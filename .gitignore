@@ -7,7 +7,14 @@ target/
 /.reference/
 vendor/SDL/.sdl3/
 **/target/
+**/build-script-cache/
 **/.codegraph/
+*.cjo
+*.o
+*.obj
+*.a
+*.lib
+*.pdb
 *.dll
 *.exe
 *.zip

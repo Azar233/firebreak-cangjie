@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.2.2 — Source-only repository cleanup (2026-11-02)
+
+Remove three generated Magic-probe build-script cache files from Git tracking and
+ignore compiler objects/build-script caches. Preserve the already-pushed v0.2.1
+history; application logic and P2.1 behavior are unchanged. This is the preferred
+source-only baseline for subsequent P3 work.
+
 ## v0.2.1 — P2.1 baseline (2026-11-02)
 
 Initial Git-managed snapshot of the Minecraft-style forest fire planning workbench:

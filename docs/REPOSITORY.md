@@ -3,7 +3,9 @@
 Repository: https://github.com/Azar233/firebreak-cangjie (private).
 
 The repository root is the firebreak project, not the surrounding multi-project
-workspace. Initial milestone: P2.1, version v0.2.1. See CHANGELOG.md.
+workspace. Current source-only baseline: P2.1, version v0.2.2. Initial import was
+v0.2.1; a follow-up removes generated Magic-probe build-script cache files without
+rewriting pushed history. See CHANGELOG.md.
 
 TODO.md is intentionally local-only and ignored. Maintain release notes and model
 assumptions in tracked docs. Each completed phase is checked, committed and pushed
