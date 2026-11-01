@@ -1,0 +1,12 @@
+[package]
+name = "firebreak"
+version = "0.2.1"
+cjc-version = "1.0.5"
+output-type = "executable"
+compile-option = "-O2"
+
+[dependencies]
+sdl = { path = "vendor/SDL" }
+
+[target.x86_64-w64-mingw32.bin-dependencies]
+path-option = ['../.tools/stdx-1.0.5.1/windows_x86_64_cjnative/dynamic/stdx']

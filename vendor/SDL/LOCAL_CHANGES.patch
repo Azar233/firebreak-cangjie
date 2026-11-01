@@ -1,0 +1,50 @@
+diff --git a/src/window.cj b/src/window.cj
+index dc2d7a7..472a032 100644
+--- a/src/window.cj
++++ b/src/window.cj
+@@ -93,6 +93,9 @@ public class SdlWindow <: Resource {
+         if (spec.highDpi) {
+             flags = flags | SDL_WINDOW_HIGH_PIXEL_DENSITY
+         }
++        if (spec.transparent) { flags = flags | SDL_WINDOW_TRANSPARENT }
++        if (spec.borderless) { flags = flags | SDL_WINDOW_BORDERLESS }
++        if (spec.alwaysOnTop) { flags = flags | SDL_WINDOW_ALWAYS_ON_TOP }
+ 
+         var window = CPointer<Unit>()
+         var createdRenderer = CPointer<Unit>()
+diff --git a/src/window_spec.cj b/src/window_spec.cj
+index 2c68181..142aeeb 100644
+--- a/src/window_spec.cj
++++ b/src/window_spec.cj
+@@ -22,6 +22,9 @@ public struct WindowSpec {
+     // when its target fits the Auto pixel/hardware budget, otherwise 1x. Positive values are exact
+     // compatibility overrides and ignore the framework pixel budget.
+     public let supersample: Int32
++    public let transparent: Bool
++    public let borderless: Bool
++    public let alwaysOnTop: Bool
+ 
+     public init(
+         title: String,
+@@ -31,7 +34,10 @@ public struct WindowSpec {
+         highDpi!: Bool = true,
+         scale!: Float32 = 1.0,
+         vsync!: Bool = true,
+-        supersample!: Int32 = 0
++        supersample!: Int32 = 0,
++        transparent!: Bool = false,
++        borderless!: Bool = false,
++        alwaysOnTop!: Bool = false
+     ) {
+         if (width <= 0 || height <= 0) {
+             throw IllegalArgumentException("WindowSpec width and height must be positive")
+@@ -44,6 +50,9 @@ public struct WindowSpec {
+         this.scale = normalizedScale(scale)
+         this.vsync = vsync
+         this.supersample = supersample
++        this.transparent = transparent
++        this.borderless = borderless
++        this.alwaysOnTop = alwaysOnTop
+     }
+ }
+ 

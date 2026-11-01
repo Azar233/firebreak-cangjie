@@ -1,0 +1,11 @@
+[package]
+name = "firebreak_probe"
+version = "0.1.0"
+cjc-version = "1.0.5"
+output-type = "executable"
+
+[dependencies]
+magic = { path = "../../../.reference/CangjieMagic" }
+
+[target.x86_64-w64-mingw32.bin-dependencies]
+path-option = ["../../../.tools/stdx-1.0.5.1/windows_x86_64_cjnative/dynamic/stdx"]
