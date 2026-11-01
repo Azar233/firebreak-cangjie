@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.3.1 — MC menu, bilingual UI and handbook (2026-11-02)
+
+- Add an Esc pause menu with project/display/experiment categories, a clearly disconnected agent information page, safe save/quit choices, and a visible menu button. Cancelled exit restores the original page and draft.
+- Add immediate Chinese/English UI and Markdown-report switching, persisted separately in an ignored local language preference. Keep site data, scenarios and numeric exports unchanged.
+- Add an eight-page bilingual project/theory handbook using the original MC book texture and page arrows, with font-aware wrapping, keyboard navigation and page bounds.
+- Validate 196 native checks: 30 new menu/language/handbook/exit checks and 166 affected regressions. No new runtime dependency; visual quality awaits user review. See docs/MENU_AND_GUIDE.md.
+
 ## v0.3.0 — P3 paired evaluation and export (2026-11-02)
 
 - Freeze baseline/site/plan inputs and evaluate identical ignition, seed and rule inputs in cancellable background batches. Revision changes invalidate old tasks and results.

@@ -131,6 +131,7 @@ func verifyP1(app: App,w: SdlWindow): Unit {
     pass(app.font.glyph(256)==63 && app.font.glyph(0x1f600)==63,"unavailable font pages and supplementary characters use safe fallback")
     app.work.acceptLoaded(Project(),""); app.syncScene(); app.cancel(); app.focus=0; app.tool=0
     pass(!app.handle(w,UiEventRecord(UiEvent.Quit)),"clean document quit terminates event loop without discard prompt")
+    app.exitReady=false // Continue using the test app after asserting the quit outcome.
     println("P1 logic/resource/position checks completed; visual quality and native dialog interaction await user review.")
 }
 

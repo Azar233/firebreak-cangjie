@@ -3,11 +3,11 @@ package firebreak
 import sdl.*
 
 func drawComparison(app: App,l: Layout): Unit {
-    let r=app.assets.r; let f=app.font
+    let r=app.assets.r
     r.fill(l.canvas,Color.rgb(33,39,34))
     for (right in [false,true]) {
         let b=compareBox(l.canvas,right)
-        f.draw(if (right) { "处理方案" } else { "原始场地" },b.x+10.0,l.canvas.y+6.0,color:Color.rgb(245,221,143))
+        uiText(app,l,if (right) { app.t("处理方案","Treatment Plan") } else { app.t("原始场地","Baseline Site") },b.x+10.0,l.canvas.y+6.0,color:Color.rgb(245,221,143))
         if (let Some(v) <- app.pairView) {
             let view=if (right) { v.planned } else { v.baseline }
             let box=if (app.mapMode) { fittedMap(b,v.aspect) } else { b }
@@ -31,29 +31,29 @@ func drawComparison(app: App,l: Layout): Unit {
                 }
             }
             r.popClip()
-            f.draw("燃烧 ${snapshot.burning()} / 燃尽 ${snapshot.burned()}",b.x+8.0,b.bottom()-24.0)
+            uiText(app,l,app.t("燃烧 ${snapshot.burning()} / 燃尽 ${snapshot.burned()}","Burning ${snapshot.burning()} / Burned ${snapshot.burned()}"),b.x+8.0,b.bottom()-24.0)
         }
     }
-    if (app.pairView.isNone()) { f.draw("选择样本数，再开始配对评估",l.canvas.x+24.0,l.canvas.centerY()) }
+    if (app.pairView.isNone()) { uiText(app,l,app.t("选择样本数，再开始配对评估","Choose sample count, then start paired evaluation"),l.canvas.x+24.0,l.canvas.centerY()) }
 }
 func drawComparisonPanel(app: App,l: Layout): Unit {
-    let f=app.font; let x=l.panel.x+18.0; let y=l.panel.y
-    f.draw("配对评估 / 无风规则 v1",x,y+18.0)
+    let x=l.panel.x+18.0; let y=l.panel.y
+    uiText(app,l,app.t("配对评估 / 无风规则 v1","Paired Evaluation / No-wind v1"),x,y+18.0)
     if (let Some(result) <- app.evalResult) {
-        f.draw("全部 ${result.rows.size} 组 / 加权均值",x,y+44.0)
-        f.draw("烧损 ${money(result.mean(false,0))} → ${money(result.mean(true,0))}",x,y+70.0)
-        f.draw("剩余 ${money(result.mean(false,1))} → ${money(result.mean(true,1))}",x,y+96.0)
-        f.draw("规划清理 ${money(result.mean(true,3))} 格",x,y+122.0)
-        f.draw("目标接触样本 ${result.exposedSamples(false)} → ${result.exposedSamples(true)}",x,y+148.0)
+        uiText(app,l,app.t("全部 ${result.rows.size} 组 / 加权均值","All ${result.rows.size} scenarios / Weighted mean"),x,y+44.0)
+        uiText(app,l,app.t("烧损 ${money(result.mean(false,0))} → ${money(result.mean(true,0))}","Burned ${money(result.mean(false,0))} -> ${money(result.mean(true,0))}"),x,y+70.0)
+        uiText(app,l,app.t("剩余 ${money(result.mean(false,1))} → ${money(result.mean(true,1))}","Remaining ${money(result.mean(false,1))} -> ${money(result.mean(true,1))}"),x,y+96.0)
+        uiText(app,l,app.t("规划清理 ${money(result.mean(true,3))} 格","Planned clearing: ${money(result.mean(true,3))} cells"),x,y+122.0)
+        uiText(app,l,app.t("目标接触样本 ${result.exposedSamples(false)} → ${result.exposedSamples(true)}","Contact samples ${result.exposedSamples(false)} -> ${result.exposedSamples(true)}"),x,y+148.0)
     } else if (let Some(job) <- app.evalJob) {
-        let progress=job.progress(); f.draw("正在评估 ${progress.completed}/${progress.total}",x,y+50.0)
-        f.draw("保持相同起火点和随机输入",x,y+86.0)
-    } else { f.draw("评估当前场地与处理方案",x,y+50.0); f.draw("未运行 / 不显示推测结果",x,y+86.0) }
-    mcButton(app,l,60,"开始评估"); mcButton(app,l,61,"取消评估")
-    mcButton(app,l,62,"上一步"); mcButton(app,l,63,"下一步")
-    mcButton(app,l,64,if (let Some(v) <- app.pairView) { if (v.playing) { "暂停回放" } else { "播放情景 1" } } else { "播放情景 1" })
-    mcButton(app,l,66,"下次样本数：${app.sampleCount}")
-    mcButton(app,l,65,"导出报告与地图"); mcButton(app,l,67,"查看最终状态")
-    if (let Some(v) <- app.pairView) { f.draw("情景 1 / 同步 ${v.step}/${v.maxStep} 步",l.canvas.x+12.0,l.toolbar.y+10.0) }
-    f.draw("样本比例不是现实概率",l.canvas.x+12.0,l.toolbar.y+38.0,color:Color.rgb(245,221,143))
+        let progress=job.progress(); uiText(app,l,app.t("正在评估 ${progress.completed}/${progress.total}","Evaluating ${progress.completed}/${progress.total}"),x,y+50.0)
+        uiText(app,l,app.t("保持相同起火点和随机输入","Shared ignition and random input"),x,y+86.0)
+    } else { uiText(app,l,app.t("评估当前场地与处理方案","Compare baseline and treatment"),x,y+50.0); uiText(app,l,app.t("未运行 / 不显示推测结果","Not evaluated / No estimates shown"),x,y+86.0) }
+    mcButton(app,l,60,app.t("开始评估","Evaluate")); mcButton(app,l,61,app.t("取消评估","Cancel"))
+    mcButton(app,l,62,app.t("上一步","Previous")); mcButton(app,l,63,app.t("下一步","Next"))
+    mcButton(app,l,64,if (let Some(v) <- app.pairView) { if (v.playing) { app.t("暂停回放","Pause Replay") } else { app.t("播放情景 1","Play Scenario 1") } } else { app.t("播放情景 1","Play Scenario 1") })
+    mcButton(app,l,66,app.t("下次样本数：${app.sampleCount}","Next Sample Count: ${app.sampleCount}"))
+    mcButton(app,l,65,app.t("导出报告与地图","Export Report & Maps")); mcButton(app,l,67,app.t("查看最终状态","View Final State"))
+    if (let Some(v) <- app.pairView) { uiText(app,l,app.t("情景 1 / 同步 ${v.step}/${v.maxStep} 步","Scenario 1 / Shared step ${v.step}/${v.maxStep}"),l.canvas.x+12.0,l.toolbar.y+10.0) }
+    uiText(app,l,app.t("样本比例不是现实概率","Sample rates are not real probabilities"),l.canvas.x+12.0,l.toolbar.y+38.0,color:Color.rgb(245,221,143))
 }

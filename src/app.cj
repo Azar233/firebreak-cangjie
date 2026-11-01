@@ -8,7 +8,7 @@ import std.math.floor
 import std.fs.{File,exists}
 import stdx.encoding.base64.toBase64String
 
-let CONTROLS=[0,1,2,3,4,5,6,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,30,31,32,33,34,35,36,40,41,42,43,44,45,46,47,48,49,50,51,52,60,61,62,63,64,65,66,67]
+let CONTROLS=[0,1,2,3,4,5,6,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,30,31,32,33,34,35,36,40,41,42,43,44,45,46,47,48,49,50,51,52,53,60,61,62,63,64,65,66,67]
 let TOOL_NAMES=["选择","林地","道路","水域","建筑","清理植被","隔离带","保护目标","禁止处理"]
 
 class Layout {
@@ -24,6 +24,7 @@ class Layout {
         toolbar=Rect(20.0+(canvas.w-546.0)/2.0,height-96.0,546.0,66.0)
     }
     func control(id: Int64): Rect {
+        if (id==53) { return Rect(width-366.0,28.0,110.0,44.0) }
         if (id==52) { return Rect(956.0,94.0,124.0,44.0) }
         if (id>=60) {
             if (id<=63) { return Rect(panel.x+18.0+Float32((id-60)%2)*122.0,panel.y+184.0+Float32((id-60)/2)*52.0,116.0,44.0) }
@@ -54,7 +55,7 @@ class Layout {
         }
     }
     func available(id: Int64,settings: Bool,simulation!: Bool=false,parameters!: Bool=false,comparison!: Bool=false): Bool {
-        if (id==52) { return true }
+        if (id==52 || id==53) { return true }
         if (id>=60) { return comparison }
         if (comparison) { return id<=1 || (id>=10 && id<=16) || id==19 }
         if (id>=40) { return simulation && (if (id==48) { true } else if (id>=49) { parameters } else { !parameters }) }
@@ -75,6 +76,16 @@ class App {
     let assets: Assets
     let font: PixelFont
     let view: VoxelView
+    let preferences: Preferences
+    var menuOpen=false
+    var bookPage: Int64=0
+    var menuPage: Int64=0
+    var menuFocus: Int64=80
+    var exitReady=false
+    var quitReturnMenu=false
+    var quitReturnPage: Int64=0
+    var quitReturnFocus: Int64=80
+    var quitAfterSave=false
     let experiment=Experiment()
     var comparePanel=false
     var sampleCount: Int64=16
@@ -103,11 +114,14 @@ class App {
     var endCell: Int64 = -1
     var lastX: Float32=0.0
     var lastY: Float32=0.0
-    var message="场地编辑后可进入火势实验；模型为四邻接、无风的离散示例。"
+    var message=""
     var dialog: ?FileDialogRequest=None
     var dialogKind: Int64=0
-    init(assets: Assets) {
+    init(assets: Assets,preferencesPath!: String="") {
+        preferences=Preferences(preferencesPath)
         this.assets=assets; font=PixelFont(assets); view=VoxelView(scene,assets); syncScene()
+        message=t("按 Esc 打开工作台菜单。","Press Esc to open the workbench menu.")
+        if (!preferences.loadError.isEmpty()) { message=t("本地设置读取失败，已使用默认语言：","Could not load preferences; using default language: ")+preferences.loadError }
     }
     func refreshExperimentView(): Unit {
         if (let Some(r) <- experiment.run) { view.setFireState(r.current().age,r.duration) }
@@ -125,7 +139,7 @@ class App {
     }
     func syncComparison(): Unit {
         if (let Some(job) <- evalJob) {
-            if (job.revision!=work.revision) { job.cancel(); evalJob=None; message="场地或参数已修改，旧评估失效。" }
+            if (job.revision!=work.revision) { job.cancel(); evalJob=None; message=t("场地或参数已修改，旧评估失效。","Site or parameters changed; previous results are invalid.") }
         }
         if (let Some(result) <- evalResult) { if (result.revision!=work.revision) { clearComparison() } }
     }
@@ -138,23 +152,23 @@ class App {
                     if (let Some(result) <- progress.result) {
                         let replacement=ComparisonView(result,assets)
                         clearComparison(); evalResult=Some(result); pairView=Some(replacement)
-                        message="${result.rows.size} 组配对评估完成；回放展示情景 1，汇总包含全部情景。"
-                    } else { message="评估失败："+progress.error }
+                        message=t("${result.rows.size} 组配对评估完成；回放展示情景 1，汇总包含全部情景。","${result.rows.size} paired scenarios complete. Replay: scenario 1; summary: all scenarios.")
+                    } else { message=t("评估失败：","Evaluation failed: ")+localizedError(progress.error,preferences.english) }
                 }
             }
         }
-        if (let Some(v) <- pairView) { v.tick(now) }
+        if (!menuOpen) { if (let Some(v) <- pairView) { v.tick(now) } }
     }
     func comparisonAction(id: Int64): Unit {
-        require(startCell<0,"请先应用或取消编辑预览")
+        require(startCell<0,t("请先应用或取消编辑预览","Apply or cancel the edit preview first"))
         match(id) {
             case 60 =>
                 let job=EvaluationJob(work.project,work.revision,makeScenarios(work.project,sampleCount))
                 if (let Some(old) <- evalJob) { old.cancel() }
-                clearComparison(); evalJob=Some(job); job.start(); message="后台配对评估中；场地修改会使结果失效。"
+                clearComparison(); evalJob=Some(job); job.start(); message=t("后台配对评估中；场地修改会使结果失效。","Evaluating in background. Site edits invalidate the results.")
             case 61 =>
                 if (let Some(job) <- evalJob) { job.cancel(); evalJob=None }
-                message="已取消评估；不发布或导出部分结果。"
+                message=t("已取消评估；不发布或导出部分结果。","Evaluation cancelled. Partial results are not published.")
             case 66 => sampleCount=if (sampleCount==4) { 16 } else if (sampleCount==16) { 32 } else { 4 }
             case _ => if (let Some(v) <- pairView) {
                 match(id) {
@@ -168,7 +182,7 @@ class App {
         }
     }
     func simulationAction(id: Int64): Unit {
-        require(startCell<0,"请先应用或取消编辑预览")
+        require(startCell<0,t("请先应用或取消编辑预览","Apply or cancel the edit preview first"))
         if (experiment.sync(work.project,work.revision)) { refreshExperimentView() }
         match(id) {
             case 40 | 41 =>
@@ -176,8 +190,8 @@ class App {
                 if (id==41) { r.running=false; r.advance() }
                 else if (r.running) { r.running=false } else { r.play(clockNow) }
                 pickingIgnition=false; refreshExperimentView()
-                message="同步四邻接传播；仿真步不代表现实秒数，单次结果不代表现实概率。"
-            case 42 => experiment.run=None; pickingIgnition=false; refreshExperimentView(); message="已重置试验；场地、处理方案与起火点均保留。"
+                message=t("同步四邻接传播；仿真步不代表现实秒数，单次结果不代表现实概率。","Synchronous four-neighbor spread. Steps are not seconds; results are not real-world probabilities.")
+            case 42 => experiment.run=None; pickingIgnition=false; refreshExperimentView(); message=t("已重置试验；场地、处理方案与起火点均保留。","Trial reset. Site, treatment and ignition are preserved.")
             case 43 | 44 =>
                 if (let Some(r) <- experiment.run) {
                     r.seek(max(0,min(r.snapshots.size-1,r.cursor+(if (id==43) { -1 } else { 1 })))); refreshExperimentView()
@@ -185,19 +199,19 @@ class App {
             case 45 =>
                 if (let Some(r) <- experiment.run) { r.running=false }
                 pickingIgnition = !pickingIgnition
-                message=if (pickingIgnition) { "点击当前模式的可燃林地设置起火点；Esc 取消。" } else { "已取消起火点选择。" }
+                message=if (pickingIgnition) { t("点击当前模式的可燃林地设置起火点；Esc 取消。","Click a fuel cell to set ignition; Esc cancels.") } else { t("已取消起火点选择。","Ignition selection cancelled.") }
             case 46 => experiment.showConnectivity = !experiment.showConnectivity; refreshExperimentView()
             case 47 =>
                 experiment.planned = !experiment.planned; pickingIgnition=false; syncScene()
-                message="已切换"+(if (experiment.planned) { "处理方案" } else { "原始场地" })+"；旧试验已失效。"
+                message=t("已切换","Switched to ")+(if (experiment.planned) { t("处理方案","Treatment Plan") } else { t("原始场地","Baseline Site") })+t("；旧试验已失效。","; previous trial invalidated.")
             case 48 => simParameters = !simParameters
             case _ => ()
         }
     }
     func setIgnition(i: Int64): Unit {
-        require(i>=0 && i<CELL_COUNT && work.project.fuel(i,planned:experiment.planned)>0.0,"起火点必须位于当前模式的可燃林地")
+        require(i>=0 && i<CELL_COUNT && work.project.fuel(i,planned:experiment.planned)>0.0,t("起火点必须位于当前模式的可燃林地","Ignition must be on fuel in the current mode"))
         let p=work.project.copy(); p.ignition=i; work.commit(p); pickingIgnition=false; syncScene()
-        message="起火点 (${i%GRID_X}, ${i/GRID_X}) 已设置；可开始或单步运行。"
+        message=t("起火点 (${i%GRID_X}, ${i/GRID_X}) 已设置；可开始或单步运行。","Ignition set at (${i%GRID_X}, ${i/GRID_X}). Start or step to run.")
     }
     func syncScene(): Unit {
         experiment.sync(work.project,work.revision); refreshExperimentView()
@@ -255,18 +269,18 @@ class App {
                 if (erase) { mask[i]=0 } else if (p.land[i]==1) { mask[i]=tool-4 }
             } else { mask[i]=0 }
         }
-        if (blocked) { return "含保护目标或禁区：整笔不可应用" }
-        if (p.metersWide<=0.0) { return "未标定：无法核算平方米和处理费用" }
+        if (blocked) { return t("含保护目标或禁区：整笔不可应用","Protected / forbidden cells: stroke cannot be applied") }
+        if (p.metersWide<=0.0) { return t("未标定：无法核算平方米和处理费用","Uncalibrated: area and cost unavailable") }
         var cost=0.0
         for (v in mask) { cost+=if (v==1) { p.clearingPrice } else if (v==2) { p.breakPrice } else { 0.0 } }
         cost*=p.cellArea()
-        return "选区 ${money(Float64(cells.size)*p.cellArea())} 平方米 | 方案 ￥${money(cost)}"+(if (cost>p.budget) { " / 超预算" } else { " / 预算内" })
+        return t("选区 ${money(Float64(cells.size)*p.cellArea())} 平方米 | 方案 ￥${money(cost)}","Selected ${money(Float64(cells.size)*p.cellArea())} m2 | Plan CNY ${money(cost)}")+(if (cost>p.budget) { t(" / 超预算"," / Over budget") } else { t(" / 预算内"," / Within budget") })
     }
     func cancel(): Unit { painting=false; startCell = -1; endCell = -1; pressed = -1; activeField = -1; dragging=false; panning=false }
     func commitStroke(): Unit {
-        require(startCell>=0 && !painting,"请先拖动选区并松开鼠标")
+        require(startCell>=0 && !painting,t("请先拖动选区并松开鼠标","Drag a selection and release the mouse first"))
         let changed=work.apply(selection(),tool,erase)
-        cancel(); if (changed) { syncScene() }; message=if (changed) { "已应用；整笔操作可撤销。" } else { "选区没有需要更改的格子。" }
+        cancel(); if (changed) { syncScene() }; message=if (changed) { t("已应用；整笔操作可撤销。","Applied. Undo restores the entire stroke.") } else { t("选区没有需要更改的格子。","No cells need changing.") }
     }
     func fieldValue(id: Int64): Float64 {
         let p=work.project
@@ -280,23 +294,23 @@ class App {
             case 33=>p.metersWide=value; case 34=>p.budget=value; case 35=>p.clearingPrice=value; case 36=>p.breakPrice=value
             case 49=>p.spreadProbability=value
             case 50 | 51 =>
-                require(!value.isNaN() && !value.isInf() && value>=0.0 && value<=2147483647.0 && floor(value)==value,"请输入范围内的整数")
+                require(!value.isNaN() && !value.isInf() && value>=0.0 && value<=2147483647.0 && floor(value)==value,t("请输入范围内的整数","Enter an integer within the allowed range"))
                 if (activeField==50) { p.burnSteps=Int64(value) } else { p.seed=Int64(value) }
             case _=>()
         }
-        work.commit(p); activeField = -1; updateExperiment(clockNow); message="参数已更新；旧试验失效，预算约束已重新校验。"
+        work.commit(p); activeField = -1; updateExperiment(clockNow); message=t("参数已更新；旧试验失效，预算约束已重新校验。","Parameters updated; old results invalidated and budget rechecked.")
     }
     func activate(id: Int64): Unit {
         if ((id>=33 && id<=36) || (id>=49 && id<=51)) {
-            commitField(); activeField=id; draft="${fieldValue(id)}"; message="输入数值，Enter 确认，Esc 取消；Backspace 删除。"; return
+            commitField(); activeField=id; draft="${fieldValue(id)}"; message=t("输入数值，Enter 确认，Esc 取消；Backspace 删除。","Enter a number; Enter confirms, Esc cancels, Backspace deletes."); return
         }
         commitField()
         if (id>=60) { comparisonAction(id); return }
         if (id>=40 && id<=48) { simulationAction(id); return }
-        if (id>=20 && id<=28) { cancel(); pickingIgnition=false; tool=id-20; message="工具："+TOOL_NAMES[tool]+"；拖动预览，再确认应用。"; return }
+        if (id>=20 && id<=28) { cancel(); pickingIgnition=false; tool=id-20; message=t("工具：","Tool: ")+toolName(tool)+t("；拖动预览，再确认应用。","; drag to preview, then apply."); return }
         match (id) {
-            case 0 => camera.reset(); message="相机已复位。"
-            case 1 => camera.pitch=1.5707963267948966; mapMode=false; message="俯视编辑。"
+            case 0 => camera.reset(); message=t("相机已复位。","Camera reset.")
+            case 1 => camera.pitch=1.5707963267948966; mapMode=false; message=t("俯视编辑。","Overhead editing view.")
             case 2 => view.showCanopy = !view.showCanopy
             case 3 => camera.rotate(-20.0,0.0)
             case 4 => camera.rotate(20.0,0.0)
@@ -307,22 +321,23 @@ class App {
                 if (!from.isEmpty()) {
                     let next=makeReference(readProjectText(from[from.size-1]))
                     cancel(); work.history(id==14); replaceReference(next); syncScene()
-                    message=if (id==14) { "已撤销。" } else { "已重做。" }
+                    message=if (id==14) { t("已撤销。","Undone.") } else { t("已重做。","Redone.") }
                 }
             case 16 => cancel(); mapMode = !mapMode
             case 17 => settings = !settings
             case 18 =>
-                if (reference.isNone()) { message="请先导入底图；二维地图已使用三维场景的纹理俯视。"; return }
+                if (reference.isNone()) { message=t("请先导入底图；二维地图已使用三维场景的纹理俯视。","Import a reference image first. The map already uses actual voxel textures."); return }
                 cancel(); referenceMode = if (mapMode) { !referenceMode } else { true }; mapMode=true
             case 19 => cancel(); pickingIgnition=false; comparePanel=false; simPanel = !simPanel; simParameters=false
+            case 53 => openMenu()
             case 52 =>
-                require(startCell<0,"请先应用或取消编辑预览")
+                require(startCell<0,t("请先应用或取消编辑预览","Apply or cancel the edit preview first"))
                 cancel(); pickingIgnition=false; comparePanel = !comparePanel; simPanel=false; referenceMode=false
                 if (let Some(r) <- experiment.run) { r.running=false }
-                message="同情景对比 / 无风规则 v1；样本比例不代表现实火灾概率。"
-            case 30 => cancel(); erase = !erase; message="擦除模式：地类恢复空地，标记或处理带移除。"
+                message=t("同情景对比 / 无风规则 v1；样本比例不代表现实火灾概率。","Paired scenarios / no-wind rule v1. Sample rates are not real-world probabilities.")
+            case 30 => cancel(); erase = !erase; message=t("擦除模式：地类恢复空地，标记或处理带移除。","Erase: clear land, markers or treatment strips.")
             case 31 => commitStroke()
-            case 32 => cancel(); message="已取消预览。"
+            case 32 => cancel(); message=t("已取消预览。","Preview cancelled.")
             case _ => ()
         }
         view.dirty=true
@@ -332,83 +347,87 @@ class App {
         view.selectedX=if (i>=0) { i%GRID_X } else { -1 }; view.selectedZ=if (i>=0) { i/GRID_X } else { -1 }; view.dirty=true
         if (i>=0) {
             let p=work.project
-            message="格 (${i%GRID_X}, ${i/GRID_X})："+LAND_NAMES[p.land[i]]+"；相对可燃量 ${p.fuel(i)} / 方案 ${p.fuel(i,planned:true)}"
-        } else { message="当前位置没有地面。" }
+            message=t("格 (${i%GRID_X}, ${i/GRID_X})：","Cell (${i%GRID_X}, ${i/GRID_X}): ")+landName(p.land[i])+t("；相对可燃量 ${p.fuel(i)} / 方案 ${p.fuel(i,planned:true)}","; relative fuel ${p.fuel(i)} / planned ${p.fuel(i,planned:true)}")
+        } else { message=t("当前位置没有地面。","No ground at this position.") }
     }
     func discard(window: SdlWindow): Bool {
         if (!work.dirty() && startCell<0 && activeField<0) { return true }
-        var opts=MessageBoxOptions("未保存更改","当前项目或预览尚未保存。是否放弃并继续？")
+        var opts=MessageBoxOptions(t("未保存更改","Unsaved Changes"),t("当前项目或预览尚未保存。是否放弃并继续？","Your project or preview is unsaved. Discard changes and continue?"))
         opts.kind=MessageBoxKind.Warning
-        opts.buttons=[MessageBoxButton("取消",id:0,returnKeyDefault:true,escapeKeyDefault:true),MessageBoxButton("放弃更改",id:1)]
+        opts.buttons=[MessageBoxButton(t("取消","Cancel"),id:0,returnKeyDefault:true,escapeKeyDefault:true),MessageBoxButton(t("放弃更改","Discard Changes"),id:1)]
         return showMessageBox(opts,window:Some(window))==1
     }
     func requestFile(window: SdlWindow,kind: Int64): Unit {
-        require(dialog.isNone(),"请先完成文件对话框")
-        commitField(); require(startCell<0,"请先应用或取消选区")
+        require(dialog.isNone(),t("请先完成文件对话框","Finish the file dialog first"))
+        commitField(); require(startCell<0,t("请先应用或取消选区","Apply or cancel the selection first"))
         dialogKind=kind
         if (kind==65) {
-            syncComparison(); require(evalResult.isSome(),"请先完成当前场地的评估")
+            syncComparison(); require(evalResult.isSome(),t("请先完成当前场地的评估","Complete evaluation of the current site first"))
             dialog=Some(FileDialogs.openFolder(options:FileDialogOptions(),window:Some(window))); return
         }
-        let filter=if (kind==13) { FileDialogFilter("底图 PNG / JPEG","png;jpg;jpeg") } else { FileDialogFilter("断火线项目","firebreak") }
+        let filter=if (kind==13) { FileDialogFilter(t("底图 PNG / JPEG","Reference PNG / JPEG"),"png;jpg;jpeg") } else { FileDialogFilter(t("断火线项目","Firebreak Project"),"firebreak") }
         let options=FileDialogOptions(filters:[filter])
         dialog=Some(if (kind==12) { FileDialogs.saveFile(options:options,window:Some(window)) } else { FileDialogs.openFile(options:options,window:Some(window)) })
     }
     func importImage(path: String): Unit {
-        let bytes=File.readFrom(path); require(bytes.size<=8000000,"底图上限 8 MB")
-        let p=Project(demo:false); p.image=toBase64String(bytes); p.source="用户导入底图"; p.metersWide=0.0
+        let bytes=File.readFrom(path); require(bytes.size<=8000000,t("底图上限 8 MB","Reference image limit: 8 MB"))
+        let p=Project(demo:false); p.image=toBase64String(bytes); p.source=t("用户导入底图","Imported reference"); p.metersWide=0.0
         try (s=Surface.loadBytes(bytes,options:ImageLoadOptions(maxPixels:16000000))) { p.aspect=Float64(s.size().w)/Float64(s.size().h) }
         p.validate()
         // Decode/upload before changing the document so a failed import keeps the current project.
         let s=decodeReference(p).getOrThrow()
-        let t=try { assets.r.textureFromSurface(s) } finally { s.close() }
-        work.commit(p); work.path=""; if (let Some(old) <- reference) { old.close() }; reference=Some(t)
-        cancel(); syncScene(); mapMode=true; referenceMode=true; settings=true; message="底图已导入；请标定宽度并标注。点击纹理俯视查看三维场景的正上方。"
+        let texture=try { assets.r.textureFromSurface(s) } finally { s.close() }
+        work.commit(p); work.path=""; if (let Some(old) <- reference) { old.close() }; reference=Some(texture)
+        cancel(); syncScene(); mapMode=true; referenceMode=true; settings=true; message=t("底图已导入；请标定宽度并标注。点击纹理俯视查看三维场景的正上方。","Reference imported. Set its width and annotate. Switch to the textured map for an overhead view.")
     }
     func pollFile(window: SdlWindow): Unit {
         if (let Some(request) <- dialog) {
             match(request.result()) {
                 case FileDialogResult.FileDialogPending => ()
-                case FileDialogResult.FileDialogCanceled => dialog=None
-                case FileDialogResult.FileDialogFailed(error) => dialog=None; message="文件对话框失败："+error
+                case FileDialogResult.FileDialogCanceled => dialog=None; quitAfterSave=false
+                case FileDialogResult.FileDialogFailed(error) => dialog=None; quitAfterSave=false; message=t("文件对话框失败：","File dialog failed: ")+localizedError(error,preferences.english)
                 case FileDialogResult.FileDialogSelected(paths,_) =>
-                    dialog=None; if (paths.isEmpty()) { return }
+                    dialog=None; if (paths.isEmpty()) { quitAfterSave=false; return }
                     try {
                         if (dialogKind==65) {
                             syncComparison(); let result=evalResult.getOrThrow()
-                            message="报告已导出："+exportEvaluation(result,assets,paths[0])
+                            message=t("报告已导出：","Report exported: ")+exportEvaluation(result,assets,paths[0],english:preferences.english)
                         } else if (dialogKind==12) {
                             var path=paths[0]; if (!path.endsWith(".firebreak")) { path+=".firebreak" }
                             if (exists(path) && path!=work.path) {
-                                var opts=MessageBoxOptions("覆盖项目","所选项目已存在，是否替换？")
-                                opts.buttons=[MessageBoxButton("取消",id:0,returnKeyDefault:true,escapeKeyDefault:true),MessageBoxButton("替换",id:1)]
-                                if (showMessageBox(opts,window:Some(window))!=1) { return }
+                                var opts=MessageBoxOptions(t("覆盖项目","Replace Project"),t("所选项目已存在，是否替换？","This project already exists. Replace it?"))
+                                opts.buttons=[MessageBoxButton(t("取消","Cancel"),id:0,returnKeyDefault:true,escapeKeyDefault:true),MessageBoxButton(t("替换","Replace"),id:1)]
+                                if (showMessageBox(opts,window:Some(window))!=1) { quitAfterSave=false; return }
                             }
-                            work.save(path); message="项目已安全保存。"
+                            work.save(path); message=t("项目已安全保存。","Project saved safely."); exitReady=quitAfterSave; quitAfterSave=false
                         } else if (discard(window)) {
                             if (dialogKind==13) { importImage(paths[0]) }
-                            else { loadProject(paths[0]); message="项目已读取。" }
+                            else { loadProject(paths[0]); message=t("项目已读取。","Project loaded.") }
                         }
-                    } catch(e: Exception) { message="操作失败："+e.message }
+                    } catch(e: Exception) { quitAfterSave=false; message=t("操作失败：","Operation failed: ")+localizedError(e.message,preferences.english) }
             }
         }
     }
     func action(window: SdlWindow,id: Int64): Unit {
         if (id==10) {
-            if (discard(window)) { cancel(); work.commit(Project()); work.path=""; work.unsaved=true; refreshReference(); syncScene(); message="已建立示例；请另存项目。" }
+            if (discard(window)) { cancel(); work.commit(Project()); work.path=""; work.unsaved=true; refreshReference(); syncScene(); message=t("已建立示例；请另存项目。","Demo created. Save it as a new project.") }
         } else if (id==65) { requestFile(window,65) } else if (id>=11 && id<=13) { requestFile(window,id) } else { activate(id) }
     }
     func handle(window: SdlWindow,record: UiEventRecord): Bool {
         clockNow=window.ticks()
-        try { return handleInput(window,record) } catch(e: Exception) { painting=false; message="操作未应用："+e.message; return true }
+        try { return handleInput(window,record) } catch(e: Exception) { painting=false; message=t("操作未应用：","Action not applied: ")+localizedError(e.message,preferences.english); return true }
     }
     func handleInput(window: SdlWindow,record: UiEventRecord): Bool {
         let l=Layout(Float32(window.width),Float32(window.height))
         match (record.event) {
-            case UiEvent.Quit | UiEvent.WindowCloseRequested => return !discard(window)
+            case UiEvent.Quit | UiEvent.WindowCloseRequested => requestExit(); return !exitReady
             case UiEvent.WindowResized(_,_) | UiEvent.WindowDisplayScaleChanged =>
                 window.refreshSize()
-                if (window.width<1100 || window.height<780) { window.setSize(max(1100,window.width),max(780,window.height)) }; view.dirty=true
+                if (window.width<1100 || window.height<780) { window.setSize(max(1100,window.width),max(780,window.height)) }; view.dirty=true; return true
+            case _=>()
+        }
+        if (menuOpen) { return handleMenu(window,record,l) }
+        match (record.event) {
             case UiEvent.MouseMove(x,y) =>
                 hover=l.hit(x,y,settings:settings,simulation:simPanel,parameters:simParameters,comparison:comparePanel)
                 if (painting) { let i=cellAt(x,y,l); if (i>=0) { endCell=i } }
@@ -434,7 +453,7 @@ class App {
             case UiEvent.MouseUp(button,x,y) =>
                 match (button) {
                     case MouseButton.Left =>
-                        if (painting) { painting=false; message="选区 ${selection().size} 格；确认应用 / Enter，取消 / Esc。" }
+                        if (painting) { painting=false; message=t("选区 ${selection().size} 格；确认应用 / Enter，取消 / Esc。","${selection().size} cells selected; Enter applies, Esc cancels.") }
                         else if (pressed>=0 && pressed==l.hit(x,y,settings:settings,simulation:simPanel,parameters:simParameters,comparison:comparePanel)) { action(window,pressed) }; pressed = -1
                     case MouseButton.Right => dragging=false
                     case MouseButton.Middle => panning=false
@@ -461,7 +480,7 @@ class App {
                 }
                 if (record.metadata.modifiers.ctrl && !repeat) {
                     match(key) {
-                        case Key.Letter(83) => if (work.path.isEmpty() || record.metadata.modifiers.shift) { requestFile(window,12) } else { require(startCell<0,"请先应用或取消选区"); work.save(work.path); message="项目已保存。" }; return true
+                        case Key.Letter(83) => if (work.path.isEmpty() || record.metadata.modifiers.shift) { requestFile(window,12) } else { require(startCell<0,t("请先应用或取消选区","Apply or cancel the selection first")); work.save(work.path); message=t("项目已保存。","Project saved.") }; return true
                         case Key.Letter(79) => requestFile(window,11); return true
                         case Key.Letter(90) => activate(if (record.metadata.modifiers.shift) { 15 } else { 14 }); return true
                         case Key.Letter(89) => activate(15); return true
@@ -489,12 +508,123 @@ class App {
                     case Key.Letter(68) => camera.panX+=12.0; view.dirty=true
                     case Key.PageUp => activate(5)
                     case Key.PageDown => activate(6)
-                    case Key.Escape => cancel(); pickingIgnition=false; message="已取消当前操作。"
+                    case Key.Escape => if (!repeat) { if (startCell>=0 || pickingIgnition) { cancel(); pickingIgnition=false; message=t("已取消当前操作。","Current action cancelled.") } else { openMenu() } }
                     case _ => ()
                 }
             case _ => ()
         }
         return true
+    }
+
+    func t(zh: String,en: String): String { preferences.text(zh,en) }
+    func toolName(index: Int64): String {
+        let names=["Select","Forest","Road","Water","Building","Clear Vegetation","Firebreak","Protect Target","No Treatment"]
+        return t(TOOL_NAMES[index],names[index])
+    }
+    func landName(index: Int64): String {
+        return t(LAND_NAMES[index],["Empty","Forest","Road","Water","Building"][index])
+    }
+    func openMenu(): Unit {
+        menuOpen=true; menuPage=0; menuFocus=80; hover = -1; pressed = -1
+        dragging=false; panning=false; painting=false
+        if (let Some(run) <- experiment.run) { run.running=false }
+        if (let Some(pair) <- pairView) { pair.playing=false }
+    }
+    func requestExit(): Unit {
+        if (dialog.isSome()) { message=t("请先完成文件对话框。","Finish the file dialog first."); return }
+        if (!work.dirty() && startCell<0 && activeField<0) { exitReady=true; return }
+        if (menuOpen && menuPage==5) { return }
+        quitReturnMenu=menuOpen; quitReturnPage=menuPage; quitReturnFocus=menuFocus
+        if (!menuOpen) { openMenu() }
+        menuPage=5; menuFocus=95; pressed = -1
+    }
+    func menuEnabled(id: Int64): Bool {
+        if (dialog.isSome()) { return false }
+        if (id==96) { return bookPage>0 }
+        if (id==97) { return bookPage<BOOK_PAGES-1 }
+        return id!=93 || (startCell<0 && activeField<0)
+    }
+    func closeMenu(): Unit {
+        commitField(); menuOpen=false; hover = -1; pressed = -1
+    }
+    func saveFromMenu(window: SdlWindow,exitAfter: Bool): Unit {
+        require(startCell<0 && activeField<0,t("请先完成或取消预览及输入。","Finish or cancel pending edits first."))
+        if (work.path.isEmpty()) { requestFile(window,12); quitAfterSave=exitAfter }
+        else { work.save(work.path); exitReady=exitAfter; message=t("项目已保存。","Project saved.") }
+    }
+    func menuAction(window: SdlWindow,id: Int64): Unit {
+        if (!menuEnabled(id)) { return }
+        match(id) {
+            case 80=>closeMenu()
+            case 81 | 82 | 83 | 84=>commitField(); menuPage=id-80; menuFocus=MenuLayout(Layout(Float32(window.width),Float32(window.height))).controls(menuPage)[0]
+            case 85=>
+                preferences.setEnglish(!preferences.english)
+                window.setTitle(t("断火线 · 场地规划工作台","Firebreak - Site Planning Workbench"))
+                message=t("语言已切换为简体中文。","Language changed to English.")
+            case 86=>saveFromMenu(window,false)
+            case 87=>requestExit()
+            case 88=>commitField(); menuPage=0; menuFocus=80
+            case 90=>view.showCanopy = !view.showCanopy; view.dirty=true
+            case 91=>mapMode = !mapMode; referenceMode=false; view.dirty=true
+            case 92=>camera.reset(); view.dirty=true
+            case 93=>saveFromMenu(window,true)
+            case 94=>exitReady=true
+            case 95=>menuOpen=quitReturnMenu; menuPage=quitReturnPage; menuFocus=quitReturnFocus
+            case 96=>bookPage--; menuFocus=if (bookPage==0) { 97 } else { 96 }
+            case 97=>bookPage++; menuFocus=if (bookPage==BOOK_PAGES-1) { 96 } else { 97 }
+            case 98=>menuPage=6; menuFocus=if (bookPage<BOOK_PAGES-1) { 97 } else { 96 }
+            case _=>if ((id>=33 && id<=36) || (id>=49 && id<=51)) { activate(id) }
+        }
+        pressed = -1
+    }
+    func handleMenu(window: SdlWindow,record: UiEventRecord,l: Layout): Bool {
+        let m=MenuLayout(l)
+        match(record.event) {
+            case UiEvent.MouseMove(x,y)=>hover=m.hit(x,y,menuPage)
+            case UiEvent.MouseDown(MouseButton.Left,x,y)=>
+                let id=m.hit(x,y,menuPage); pressed=if (id>=0 && menuEnabled(id)) { id } else { -1 }
+                if (pressed>=0) { menuFocus=pressed }
+            case UiEvent.MouseUp(MouseButton.Left,x,y)=>
+                let id=pressed; pressed = -1
+                if (id>=0 && id==m.hit(x,y,menuPage)) { menuAction(window,id) }
+            case UiEvent.WindowFocusLost=>pressed = -1; hover = -1
+            case UiEvent.TextInput(text)=>if (menuPage!=5 && activeField>=0 && draft.size+text.size<=24) {
+                var valid=true; for (ch in text.toArray()) { if (!(ch>=48 && ch<=57) && ch!=46) { valid=false } }
+                if (valid) { draft+=text }
+            }
+            case UiEvent.KeyDown(key,repeat)=>
+                if (dialog.isSome()) { return true }
+                if (menuPage==5) {
+                    match(key) { case Key.Escape=>if (!repeat) { menuAction(window,95) }; return true; case _=>() }
+                }
+                if (activeField>=0 && menuPage!=5) {
+                    match(key) {
+                        case Key.Escape=>if (!repeat) { activeField = -1 }
+                        case Key.Enter=>if (!repeat) { commitField() }
+                        case Key.Backspace=>if (!draft.isEmpty()) { draft=draft[..draft.size-1] }
+                        case Key.Letter(65)=>if (record.metadata.modifiers.ctrl) { draft="" }
+                        case _=>()
+                    }; return true
+                }
+                if (repeat) { return true }
+                match(key) {
+                    case Key.Escape=>if (menuPage==0) { closeMenu() } else { menuPage=0; menuFocus=80; pressed = -1 }
+                    case Key.Tab | Key.Up | Key.Down=>
+                        let ids=m.controls(menuPage); var index: Int64=0
+                        for (i in 0..ids.size) { if (ids[i]==menuFocus) { index=i } }
+                        let backward=match(key) { case Key.Up=>true; case _=>record.metadata.modifiers.shift }
+                        for (_ in 0..ids.size) {
+                            index=(index+(if (backward) { ids.size-1 } else { 1 }))%ids.size
+                            if (menuEnabled(ids[index])) { menuFocus=ids[index]; break }
+                        }
+                    case Key.Left=>if (menuPage==6) { menuAction(window,96) }
+                    case Key.Right=>if (menuPage==6) { menuAction(window,97) }
+                    case Key.Enter | Key.Space=>menuAction(window,menuFocus)
+                    case _=>()
+                }
+            case _=>()
+        }
+        return !exitReady
     }
     func close(): Unit { if (let Some(job) <- evalJob) { job.cancel() }; clearComparison(); view.close(); if (let Some(t) <- reference) { t.close() }; reference=None }
 }

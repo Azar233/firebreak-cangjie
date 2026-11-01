@@ -35,3 +35,7 @@ artifacts/*
 !artifacts/p2-ideal-percolation.csv
 
 !artifacts/p3-checks.log
+
+/settings.local.json
+/settings.local.json.writing
+!artifacts/menu-checks.log

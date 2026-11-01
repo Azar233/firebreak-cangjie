@@ -7,14 +7,16 @@ main(args: Array<String>): Int64 {
         let verify=args.size>0 && args[0]=="--verify"
         try (window=SdlWindow(WindowSpec("断火线 · P3 多情景方案对比",1280,860,supersample:1),hidden:verify)) {
             try (assets=Assets(window.renderer)) {
-                let app=App(assets)
+                let app=App(assets,preferencesPath:if (verify) { "" } else { "settings.local.json" })
+                window.setTitle(app.t("断火线 · 场地规划工作台","Firebreak - Site Planning Workbench"))
                 try {
-                    if (verify) { verifyP1(app,window); verifyTopMap(app,window); verifyP2(app,window); verifyBurnDisplay(app,window); verifyP3(app,window); verifyP0(app,window); return 0 }
+                    if (verify) { verifyP1(app,window); verifyTopMap(app,window); verifyP2(app,window); verifyBurnDisplay(app,window); verifyP3(app,window); verifyMenu(app,window); verifyP0(app,window); return 0 }
                     var running=true
                     while (running) {
                         while (let Some(record) <- window.pollEventRecord()) { if (!app.handle(window,record)) { running=false; break } }
                         if (!running) { break }
                         app.pollFile(window)
+                        if (app.exitReady) { break }
                         app.updateExperiment(window.ticks())
                         render(app,window); window.delay(12)
                     }

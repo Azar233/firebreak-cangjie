@@ -3,7 +3,7 @@
   "sampling": "nearest",
   "blocks": ["grass_block_top", "grass_block_side", "dirt", "oak_log", "oak_log_top", "oak_leaves", "stone", "oak_planks", "bricks", "dirt_path_top"],
   "items": ["iron_axe", "iron_shovel", "flint_and_steel", "water_bucket", "map", "compass_16", "paper", "oak_sign", "barrier"],
-  "files": ["textures/gui/widgets.png", "textures/gui/container/generic_54.png", "textures/map/map_background.png", "textures/block/fire_0.png", "textures/font/ascii.png", "font/glyph_sizes.bin"],
+  "files": ["textures/gui/widgets.png", "textures/gui/book.png", "textures/gui/container/generic_54.png", "textures/map/map_background.png", "textures/block/fire_0.png", "textures/font/ascii.png", "font/glyph_sizes.bin"],
   "unicode_pages": "Selected from non-ASCII codepoints in src/*.cj at build time",
   "widget_regions": {
     "hotbar": [0, 0, 182, 22],

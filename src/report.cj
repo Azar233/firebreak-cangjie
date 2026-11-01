@@ -27,7 +27,8 @@ func evaluationParameters(result: EvaluationResult): String {
     }
     j.put("scenarios",scenarios); return j.toJsonString()
 }
-func evaluationReport(result: EvaluationResult): String {
+func evaluationReport(result: EvaluationResult,english!: Bool=false): String {
+    if (english) { return englishEvaluationReport(result) }
     let p=readProjectText(result.projectText)
     return "# 断火线：多情景方案比较\n\n"+
         "场地快照：site.firebreak；revision ${result.revision}；样本 ${result.rows.size} 组。\n\n"+
@@ -56,14 +57,14 @@ func saveEvaluationMap(view: VoxelView,aspect: Float64,path: String): Unit {
         view.rows(surface,Camera(),Rect(0.0,0.0,Float32(width),Float32(height)),width,height,0,height); surface.savePng(path)
     }
 }
-func exportEvaluation(result: EvaluationResult,assets: Assets,parent: String): String {
+func exportEvaluation(result: EvaluationResult,assets: Assets,parent: String,english!: Bool=false): String {
     require(!result.rows.isEmpty(),"没有完整评估结果")
     let temp=Directory.createTemp(parent).toString()
     try {
         File.writeTo(temp+"/site.firebreak",result.projectText.toArray())
         File.writeTo(temp+"/metrics.csv",evaluationCsv(result).toArray())
         File.writeTo(temp+"/parameters.json",evaluationParameters(result).toArray())
-        File.writeTo(temp+"/report.md",evaluationReport(result).toArray())
+        File.writeTo(temp+"/report.md",evaluationReport(result,english:english).toArray())
         try (pair=ComparisonView(result,assets)) {
             pair.seek(pair.maxStep)
             saveEvaluationMap(pair.baseline,pair.aspect,temp+"/baseline.png")
@@ -78,4 +79,26 @@ func exportEvaluation(result: EvaluationResult,assets: Assets,parent: String): S
         require(ok!=0,"无法发布报告目录，已有目标保留")
         return path
     } catch(e: Exception) { throw Exception(e.message+"；未完成的导出保留于 "+temp) }
+}
+func englishEvaluationReport(result: EvaluationResult): String {
+    let p=readProjectText(result.projectText)
+    return "# Firebreak: Paired Scenario Evaluation\n\n"+
+        "Frozen site: site.firebreak. Revision ${result.revision}; ${result.rows.size} paired scenarios.\n\n"+
+        "|Weighted mean (cells)|Baseline|Treatment|\n|---|---:|---:|\n"+
+        "|Burned|${money(result.mean(false,0))}|${money(result.mean(true,0))}|\n"+
+        "|Planned clearing|0|${money(result.mean(true,3))}|\n"+
+        "|Remaining forest|${money(result.mean(false,1))}|${money(result.mean(true,1))}|\n"+
+        "|Target contact|${money(result.mean(false,2))}|${money(result.mean(true,2))}|\n\n"+
+        "Samples with target contact (unweighted): baseline ${result.exposedSamples(false)}/${result.rows.size}; treatment ${result.exposedSamples(true)}/${result.rows.size}. "+
+        "Samples with greater treatment burn loss or target contact: ${result.worseSamples()}. All samples are retained.\n\n"+
+        (if (p.metersWide>0.0) { "Cell area: ${money(p.cellArea())} m2; treated: ${p.count(p.treatment)} cells; cost CNY ${money(p.cost())}; budget CNY ${money(p.budget)}.\n\n" }
+         else { "Site is uncalibrated: physical area and cost are unavailable.\n\n" })+
+        "Aggregation: sum(weight * value) / sum(weight). Tables show two decimals; metrics.csv retains integer sample metrics and exact weights.\n\n"+
+        "Scenarios: use the configured fuel-cell ignition first, then forest-index quantiles, up to four distinct ignition sites. Cycle these sites and increment seed with equal weights. "+
+        "This is not geographically uniform sampling or independent real-world observation. Exact inputs are in parameters.json.\n\n"+
+        "Rule v1: four neighbors, no wind, synchronous discrete spread, finite burn duration. Each pair shares ignition, seed, parameters and step/directed-edge random inputs. "+
+        "Treatment removes fuel; a treated ignition is recorded as prevented, without resampling.\n\n"+
+        "Target contact counts protected cells that burn or have a burning four-neighbor; it is not building damage. Baseline forest = cleared + burned + remaining.\n\n"+
+        "baseline.png and planned.png show only scenario 1 at its final state, not aggregate risk. Sample rates are not real-world fire probabilities; steps are not seconds. "+
+        "This educational planning prototype has not been calibrated against real fires.\n"
 }
