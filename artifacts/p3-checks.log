@@ -1,172 +1,172 @@
-PASS P1 versioned project round trip preserves baseline, constraints, plan and prices
-PASS treatment keeps baseline and changes only planned fuel
-PASS two 25 square meter cells at 2 yuan cost exactly 100
-PASS over-budget stroke fails atomically without consuming undo history
-PASS undo restores original document and clean state
-PASS redo restores whole stroke and unsaved state
-PASS new edit clears redo and removing treatment refunds cost
-PASS forbidden cell rejects entire mixed stroke
-PASS protected target rejects treatment
-PASS adding a protection marker removes conflicting treatment while preserving forest
-PASS land annotation removes obsolete intervention
-PASS uncalibrated forest cannot produce a priced intervention
-PASS width calibration changes cell area quadratically
-PASS unknown project version rejected
-PASS malformed or incomplete projects rejected
-PASS non-finite price rejected
-PASS Unicode path save safely replaces existing project and removes temporary file
-PASS saved project reload restores all state
-PASS failed load retains active project and save path
-PASS existing recovery file blocks save without overwriting original
-PASS failed replacement of directory preserves original, unsaved state and path
-PASS failed save leaves previously saved bytes intact
-PASS JPEG import preserves aspect and starts uncalibrated
-PASS bad image import preserves document and live texture
-PASS aspect-aware calibration gives correct rectangular cell area
-PASS embedded base map reload works after original image is deleted and releases old texture
-PASS application failed open preserves document and renderer reference
-PASS drag previews six cells without changing baseline
-PASS preview reports calibrated rectangle area before commit
-PASS confirm submits drag as exactly one undo transaction
-PASS undo button restores complete stroke
-PASS redo button restores complete stroke
-PASS Escape cancels preview without modifying plan
-PASS numeric calibration field commits through keyboard
-PASS invalid numeric input retains previous budget and editable draft
-PASS both sidebar modes have distinct reachable control targets at minimum, normal and fullscreen sizes
-PASS keyboard focus skips hidden controls in settings mode
-PASS reference replacement releases final image texture
-PASS committed scene edit cancels stale progressive render
-PASS planned strip removes displayed trunk and overhanging canopy without changing baseline
-PASS unavailable font pages and supplementary characters use safe fallback
-PASS clean document quit terminates event loop without discard prompt
-P1 logic/resource/position checks completed; visual quality and native dialog interaction await user review.
-PASS 1440 overhead map picks preserve cell coordinates across aspect ratios independently of 3D camera
-PASS original-map parchment fits viewport and paper margin is not editable terrain
-PASS overhead letterbox margins do not pick terrain
-PASS overhead pixels use actual MC grass, road and topmost roof textures
-PASS overhead scene keeps canopy occlusion while picking the ground beneath
-PASS projection change invalidates cached overhead texture even for the same viewport
-PASS switching to overhead cancels unfinished oblique render
-PASS map switching preserves oblique camera orientation
-PASS empty graph has zero components and no spanning path
-PASS full four-neighbor lattice forms one spanning component
-PASS diagonal sites remain separate under four-neighbor adjacency
-PASS removing a one-cell bridge splits two six-cell forest islands
-PASS shortest fuel path ends at target perimeter without treating building as fuel
-PASS non-fuel gap removes ignition-to-target path
-PASS synchronous chain advances one edge per step and leaves old snapshot unchanged
-PASS finite deterministic chain burns out exactly after five updates
-PASS zero spread probability still consumes ignition for its finite duration
-PASS non-fuel barrier blocks fire even at spread probability one
-PASS fire cannot jump diagonally or across non-fuel cells
-PASS target-neighbor exposure persists without claiming non-fuel target burned
-PASS run freezes fuel inputs instead of observing later source mutations
-PASS same scenario seed reproduces every snapshot
-PASS replay consumes existing snapshots without redrawing random numbers or branching history
-PASS random input is stable and distinguishes seed, step and directed edge
-PASS render ticks before fixed playback interval do not advance model
-PASS different UI tick schedules yield the same fixed-step state
-PASS paused playback does not mutate simulation
-PASS invalid ignition, probability and duration are rejected
-PASS project v2 preserves scenario and model parameters
-PASS project v1 upgrades with explicit default scenario parameters
-PASS unknown spread rule version cannot silently reinterpret saved scenario
-PASS independent 32x32 ideal-site sweep: empty/full endpoints, coupled monotonicity and sparse/dense spanning contrast
-PASS ignition tool selects actual forest ground beneath textured canopy
-PASS single-step updates model and shared renderer without starting clock
-PASS subsequent single-step continues the same run
-PASS previous snapshot rewinds without truncating computed history
-PASS next snapshot replays saved state
-PASS start button resumes trial
-PASS pause button stops trial
-PASS connectivity overlay reads exact scenario fuel graph
-PASS parameter edit invalidates prior trial and persists validated value
-PASS fractional burn duration is rejected without replacing prior value
-PASS committed treatment invalidates trial and refreshes exact fuel topology
-PASS baseline mode restores fuel removed by plan without mutating old frozen snapshots
-PASS baseline and plan masks distinguish treatment from wildfire losses
-PASS reset clears trial only and preserves scenario, baseline and intervention
-PASS both experiment panel modes have non-overlapping controls at minimum, normal and fullscreen sizes
-PASS experiment keyboard focus skips hidden edit and playback controls
-PASS original MC animated fire sheet loads with valid frame rectangles
-P2 model, replay, resource and position checks completed; visual quality awaits user review.
-PASS burnout hides every leaf while burning phases progressively thin canopy
-PASS burnout removes upper trunk and preserves exactly one block of stump
-PASS actual ray traversal reveals ash beneath removed canopy and hits shortened stump
-PASS burnout appearance leaves ground picking on original terrain coordinates
-PASS ash samples a visible neutral texture instead of green grass
-PASS display filtering does not destroy base voxels and intact geometry remains recoverable
-PASS display phases cover short and long burn durations without adding model steps
-PASS current snapshot publishes burnout geometry to shared renderer
-PASS fire sprite anchor follows shortened stump or exposed ground instead of floating at old canopy height
-PASS rewinding snapshot restores unburned neighbors and early burning canopy
-PASS replaying burnout restores the same appearance without recomputing fire history
-PASS native burnout render preserves baseline, snapshots and propagation metrics
-PASS reset restores full forest geometry without rebuilding or losing original scene
-PASS no treatment produces identical paired outcomes and histories without mutating baseline
-PASS deterministic cut preserves right-side ignition failures and prevents left-side target contact
-PASS clearing, burning and remaining conserve baseline forest; unequal sample weights are used
-PASS treated ignition remains in paired sample and is explicitly prevented
-PASS history-free batch run has identical final state with one retained snapshot
-PASS job freezes project inputs before asynchronous evaluation
-PASS pre-cancelled job publishes no partial result
-PASS background batch cancels after completed work and withholds partial results
-PASS empty fuel, invalid count/weight, duplicate ids and non-fuel baseline ignition are rejected
-PASS frozen project retains full Float64 precision for reproducible calculations
-PASS pointer-started asynchronous evaluation publishes complete current-revision comparison
-PASS comparison canvas and hotkeys cannot accidentally edit the project
-PASS input revision invalidates results and closes comparison graphics
-PASS revision change cancels background work and cannot publish stale results
-PASS comparison controls and paired panes fit three desktop sizes; keyboard skips hidden controls
-PASS synchronized replay holds each side at its own final snapshot
-PASS paired replay uses shared logical time independent of render cadence
-PASS both comparison panes render actual voxel textures at native target resolution
-PASS shared camera and projection changes invalidate and redraw both panes
-PASS exports preserve frozen inputs and exact CSV and never replace existing report directories
-PASS exported project and scenarios reproduce every per-sample metric
-PASS exported paired PNG maps decode with identical dimensions
-PASS report states sampling, weighted aggregation and first-scenario image limits
-PASS comparison textures and pending surfaces close after export
-P3 logic, background task, replay, export and position checks completed; visual design awaits user review.
-PASS 72 world/screen/ground round trips across rotation, top view, zoom and pan
-PASS zoom upper bound
-PASS zoom lower bound
-PASS pitch prevents underground camera
-PASS parallel outside ray misses safely
-PASS ray pointing away misses
-PASS near voxel occludes distant voxel
-PASS removing near voxel reveals distant voxel
-PASS original leaves contain both alpha holes and solid pixels
-PASS leaf alpha holes reveal background without sorting artifacts
-PASS ground picking ignores tree canopy
-PASS foliage tint preserves alpha
-PASS visible control targets and canvas bounds at 3 desktop sizes
-PASS hotbar selects map through pointer events
-PASS number key selects second tool
-PASS Shift+Tab reaches comparison entry and skips hidden numeric fields
-PASS top view button
-PASS canopy visibility button
-PASS camera reset button
-PASS pointer selects ground beneath canopy
-PASS right-drag rotates and releases
-PASS middle-drag pans
-PASS focus loss clears drag state
-PASS native canvas sizing handles 100/125/150/200 percent DPI
-PASS extreme canvas dimensions retain bounded allocation
-PASS invalid pixel scale rejected
-PASS large window settles to actual canvas pixels instead of fixed 480px
-Large canvas target: 2230 x 1098
-PASS large-window picking uses logical coordinates independently of render pixels
-PASS same-size camera/selection invalidation replaces old native frame
-PASS interaction publishes preview and defers native refinement
-PASS idle refinement advances in bounded row batches
-PASS camera change cancels stale refinement surface
-PASS normal idle ticks replace preview with complete native frame
-P0 first scene rasterization: 71 ms; cached while camera is unchanged
-PASS native SDL screenshot generated
-PASS bitmap font pages and UI textures load
-PASS unchanged camera reuses rendered scene texture
-PASS closing releases cached frame and incomplete refinement safely
-PASS asset textures release safely before window close
-P0 logic/resource/position checks completed. Visual quality awaits user review.
+PASS P1 versioned project round trip preserves baseline, constraints, plan and prices
+PASS treatment keeps baseline and changes only planned fuel
+PASS two 25 square meter cells at 2 yuan cost exactly 100
+PASS over-budget stroke fails atomically without consuming undo history
+PASS undo restores original document and clean state
+PASS redo restores whole stroke and unsaved state
+PASS new edit clears redo and removing treatment refunds cost
+PASS forbidden cell rejects entire mixed stroke
+PASS protected target rejects treatment
+PASS adding a protection marker removes conflicting treatment while preserving forest
+PASS land annotation removes obsolete intervention
+PASS uncalibrated forest cannot produce a priced intervention
+PASS width calibration changes cell area quadratically
+PASS unknown project version rejected
+PASS malformed or incomplete projects rejected
+PASS non-finite price rejected
+PASS Unicode path save safely replaces existing project and removes temporary file
+PASS saved project reload restores all state
+PASS failed load retains active project and save path
+PASS existing recovery file blocks save without overwriting original
+PASS failed replacement of directory preserves original, unsaved state and path
+PASS failed save leaves previously saved bytes intact
+PASS JPEG import preserves aspect and starts uncalibrated
+PASS bad image import preserves document and live texture
+PASS aspect-aware calibration gives correct rectangular cell area
+PASS embedded base map reload works after original image is deleted and releases old texture
+PASS application failed open preserves document and renderer reference
+PASS drag previews six cells without changing baseline
+PASS preview reports calibrated rectangle area before commit
+PASS confirm submits drag as exactly one undo transaction
+PASS undo button restores complete stroke
+PASS redo button restores complete stroke
+PASS Escape cancels preview without modifying plan
+PASS numeric calibration field commits through keyboard
+PASS invalid numeric input retains previous budget and editable draft
+PASS both sidebar modes have distinct reachable control targets at minimum, normal and fullscreen sizes
+PASS keyboard focus skips hidden controls in settings mode
+PASS reference replacement releases final image texture
+PASS committed scene edit cancels stale progressive render
+PASS planned strip removes displayed trunk and overhanging canopy without changing baseline
+PASS unavailable font pages and supplementary characters use safe fallback
+PASS clean document quit terminates event loop without discard prompt
+P1 logic/resource/position checks completed; visual quality and native dialog interaction await user review.
+PASS 1440 overhead map picks preserve cell coordinates across aspect ratios independently of 3D camera
+PASS original-map parchment fits viewport and paper margin is not editable terrain
+PASS overhead letterbox margins do not pick terrain
+PASS overhead pixels use actual MC grass, road and topmost roof textures
+PASS overhead scene keeps canopy occlusion while picking the ground beneath
+PASS projection change invalidates cached overhead texture even for the same viewport
+PASS switching to overhead cancels unfinished oblique render
+PASS map switching preserves oblique camera orientation
+PASS empty graph has zero components and no spanning path
+PASS full four-neighbor lattice forms one spanning component
+PASS diagonal sites remain separate under four-neighbor adjacency
+PASS removing a one-cell bridge splits two six-cell forest islands
+PASS shortest fuel path ends at target perimeter without treating building as fuel
+PASS non-fuel gap removes ignition-to-target path
+PASS synchronous chain advances one edge per step and leaves old snapshot unchanged
+PASS finite deterministic chain burns out exactly after five updates
+PASS zero spread probability still consumes ignition for its finite duration
+PASS non-fuel barrier blocks fire even at spread probability one
+PASS fire cannot jump diagonally or across non-fuel cells
+PASS target-neighbor exposure persists without claiming non-fuel target burned
+PASS run freezes fuel inputs instead of observing later source mutations
+PASS same scenario seed reproduces every snapshot
+PASS replay consumes existing snapshots without redrawing random numbers or branching history
+PASS random input is stable and distinguishes seed, step and directed edge
+PASS render ticks before fixed playback interval do not advance model
+PASS different UI tick schedules yield the same fixed-step state
+PASS paused playback does not mutate simulation
+PASS invalid ignition, probability and duration are rejected
+PASS project v2 preserves scenario and model parameters
+PASS project v1 upgrades with explicit default scenario parameters
+PASS unknown spread rule version cannot silently reinterpret saved scenario
+PASS independent 32x32 ideal-site sweep: empty/full endpoints, coupled monotonicity and sparse/dense spanning contrast
+PASS ignition tool selects actual forest ground beneath textured canopy
+PASS single-step updates model and shared renderer without starting clock
+PASS subsequent single-step continues the same run
+PASS previous snapshot rewinds without truncating computed history
+PASS next snapshot replays saved state
+PASS start button resumes trial
+PASS pause button stops trial
+PASS connectivity overlay reads exact scenario fuel graph
+PASS parameter edit invalidates prior trial and persists validated value
+PASS fractional burn duration is rejected without replacing prior value
+PASS committed treatment invalidates trial and refreshes exact fuel topology
+PASS baseline mode restores fuel removed by plan without mutating old frozen snapshots
+PASS baseline and plan masks distinguish treatment from wildfire losses
+PASS reset clears trial only and preserves scenario, baseline and intervention
+PASS both experiment panel modes have non-overlapping controls at minimum, normal and fullscreen sizes
+PASS experiment keyboard focus skips hidden edit and playback controls
+PASS original MC animated fire sheet loads with valid frame rectangles
+P2 model, replay, resource and position checks completed; visual quality awaits user review.
+PASS burnout hides every leaf while burning phases progressively thin canopy
+PASS burnout removes upper trunk and preserves exactly one block of stump
+PASS actual ray traversal reveals ash beneath removed canopy and hits shortened stump
+PASS burnout appearance leaves ground picking on original terrain coordinates
+PASS ash samples a visible neutral texture instead of green grass
+PASS display filtering does not destroy base voxels and intact geometry remains recoverable
+PASS display phases cover short and long burn durations without adding model steps
+PASS current snapshot publishes burnout geometry to shared renderer
+PASS fire sprite anchor follows shortened stump or exposed ground instead of floating at old canopy height
+PASS rewinding snapshot restores unburned neighbors and early burning canopy
+PASS replaying burnout restores the same appearance without recomputing fire history
+PASS native burnout render preserves baseline, snapshots and propagation metrics
+PASS reset restores full forest geometry without rebuilding or losing original scene
+PASS no treatment produces identical paired outcomes and histories without mutating baseline
+PASS deterministic cut preserves right-side ignition failures and prevents left-side target contact
+PASS clearing, burning and remaining conserve baseline forest; unequal sample weights are used
+PASS treated ignition remains in paired sample and is explicitly prevented
+PASS history-free batch run has identical final state with one retained snapshot
+PASS job freezes project inputs before asynchronous evaluation
+PASS pre-cancelled job publishes no partial result
+PASS background batch cancels after completed work and withholds partial results
+PASS empty fuel, invalid count/weight, duplicate ids and non-fuel baseline ignition are rejected
+PASS frozen project retains full Float64 precision for reproducible calculations
+PASS pointer-started asynchronous evaluation publishes complete current-revision comparison
+PASS comparison canvas and hotkeys cannot accidentally edit the project
+PASS input revision invalidates results and closes comparison graphics
+PASS revision change cancels background work and cannot publish stale results
+PASS comparison controls and paired panes fit three desktop sizes; keyboard skips hidden controls
+PASS synchronized replay holds each side at its own final snapshot
+PASS paired replay uses shared logical time independent of render cadence
+PASS both comparison panes render actual voxel textures at native target resolution
+PASS shared camera and projection changes invalidate and redraw both panes
+PASS exports preserve frozen inputs and exact CSV and never replace existing report directories
+PASS exported project and scenarios reproduce every per-sample metric
+PASS exported paired PNG maps decode with identical dimensions
+PASS report states sampling, weighted aggregation and first-scenario image limits
+PASS comparison textures and pending surfaces close after export
+P3 logic, background task, replay, export and position checks completed; visual design awaits user review.
+PASS 72 world/screen/ground round trips across rotation, top view, zoom and pan
+PASS zoom upper bound
+PASS zoom lower bound
+PASS pitch prevents underground camera
+PASS parallel outside ray misses safely
+PASS ray pointing away misses
+PASS near voxel occludes distant voxel
+PASS removing near voxel reveals distant voxel
+PASS original leaves contain both alpha holes and solid pixels
+PASS leaf alpha holes reveal background without sorting artifacts
+PASS ground picking ignores tree canopy
+PASS foliage tint preserves alpha
+PASS visible control targets and canvas bounds at 3 desktop sizes
+PASS hotbar selects map through pointer events
+PASS number key selects second tool
+PASS Shift+Tab reaches comparison entry and skips hidden numeric fields
+PASS top view button
+PASS canopy visibility button
+PASS camera reset button
+PASS pointer selects ground beneath canopy
+PASS right-drag rotates and releases
+PASS middle-drag pans
+PASS focus loss clears drag state
+PASS native canvas sizing handles 100/125/150/200 percent DPI
+PASS extreme canvas dimensions retain bounded allocation
+PASS invalid pixel scale rejected
+PASS large window settles to actual canvas pixels instead of fixed 480px
+Large canvas target: 2230 x 1098
+PASS large-window picking uses logical coordinates independently of render pixels
+PASS same-size camera/selection invalidation replaces old native frame
+PASS interaction publishes preview and defers native refinement
+PASS idle refinement advances in bounded row batches
+PASS camera change cancels stale refinement surface
+PASS normal idle ticks replace preview with complete native frame
+P0 first scene rasterization: 71 ms; cached while camera is unchanged
+PASS native SDL screenshot generated
+PASS bitmap font pages and UI textures load
+PASS unchanged camera reuses rendered scene texture
+PASS closing releases cached frame and incomplete refinement safely
+PASS asset textures release safely before window close
+P0 logic/resource/position checks completed. Visual quality awaits user review.
