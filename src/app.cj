@@ -8,7 +8,7 @@ import std.math.floor
 import std.fs.{File,exists}
 import stdx.encoding.base64.toBase64String
 
-let CONTROLS=[0,1,2,3,4,5,6,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,30,31,32,33,34,35,36,40,41,42,43,44,45,46,47,48,49,50,51]
+let CONTROLS=[0,1,2,3,4,5,6,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,30,31,32,33,34,35,36,40,41,42,43,44,45,46,47,48,49,50,51,52,60,61,62,63,64,65,66,67]
 let TOOL_NAMES=["选择","林地","道路","水域","建筑","清理植被","隔离带","保护目标","禁止处理"]
 
 class Layout {
@@ -24,6 +24,12 @@ class Layout {
         toolbar=Rect(20.0+(canvas.w-546.0)/2.0,height-96.0,546.0,66.0)
     }
     func control(id: Int64): Rect {
+        if (id==52) { return Rect(956.0,94.0,124.0,44.0) }
+        if (id>=60) {
+            if (id<=63) { return Rect(panel.x+18.0+Float32((id-60)%2)*122.0,panel.y+184.0+Float32((id-60)/2)*52.0,116.0,44.0) }
+            let row=match(id) { case 64=>0; case 66=>1; case 65=>2; case _=>3 }
+            return Rect(panel.x+18.0,panel.y+288.0+Float32(row)*52.0,238.0,44.0)
+        }
         if (id==19) { return Rect(852.0,94.0,98.0,44.0) }
         if (id>=49 && id<=51) { return Rect(panel.x+18.0,panel.y+56.0+Float32(id-49)*76.0,238.0,44.0) }
         if (id>=40 && id<=45) {
@@ -47,15 +53,18 @@ class Layout {
             case _ => Rect(panel.x+18.0,panel.y+446.0,238.0,44.0)
         }
     }
-    func available(id: Int64,settings: Bool,simulation!: Bool=false,parameters!: Bool=false): Bool {
+    func available(id: Int64,settings: Bool,simulation!: Bool=false,parameters!: Bool=false,comparison!: Bool=false): Bool {
+        if (id==52) { return true }
+        if (id>=60) { return comparison }
+        if (comparison) { return id<=1 || (id>=10 && id<=16) || id==19 }
         if (id>=40) { return simulation && (if (id==48) { true } else if (id>=49) { parameters } else { !parameters }) }
         if (simulation && ((id>=2 && id<=6) || id==17 || (id>=30 && id<=36))) { return false }
         if (id>=33 && id<=36) { return settings }
         if (id>=2 && id<=6) { return !settings }
         return true
     }
-    func hit(x: Float32,y: Float32,settings!: Bool=false,simulation!: Bool=false,parameters!: Bool=false): Int64 {
-        for (id in CONTROLS) { if (available(id,settings,simulation:simulation,parameters:parameters) && control(id).contains(x,y)) { return id } }; return -1
+    func hit(x: Float32,y: Float32,settings!: Bool=false,simulation!: Bool=false,parameters!: Bool=false,comparison!: Bool=false): Int64 {
+        for (id in CONTROLS) { if (available(id,settings,simulation:simulation,parameters:parameters,comparison:comparison) && control(id).contains(x,y)) { return id } }; return -1
     }
 }
 
@@ -67,6 +76,11 @@ class App {
     let font: PixelFont
     let view: VoxelView
     let experiment=Experiment()
+    var comparePanel=false
+    var sampleCount: Int64=16
+    var evalJob: ?EvaluationJob=None
+    var evalResult: ?EvaluationResult=None
+    var pairView: ?ComparisonView=None
     var simPanel=false
     var simParameters=false
     var pickingIgnition=false
@@ -102,9 +116,56 @@ class App {
         view.dirty=true
     }
     func updateExperiment(now: UInt64): Unit {
-        clockNow=now
+        clockNow=now; syncComparison(); pollEvaluation(now)
         if (experiment.sync(work.project,work.revision)) { refreshExperimentView() }
         if (let Some(r) <- experiment.run) { if (r.tick(now)) { refreshExperimentView() } }
+    }
+    func clearComparison(): Unit {
+        if (let Some(v) <- pairView) { v.close() }; pairView=None; evalResult=None
+    }
+    func syncComparison(): Unit {
+        if (let Some(job) <- evalJob) {
+            if (job.revision!=work.revision) { job.cancel(); evalJob=None; message="场地或参数已修改，旧评估失效。" }
+        }
+        if (let Some(result) <- evalResult) { if (result.revision!=work.revision) { clearComparison() } }
+    }
+    func pollEvaluation(now: UInt64): Unit {
+        if (let Some(job) <- evalJob) {
+            let progress=job.progress()
+            if (progress.done) {
+                evalJob=None
+                if (!progress.cancelled && job.revision==work.revision) {
+                    if (let Some(result) <- progress.result) {
+                        let replacement=ComparisonView(result,assets)
+                        clearComparison(); evalResult=Some(result); pairView=Some(replacement)
+                        message="${result.rows.size} 组配对评估完成；回放展示情景 1，汇总包含全部情景。"
+                    } else { message="评估失败："+progress.error }
+                }
+            }
+        }
+        if (let Some(v) <- pairView) { v.tick(now) }
+    }
+    func comparisonAction(id: Int64): Unit {
+        require(startCell<0,"请先应用或取消编辑预览")
+        match(id) {
+            case 60 =>
+                let job=EvaluationJob(work.project,work.revision,makeScenarios(work.project,sampleCount))
+                if (let Some(old) <- evalJob) { old.cancel() }
+                clearComparison(); evalJob=Some(job); job.start(); message="后台配对评估中；场地修改会使结果失效。"
+            case 61 =>
+                if (let Some(job) <- evalJob) { job.cancel(); evalJob=None }
+                message="已取消评估；不发布或导出部分结果。"
+            case 66 => sampleCount=if (sampleCount==4) { 16 } else if (sampleCount==16) { 32 } else { 4 }
+            case _ => if (let Some(v) <- pairView) {
+                match(id) {
+                    case 62=>v.seek(v.step-1)
+                    case 63=>v.seek(v.step+1)
+                    case 64=>if (v.playing) { v.playing=false } else { v.play(clockNow) }
+                    case 67=>v.seek(v.maxStep)
+                    case _=>()
+                }
+            }
+        }
     }
     func simulationAction(id: Int64): Unit {
         require(startCell<0,"请先应用或取消编辑预览")
@@ -140,23 +201,8 @@ class App {
     }
     func syncScene(): Unit {
         experiment.sync(work.project,work.revision); refreshExperimentView()
-        // P1's bounded scene is rebuilt once per committed edit, never per preview cell.
-        // Future larger forests will replace this with dirty chunks and distance-dependent detail.
-        let p=work.project
-        for (i in 0..scene.blocks.size) { scene.blocks[i]=0 }; scene.trees=0
-        for (z in 0..GRID_Z) { for (x in 0..GRID_X) {
-            let i=z*GRID_X+x; let h: Int64=if (p.image.isEmpty() && x>15 && z>12) { 3 } else if (p.image.isEmpty() && x>12 && z>10) { 2 } else { 1 }
-            scene.canopyColumns[i]=p.fuel(i,planned:experiment.planned)>0.0
-            scene.heights[i]=h
-            let mat=if (experiment.planned && p.treatment[i]!=0) { 8 } else { match(p.land[i]) { case 0=>2; case 2=>8; case 3=>9; case 4=>5; case _=>1 } }
-            for (y in 0..h) { scene.set(x,y,z,if (y==h-1) { mat } else { 2 }) }
-            if (p.land[i]==4) { for (y in h..h+3) { scene.set(x,y,z,6) }; scene.set(x,h+3,z,7) }
-        } }
-        for (z in 0..GRID_Z) { for (x in 0..GRID_X) {
-            let i=z*GRID_X+x
-            if (p.fuel(i,planned:experiment.planned)>0.0 && x%4==3 && z%4==3) { scene.tree(x,z) }
-        } }
-        view.dirty=true
+        populateScene(scene,work.project,experiment.planned); view.dirty=true
+        syncComparison()
     }
     func makeReference(p: Project): ?Texture {
         var next: ?Texture=None
@@ -245,6 +291,7 @@ class App {
             commitField(); activeField=id; draft="${fieldValue(id)}"; message="输入数值，Enter 确认，Esc 取消；Backspace 删除。"; return
         }
         commitField()
+        if (id>=60) { comparisonAction(id); return }
         if (id>=40 && id<=48) { simulationAction(id); return }
         if (id>=20 && id<=28) { cancel(); pickingIgnition=false; tool=id-20; message="工具："+TOOL_NAMES[tool]+"；拖动预览，再确认应用。"; return }
         match (id) {
@@ -267,7 +314,12 @@ class App {
             case 18 =>
                 if (reference.isNone()) { message="请先导入底图；二维地图已使用三维场景的纹理俯视。"; return }
                 cancel(); referenceMode = if (mapMode) { !referenceMode } else { true }; mapMode=true
-            case 19 => cancel(); pickingIgnition=false; simPanel = !simPanel; simParameters=false
+            case 19 => cancel(); pickingIgnition=false; comparePanel=false; simPanel = !simPanel; simParameters=false
+            case 52 =>
+                require(startCell<0,"请先应用或取消编辑预览")
+                cancel(); pickingIgnition=false; comparePanel = !comparePanel; simPanel=false; referenceMode=false
+                if (let Some(r) <- experiment.run) { r.running=false }
+                message="同情景对比 / 无风规则 v1；样本比例不代表现实火灾概率。"
             case 30 => cancel(); erase = !erase; message="擦除模式：地类恢复空地，标记或处理带移除。"
             case 31 => commitStroke()
             case 32 => cancel(); message="已取消预览。"
@@ -294,6 +346,10 @@ class App {
         require(dialog.isNone(),"请先完成文件对话框")
         commitField(); require(startCell<0,"请先应用或取消选区")
         dialogKind=kind
+        if (kind==65) {
+            syncComparison(); require(evalResult.isSome(),"请先完成当前场地的评估")
+            dialog=Some(FileDialogs.openFolder(options:FileDialogOptions(),window:Some(window))); return
+        }
         let filter=if (kind==13) { FileDialogFilter("底图 PNG / JPEG","png;jpg;jpeg") } else { FileDialogFilter("断火线项目","firebreak") }
         let options=FileDialogOptions(filters:[filter])
         dialog=Some(if (kind==12) { FileDialogs.saveFile(options:options,window:Some(window)) } else { FileDialogs.openFile(options:options,window:Some(window)) })
@@ -318,7 +374,10 @@ class App {
                 case FileDialogResult.FileDialogSelected(paths,_) =>
                     dialog=None; if (paths.isEmpty()) { return }
                     try {
-                        if (dialogKind==12) {
+                        if (dialogKind==65) {
+                            syncComparison(); let result=evalResult.getOrThrow()
+                            message="报告已导出："+exportEvaluation(result,assets,paths[0])
+                        } else if (dialogKind==12) {
                             var path=paths[0]; if (!path.endsWith(".firebreak")) { path+=".firebreak" }
                             if (exists(path) && path!=work.path) {
                                 var opts=MessageBoxOptions("覆盖项目","所选项目已存在，是否替换？")
@@ -337,7 +396,7 @@ class App {
     func action(window: SdlWindow,id: Int64): Unit {
         if (id==10) {
             if (discard(window)) { cancel(); work.commit(Project()); work.path=""; work.unsaved=true; refreshReference(); syncScene(); message="已建立示例；请另存项目。" }
-        } else if (id>=11 && id<=13) { requestFile(window,id) } else { activate(id) }
+        } else if (id==65) { requestFile(window,65) } else if (id>=11 && id<=13) { requestFile(window,id) } else { activate(id) }
     }
     func handle(window: SdlWindow,record: UiEventRecord): Bool {
         clockNow=window.ticks()
@@ -351,7 +410,7 @@ class App {
                 window.refreshSize()
                 if (window.width<1100 || window.height<780) { window.setSize(max(1100,window.width),max(780,window.height)) }; view.dirty=true
             case UiEvent.MouseMove(x,y) =>
-                hover=l.hit(x,y,settings:settings,simulation:simPanel,parameters:simParameters)
+                hover=l.hit(x,y,settings:settings,simulation:simPanel,parameters:simParameters,comparison:comparePanel)
                 if (painting) { let i=cellAt(x,y,l); if (i>=0) { endCell=i } }
                 if (dragging) { camera.rotate(Float64(x-lastX),Float64(y-lastY)); view.dirty=true }
                 if (panning) { camera.panX+=Float64(x-lastX); camera.panY+=Float64(y-lastY); view.dirty=true }
@@ -359,9 +418,9 @@ class App {
             case UiEvent.MouseDown(button,x,y) =>
                 lastX=x; lastY=y
                 match (button) {
-                    case MouseButton.Left => pressed=l.hit(x,y,settings:settings,simulation:simPanel,parameters:simParameters)
+                    case MouseButton.Left => pressed=l.hit(x,y,settings:settings,simulation:simPanel,parameters:simParameters,comparison:comparePanel)
                         if (pressed>=0) { for (i in 0..CONTROLS.size) { if (CONTROLS[i]==pressed) { focus=i } } }
-                        else if (l.canvas.contains(x,y)) {
+                        else if (!comparePanel && l.canvas.contains(x,y)) {
                             commitField()
                             if (pickingIgnition) { setIgnition(cellAt(x,y,l)); return true }
                             select(x,y,l)
@@ -376,7 +435,7 @@ class App {
                 match (button) {
                     case MouseButton.Left =>
                         if (painting) { painting=false; message="选区 ${selection().size} 格；确认应用 / Enter，取消 / Esc。" }
-                        else if (pressed>=0 && pressed==l.hit(x,y,settings:settings,simulation:simPanel,parameters:simParameters)) { action(window,pressed) }; pressed = -1
+                        else if (pressed>=0 && pressed==l.hit(x,y,settings:settings,simulation:simPanel,parameters:simParameters,comparison:comparePanel)) { action(window,pressed) }; pressed = -1
                     case MouseButton.Right => dragging=false
                     case MouseButton.Middle => panning=false
                     case _ => ()
@@ -384,6 +443,7 @@ class App {
             case UiEvent.MouseWheel(_,dy,x,y) => if (!mapMode && startCell<0 && l.canvas.contains(x,y)) { camera.scale(Float64(dy)); view.dirty=true }
             case UiEvent.WindowFocusLost =>
                 if (let Some(r) <- experiment.run) { r.running=false }
+                if (let Some(v) <- pairView) { v.playing=false }
                 if (painting) { startCell = -1; endCell = -1 }; painting=false; dragging=false; panning=false; pressed = -1
             case UiEvent.DropFile(path,_,_) => if (discard(window)) { importImage(path) }
             case UiEvent.TextInput(text) => if (activeField>=0 && draft.size+text.size<=24) {
@@ -411,14 +471,14 @@ class App {
                 match (key) {
                     case Key.Tab => if (!repeat) {
                         let step=if (record.metadata.modifiers.shift) { CONTROLS.size-1 } else { 1 }
-                        for (_ in 0..CONTROLS.size) { focus=(focus+step)%CONTROLS.size; if (l.available(CONTROLS[focus],settings,simulation:simPanel,parameters:simParameters)) { break } }
+                        for (_ in 0..CONTROLS.size) { focus=(focus+step)%CONTROLS.size; if (l.available(CONTROLS[focus],settings,simulation:simPanel,parameters:simParameters,comparison:comparePanel)) { break } }
                     }
-                    case Key.Enter => if (!repeat) { if (startCell>=0) { commitStroke() } else { action(window,CONTROLS[focus]) } }
-                    case Key.Space => if (!repeat) { action(window,CONTROLS[focus]) }
+                    case Key.Enter => if (!repeat) { if (startCell>=0) { commitStroke() } else if (l.available(CONTROLS[focus],settings,simulation:simPanel,parameters:simParameters,comparison:comparePanel)) { action(window,CONTROLS[focus]) } }
+                    case Key.Space => if (!repeat && l.available(CONTROLS[focus],settings,simulation:simPanel,parameters:simParameters,comparison:comparePanel)) { action(window,CONTROLS[focus]) }
                     case Key.Home => activate(0)
                     case Key.Letter(84) => activate(1)
                     case Key.Letter(72) => activate(2)
-                    case Key.Digit(n) => if (n>=49 && n<=57) { activate(20+Int64(n-49)) }
+                    case Key.Digit(n) => if (!comparePanel && n>=49 && n<=57) { activate(20+Int64(n-49)) }
                     case Key.Left => camera.rotate(-8.0,0.0); view.dirty=true
                     case Key.Right => camera.rotate(8.0,0.0); view.dirty=true
                     case Key.Up => camera.rotate(0.0,8.0); view.dirty=true
@@ -436,8 +496,5 @@ class App {
         }
         return true
     }
-    func close(): Unit { view.close(); if (let Some(t) <- reference) { t.close() }; reference=None }
+    func close(): Unit { if (let Some(job) <- evalJob) { job.cancel() }; clearComparison(); view.close(); if (let Some(t) <- reference) { t.close() }; reference=None }
 }
-
-
-

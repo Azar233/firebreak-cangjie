@@ -33,3 +33,5 @@ artifacts/*
 !artifacts/p1-checks.log
 !artifacts/p2-checks.log
 !artifacts/p2-ideal-percolation.csv
+
+!artifacts/p3-checks.log

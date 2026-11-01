@@ -5,11 +5,11 @@ import sdl.*
 main(args: Array<String>): Int64 {
     try {
         let verify=args.size>0 && args[0]=="--verify"
-        try (window=SdlWindow(WindowSpec("断火线 · P2 连通与火势实验",1280,860,supersample:1),hidden:verify)) {
+        try (window=SdlWindow(WindowSpec("断火线 · P3 多情景方案对比",1280,860,supersample:1),hidden:verify)) {
             try (assets=Assets(window.renderer)) {
                 let app=App(assets)
                 try {
-                    if (verify) { verifyP1(app,window); verifyTopMap(app,window); verifyP2(app,window); verifyBurnDisplay(app,window); verifyP0(app,window); return 0 }
+                    if (verify) { verifyP1(app,window); verifyTopMap(app,window); verifyP2(app,window); verifyBurnDisplay(app,window); verifyP3(app,window); verifyP0(app,window); return 0 }
                     var running=true
                     while (running) {
                         while (let Some(record) <- window.pollEventRecord()) { if (!app.handle(window,record)) { running=false; break } }

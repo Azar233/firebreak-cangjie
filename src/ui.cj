@@ -42,7 +42,9 @@ func landColor(n: Int64): Color {
     match(n) { case 1=>Color.rgb(74,125,48); case 2=>Color.rgb(151,134,94); case 3=>Color.rgb(53,120,181); case 4=>Color.rgb(173,111,80); case _=>Color.rgb(127,118,98) }
 }
 func drawMapPaper(app: App,l: Layout): Unit {
-    let b=app.mapPaperBox(l)
+    drawMapPaperAt(app,app.mapPaperBox(l))
+}
+func drawMapPaperAt(app: App,b: Rect): Unit {
     // Original resource packs can use different resolutions; preserve the outer
     // 1/16 of each edge rather than assuming a particular texture size.
     let texture=app.assets.image("textures/map/map_background.png")
@@ -141,29 +143,36 @@ func render(app: App,window: SdlWindow,capture!: String=""): Unit {
     let r=window.renderer; let f=app.font; let p=app.work.project
     let l=Layout(Float32(window.width),Float32(window.height))
     let reference=app.mapMode && app.referenceMode && app.reference.isSome()
-    if (!reference) { app.view.prepare(app.camera,if (app.mapMode) { app.mapBox(l) } else { l.canvas },window,
+    if (app.comparePanel) {
+        if (let Some(v) <- app.pairView) { v.prepare(app.camera,l.canvas,window,app.mapMode,app.view.showCanopy,!capture.isEmpty(),app.dragging || app.panning) }
+    } else if (!reference) { app.view.prepare(app.camera,if (app.mapMode) { app.mapBox(l) } else { l.canvas },window,
         interacting:app.dragging || app.panning,forceFull:!capture.isEmpty(),topDown:app.mapMode) }
     r.beginScene(l.width,l.height,Color.rgb(34,38,32))
     frame(r,Rect(12.0,12.0,l.width-24.0,76.0))
     f.draw("断火线",30.0,26.0,scale:2.0)
-    f.draw("P2 / 场地与火势"+(if (app.work.dirty()) { " * 未保存" } else if (app.work.path.isEmpty()) { " / 未另存" } else { " / 已保存" }),164.0,40.0,color:Color.rgb(222,220,192))
+    f.draw("P3 / 方案对比"+(if (app.work.dirty()) { " * 未保存" } else if (app.work.path.isEmpty()) { " / 未另存" } else { " / 已保存" }),164.0,40.0,color:Color.rgb(222,220,192))
     mcButton(app,l,0,"相机复位"); mcButton(app,l,1,"俯视编辑")
     let titles=["新建","打开","另存为","导入底图","撤销","重做",if (app.mapMode) { "三维场景" } else { "二维地图" }]
     for (i in 0..7) { mcButton(app,l,10+i,titles[i]) }
-    mcButton(app,l,18,if (reference) { "纹理俯视" } else { "参照底图" })
+    if (!app.comparePanel) { mcButton(app,l,18,if (reference) { "纹理俯视" } else { "参照底图" }) }
     mcButton(app,l,19,if (app.simPanel) { "场地编辑" } else { "火势实验" })
-    if (app.mapMode) {
-        r.fill(l.canvas,Color.rgb(33,39,34)); drawMapPaper(app,l)
-    } else { frame(r,Rect(l.canvas.x-4.0,l.canvas.y-4.0,l.canvas.w+8.0,l.canvas.h+8.0),dark:true) }
-    if (reference) { drawReference(app,l) }
+    mcButton(app,l,52,if (app.comparePanel) { "返回编辑" } else { "方案对比" })
+    if (app.comparePanel) { drawComparison(app,l) }
     else {
-        if (!app.mapMode) { r.fill(l.canvas,Color.rgb(33,39,34)) }
-        app.view.draw(if (app.mapMode) { app.mapBox(l) } else { l.canvas })
+        if (app.mapMode) {
+            r.fill(l.canvas,Color.rgb(33,39,34)); drawMapPaper(app,l)
+        } else { frame(r,Rect(l.canvas.x-4.0,l.canvas.y-4.0,l.canvas.w+8.0,l.canvas.h+8.0),dark:true) }
+        if (reference) { drawReference(app,l) }
+        else {
+            if (!app.mapMode) { r.fill(l.canvas,Color.rgb(33,39,34)) }
+            app.view.draw(if (app.mapMode) { app.mapBox(l) } else { l.canvas })
+        }
+        drawOverlays(app,l)
     }
-    drawOverlays(app,l)
     frame(r,l.panel,dark:true)
     let x=l.panel.x+18.0; let y=l.panel.y
-    if (app.simPanel) { drawSimulationPanel(app,l) }
+    if (app.comparePanel) { drawComparisonPanel(app,l) }
+    else if (app.simPanel) { drawSimulationPanel(app,l) }
     else if (app.settings) {
         f.draw("尺度与预算 / Enter 确认",x,y+18.0)
         let labels=["整张底图宽度 (米，0 未标定)","预算上限 (元)","清理单价 (元/平方米)","隔离带单价 (元/平方米)"]
@@ -183,24 +192,26 @@ func render(app: App,window: SdlWindow,capture!: String=""): Unit {
         mcButton(app,l,3,"向左旋转"); mcButton(app,l,4,"向右旋转")
         mcButton(app,l,5,"放大 +"); mcButton(app,l,6,"缩小 -")
     }
-    if (!app.simPanel) {
+    if (!app.simPanel && !app.comparePanel) {
         mcButton(app,l,30,if (app.erase) { "擦除模式：开" } else { "擦除模式：关" })
         mcButton(app,l,31,"确认应用"); mcButton(app,l,32,"取消选区")
         mcButton(app,l,17,if (app.settings) { "返回场地信息" } else { "尺度与预算设置" })
     }
-    let status=if (app.startCell>=0) { "预览 ${app.selection().size} 格 | Enter 应用 / Esc 取消 | 青色保护 / 红色禁区" }
+    let status=if (app.comparePanel) { "同步相机 / 同步仿真步 | 回放：情景 1 | 汇总：全部情景 | H 树冠" } else if (app.startCell>=0) { "预览 ${app.selection().size} 格 | Enter 应用 / Esc 取消 | 青色保护 / 红色禁区" }
         else { "左键框选 | 右键旋转 / 中键平移 | 1-9 工具 | Ctrl+S 保存 | Ctrl+Z 撤销" }
     r.pushClip(Rect(20.0,l.canvas.bottom()+6.0,l.canvas.w,24.0)); f.draw(status,20.0,l.canvas.bottom()+10.0,color:Color.rgb(190,199,170)); r.popClip()
-    app.assets.blit("textures/gui/widgets.png",l.toolbar,source:Some(Rect(0.0,0.0,182.0,22.0)))
-    app.assets.blit("textures/gui/widgets.png",Rect(l.toolbar.x+Float32(app.tool)*60.0-3.0,l.toolbar.y,72.0,66.0),source:Some(Rect(0.0,22.0,24.0,22.0)))
-    for (i in 0..9) {
-        let b=l.control(20+i)
-        if (app.hover==20+i) { r.fill(b,Color.rgba(255,255,255,25)) }
-        let icon=if (i==1) { "textures/block/oak_leaves.png" } else if (i==4) { "textures/block/bricks.png" } else { "textures/item/"+TOOL_PATHS[i]+".png" }
-        app.assets.blit(icon,Rect(b.x+10.0,b.y+8.0,40.0,40.0),tint:if (i==1) { Color.rgb(91,157,57) } else { Color.rgb(255,255,255) })
-        if (CONTROLS[app.focus]==20+i) { r.strokeRect(b,Pen(width:2.0,color:Color.rgb(234,215,129))) }
+    if (!app.comparePanel) {
+        app.assets.blit("textures/gui/widgets.png",l.toolbar,source:Some(Rect(0.0,0.0,182.0,22.0)))
+        app.assets.blit("textures/gui/widgets.png",Rect(l.toolbar.x+Float32(app.tool)*60.0-3.0,l.toolbar.y,72.0,66.0),source:Some(Rect(0.0,22.0,24.0,22.0)))
+        for (i in 0..9) {
+            let b=l.control(20+i)
+            if (app.hover==20+i) { r.fill(b,Color.rgba(255,255,255,25)) }
+            let icon=if (i==1) { "textures/block/oak_leaves.png" } else if (i==4) { "textures/block/bricks.png" } else { "textures/item/"+TOOL_PATHS[i]+".png" }
+            app.assets.blit(icon,Rect(b.x+10.0,b.y+8.0,40.0,40.0),tint:if (i==1) { Color.rgb(91,157,57) } else { Color.rgb(255,255,255) })
+            if (CONTROLS[app.focus]==20+i) { r.strokeRect(b,Pen(width:2.0,color:Color.rgb(234,215,129))) }
+        }
+        f.draw(TOOL_NAMES[app.tool],l.panel.x+16.0,l.toolbar.y+22.0,color:Color.rgb(245,221,143))
     }
-    f.draw(TOOL_NAMES[app.tool],l.panel.x+16.0,l.toolbar.y+22.0,color:Color.rgb(245,221,143))
     r.pushClip(Rect(20.0,l.height-25.0,l.width-40.0,22.0)); f.draw(if (app.startCell>=0) { app.previewText() } else { app.message },20.0,l.height-23.0,color:Color.rgb(222,220,192)); r.popClip()
     r.endScene()
     if (!capture.isEmpty()) {

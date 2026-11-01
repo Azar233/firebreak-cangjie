@@ -34,20 +34,22 @@ class FireRun {
     let probability: Float64
     let duration: Int64
     let seed: Int64
+    let keepHistory: Bool
     let snapshots=ArrayList<FireSnapshot>()
     var cursor: Int64=0
     var running=false
     var nextTick: UInt64=0
     init(fuel: Array<Bool>,nx: Int64,nz: Int64,ignition: Int64,probability: Float64,duration: Int64,seed: Int64,
-        targets!: Array<Bool>=Array<Bool>()) {
+        targets!: Array<Bool>=Array<Bool>(),allowBlockedIgnition!: Bool=false,keepHistory!: Bool=true) {
         require(nx>0 && nz>0 && fuel.size==nx*nz,"非法传播网格")
-        require(ignition>=0 && ignition<fuel.size && fuel[ignition],"请在当前模式的可燃林地上设置起火点")
+        require(ignition>=0 && ignition<fuel.size && (fuel[ignition] || allowBlockedIgnition),"请在当前模式的可燃林地上设置起火点")
         require(probability>=0.0 && probability<=1.0 && !probability.isNaN(),"传播概率须在 0 至 1 之间")
         require(duration>=1 && duration<=8 && seed>=0 && seed<=2147483647,"燃烧持续步或 seed 超出范围")
         require(targets.isEmpty() || targets.size==fuel.size,"保护目标尺寸不匹配")
         this.fuel=fuel.clone(); this.nx=nx; this.nz=nz; this.probability=probability; this.duration=duration; this.seed=seed
+        this.keepHistory=keepHistory
         this.targets=if (targets.isEmpty()) { Array<Bool>(fuel.size,repeat:false) } else { targets.clone() }
-        let age=Array<Int64>(fuel.size,repeat:0); age[ignition]=duration
+        let age=Array<Int64>(fuel.size,repeat:0); if (fuel[ignition]) { age[ignition]=duration }
         let exposed=Array<Bool>(fuel.size,repeat:false); markExposure(age,exposed)
         snapshots.add(FireSnapshot(age,exposed,0))
     }
@@ -71,7 +73,8 @@ class FireRun {
             }
         } }
         markExposure(next,exposed)
-        snapshots.add(FireSnapshot(next,exposed,old.step+1)); cursor++
+        if (!keepHistory) { snapshots.clear(); cursor=0 }
+        snapshots.add(FireSnapshot(next,exposed,old.step+1)); if (keepHistory) { cursor++ }
         if (current().burning()==0) { running=false }
         return true
     }

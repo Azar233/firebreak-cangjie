@@ -15,6 +15,8 @@ let LAND_NAMES=["空地","林地","道路","水域","建筑"]
 
 // Baseline annotations and intervention mask are independent. Fuel is a relative index,
 // not measured biomass; P1 deliberately contains no spread prediction.
+func numberText(v: Float64): String { v.format(".16e") }
+
 class Project {
     var land=Array<Int64>(CELL_COUNT,repeat:0)
     var targets=Array<Int64>(CELL_COUNT,repeat:0)
@@ -67,14 +69,14 @@ class Project {
     func text(): String {
         let j=JsonObject()
         j.put("format",JsonString("firebreak")); j.put("version",JsonInt(2))
-        j.put("ignitionCell",JsonInt(ignition)); j.put("spreadProbability",JsonString("${spreadProbability}"))
+        j.put("ignitionCell",JsonInt(ignition)); j.put("spreadProbability",JsonString(numberText(spreadProbability)))
         j.put("spreadRuleVersion",JsonInt(1))
         j.put("burnSteps",JsonInt(burnSteps)); j.put("seed",JsonInt(seed))
         j.put("nx",JsonInt(GRID_X)); j.put("nz",JsonInt(GRID_Z))
         j.put("land",JsonString(maskText(land))); j.put("targets",JsonString(maskText(targets)))
         j.put("forbidden",JsonString(maskText(forbidden))); j.put("treatment",JsonString(maskText(treatment)))
-        j.put("metersWide",JsonString("${metersWide}")); j.put("aspect",JsonString("${aspect}"))
-        j.put("budget",JsonString("${budget}")); j.put("clearingPrice",JsonString("${clearingPrice}")); j.put("breakPrice",JsonString("${breakPrice}"))
+        j.put("metersWide",JsonString(numberText(metersWide))); j.put("aspect",JsonString(numberText(aspect)))
+        j.put("budget",JsonString(numberText(budget))); j.put("clearingPrice",JsonString(numberText(clearingPrice))); j.put("breakPrice",JsonString(numberText(breakPrice)))
         j.put("imageBase64",JsonString(image)); j.put("source",JsonString(source))
         return j.toJsonString()
     }

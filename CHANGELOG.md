@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.3.0 — P3 paired evaluation and export (2026-11-02)
+
+- Freeze baseline/site/plan inputs and evaluate identical ignition, seed and rule inputs in cancellable background batches. Revision changes invalidate old tasks and results.
+- Separate clearing, burned, remaining and cumulative target-contact metrics; preserve all samples and use explicit weights. A treated ignition is recorded as prevented, never resampled.
+- Add synchronized two-pane voxel/map replay for scenario 1, shared camera controls, batch progress and 4/16/32 sample selection.
+- Export per-sample CSV, exact parameters/scenarios, frozen project, Markdown report and paired final PNG maps into a new report directory without overwriting existing reports.
+- Preserve Float64 project values with 17 significant digits for reproducibility. Project format remains v2.
+
+Validation: 166 native checks passed (24 new P3 checks plus affected P0–P2.1 regressions); see docs/P3_VALIDATION.md. Visual quality and native dialog experience await user review. Grid remains 24×20; P4 budget-constrained recommendations and P5 CangjieMagic integration remain upcoming. TODO remains local-only.
+
 ## v0.2.2 — Source-only repository cleanup (2026-11-02)
 
 Remove three generated Magic-probe build-script cache files from Git tracking and

@@ -126,7 +126,7 @@ func verifyP0(app: App,w: SdlWindow): Unit {
     event(app,w,UiEvent.KeyDown(Key.Digit(UInt8(50)),false)); pass(app.tool==1,"number key selects second tool")
     app.focus=0
     app.handle(w,UiEventRecord(UiEvent.KeyDown(Key.Tab,false),UiEventMetadata(modifiers:EventKeyModifiers(raw:UInt16(1)))))
-    pass(CONTROLS[app.focus]==32,"Shift+Tab reverse focus skips hidden numeric fields")
+    pass(CONTROLS[app.focus]==52,"Shift+Tab reaches comparison entry and skips hidden numeric fields")
     click(app,w,1); pass(app.camera.pitch>1.57,"top view button")
     click(app,w,2); pass(!app.view.showCanopy,"canopy visibility button")
     click(app,w,0); pass(abs(app.camera.yaw-0.64)<1.0e-12 && app.camera.panX==0.0,"camera reset button")
