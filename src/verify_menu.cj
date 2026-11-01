@@ -63,9 +63,9 @@ func verifyMenu(app: App,w: SdlWindow): Unit {
     for (english in [false,true]) {
         app.preferences.setEnglish(english)
         for (page in 0..BOOK_PAGES) {
-            app.bookPage=page; let lines=bookLines(app.font,bookBody(app),338.0,0.9)
+            app.bookPage=page; let lines=bookLines(app.font,bookBody(app),350.0,1.0)
             require(lines.size<=18,"Handbook page exceeds readable paper area: ${page} / ${english} / ${lines.size}")
-            for (line in lines) { require(app.font.measure(line,scale:0.9)<=338.0,"Handbook line exceeds paper width") }
+            for (line in lines) { require(app.font.measure(line)<=350.0,"Handbook line exceeds paper width") }
         }
     }
     pass(true,"all eight handbook pages wrap within the paper area in both languages")

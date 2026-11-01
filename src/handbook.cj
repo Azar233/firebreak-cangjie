@@ -51,24 +51,24 @@ func bookLines(font: PixelFont,text: String,width: Float32,scale: Float32): Arra
     }
     return lines.toArray()
 }
-func drawHandbook(app: App,m: MenuLayout): Unit {
+func drawHandbook(app: App,m: MenuLayout,pixelRatio: Float32): Unit {
     let b=m.book; let f=app.font; let r=app.assets.r
     app.assets.blit("textures/gui/book.png",b,source:Some(Rect(20.0,0.0,146.0,182.0)))
     let ink=Color.rgb(53,40,28)
-    let title=bookTitle(app); let scale=min(1.0,(b.w-100.0)/max(1.0,f.measure(title)))
-    f.draw(title,b.x+50.0,b.y+38.0,color:ink,scale:scale)
-    let lines=bookLines(f,bookBody(app),b.w-100.0,0.9)
-    r.pushClip(Rect(b.x+46.0,b.y+76.0,b.w-92.0,b.h-160.0))
-    for (i in 0..lines.size) { f.draw(lines[i],b.x+50.0,b.y+78.0+Float32(i)*21.0,color:ink,scale:0.9) }
+    let title=bookTitle(app); let scale=min(m.scale,(b.w-88.0*m.scale)/max(1.0,f.measure(title)))
+    f.draw(title,b.x+44.0*m.scale,b.y+38.0*m.scale,color:ink,scale:scale,shadow:false,snap:true,pixelRatio:pixelRatio)
+    let body=m.bookBodyBox(); let lines=bookLines(f,bookBody(app),body.w,m.scale)
+    r.pushClip(body)
+    for (i in 0..lines.size) { f.draw(lines[i],body.x,body.y+Float32(i)*22.0*m.scale,color:ink,scale:m.scale,shadow:false,snap:true,pixelRatio:pixelRatio) }
     r.popClip()
-    f.center("${app.bookPage+1} / ${BOOK_PAGES}",Rect(b.centerX()-54.0,b.bottom()-58.0,108.0,30.0),color:ink)
+    f.center("${app.bookPage+1} / ${BOOK_PAGES}",m.bookAt(165.0,488.0,108.0,30.0),color:ink,scale:m.scale,shadow:false,snap:true,pixelRatio:pixelRatio)
     for (id in [96,97]) {
         let box=m.box(id,page:6); let enabled=app.menuEnabled(id)
-        app.assets.blit("textures/gui/book.png",Rect(box.x+1.0,box.y+9.0,46.0,26.0),
+        app.assets.blit("textures/gui/book.png",Rect(box.x+m.scale,box.y+9.0*m.scale,46.0*m.scale,26.0*m.scale),
             source:Some(Rect(if (enabled && (app.hover==id || app.pressed==id)) { 23.0 } else { 0.0 },if (id==97) { 192.0 } else { 205.0 },23.0,13.0)),
             tint:if (enabled) { Color.rgb(255,255,255) } else { Color.rgb(130,130,130) })
         if (enabled && app.menuFocus==id) { r.strokeRect(box,Pen(width:2.0,color:ink)) }
     }
-    mcButtonAt(app,m.box(88,page:6),88,app.t("返回菜单","Back to Menu"),app.menuFocus==88)
-    f.center(app.t("← → 翻页 / Esc 返回","Left / Right: Turn page / Esc: Back"),Rect(b.x,b.bottom()+66.0,b.w,24.0))
+    mcButtonAt(app,m.box(88,page:6),88,app.t("返回菜单","Back to Menu"),app.menuFocus==88,textScale:m.scale,pixelRatio:pixelRatio,snapText:true)
+    f.center(app.t("← → 翻页 / Esc 返回","Left / Right: Turn page / Esc: Back"),m.bookAt(0.0,612.0,438.0,24.0),scale:m.scale,snap:true,pixelRatio:pixelRatio)
 }

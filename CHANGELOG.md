@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.3.2 — Adaptive modals and clearer book text (2026-11-02)
+
+- Scale menu/book geometry, text, button borders and input targets together in quarter steps from 1x to 3x as window space grows.
+- Remove the handbook 0.9x font reduction and dark text shadow; snap glyph geometry to physical pixels while retaining original MC textures and fonts.
+- Check 202 native assertions, including five layout sizes through 4K, both languages, DPI pixel alignment, real shadow/no-shadow rendering, fullscreen pointer input and live resize. See docs/MENU_AND_GUIDE.md.
+
 ## v0.3.1 — MC menu, bilingual UI and handbook (2026-11-02)
 
 - Add an Esc pause menu with project/display/experiment categories, a clearly disconnected agent information page, safe save/quit choices, and a visible menu button. Cancelled exit restores the original page and draft.

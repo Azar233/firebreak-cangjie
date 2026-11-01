@@ -1,6 +1,7 @@
 package firebreak
 
 import sdl.*
+import std.math.round
 import std.fs.{File,exists}
 import std.collection.{HashMap,ArrayList}
 
@@ -121,7 +122,7 @@ class PixelFont {
         var width: Float32=0.0
         for (ch in s.runes()) { width+=advance(Int64(UInt32(ch)),scale) }; return width
     }
-    func draw(s: String,x: Float32,y: Float32,color!: Color=Color.rgb(235,235,224),scale!: Float32=1.0): Unit {
+    func draw(s: String,x: Float32,y: Float32,color!: Color=Color.rgb(235,235,224),scale!: Float32=1.0,shadow!: Bool=true,snap!: Bool=false,pixelRatio!: Float32=1.0): Unit {
         var cursor=x
         for (ch in s.runes()) {
             if (UInt32(ch)<32) { continue }
@@ -136,13 +137,27 @@ class PixelFont {
                 factor=scale
             }
             if (code!=32) {
-                assets.blit(path,Rect(cursor+scale,y+scale,source.w*factor,source.h*factor),source:Some(source),tint:Color.rgb(25,28,24))
-                assets.blit(path,Rect(cursor,y,source.w*factor,source.h*factor),source:Some(source),tint:color)
+                let b=Rect(cursor,y,source.w*factor,source.h*factor)
+                if (shadow) {
+                    let shade=Rect(cursor+scale,y+scale,b.w,b.h)
+                    assets.blit(path,if (snap) { fontPixelRect(shade,pixelRatio) } else { shade },source:Some(source),tint:Color.rgb(25,28,24))
+                }
+                assets.blit(path,if (snap) { fontPixelRect(b,pixelRatio) } else { b },source:Some(source),tint:color)
             }
             cursor+=advance(code,scale)
         }
     }
-    func center(s: String,b: Rect,color!: Color=Color.rgb(235,235,224)): Unit {
-        draw(s,b.centerX()-measure(s)/2.0,b.centerY()-8.0,color:color)
+    func center(s: String,b: Rect,color!: Color=Color.rgb(235,235,224),scale!: Float32=1.0,shadow!: Bool=true,snap!: Bool=false,pixelRatio!: Float32=1.0): Unit {
+        draw(s,b.centerX()-measure(s,scale:scale)/2.0,b.centerY()-8.0*scale,color:color,scale:scale,shadow:shadow,snap:snap,pixelRatio:pixelRatio)
     }
+}
+
+// Snap both glyph corners to the physical pixel grid without changing text advances.
+func fontPixelRect(b: Rect,pixelRatio: Float32): Rect {
+    require(pixelRatio>0.0 && pixelRatio<=16.0,"Invalid font pixel ratio")
+    let x=Float32(round(Float64(b.x*pixelRatio)))/pixelRatio
+    let y=Float32(round(Float64(b.y*pixelRatio)))/pixelRatio
+    let right=Float32(round(Float64(b.right()*pixelRatio)))/pixelRatio
+    let bottom=Float32(round(Float64(b.bottom()*pixelRatio)))/pixelRatio
+    return Rect(x,y,max(1.0/pixelRatio,right-x),max(1.0/pixelRatio,bottom-y))
 }

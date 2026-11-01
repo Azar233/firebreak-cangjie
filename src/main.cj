@@ -10,7 +10,7 @@ main(args: Array<String>): Int64 {
                 let app=App(assets,preferencesPath:if (verify) { "" } else { "settings.local.json" })
                 window.setTitle(app.t("断火线 · 场地规划工作台","Firebreak - Site Planning Workbench"))
                 try {
-                    if (verify) { verifyP1(app,window); verifyTopMap(app,window); verifyP2(app,window); verifyBurnDisplay(app,window); verifyP3(app,window); verifyMenu(app,window); verifyP0(app,window); return 0 }
+                    if (verify) { verifyP1(app,window); verifyTopMap(app,window); verifyP2(app,window); verifyBurnDisplay(app,window); verifyP3(app,window); verifyMenu(app,window); verifyAdaptiveMenu(app,window); verifyP0(app,window); return 0 }
                     var running=true
                     while (running) {
                         while (let Some(record) <- window.pollEventRecord()) { if (!app.handle(window,record)) { running=false; break } }

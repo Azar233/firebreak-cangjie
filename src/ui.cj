@@ -21,19 +21,20 @@ func frame(r: Renderer,b: Rect,dark!: Bool=false): Unit {
 func mcButton(app: App,l: Layout,id: Int64,title: String): Unit {
     mcButtonAt(app,l.control(id),id,title,CONTROLS[app.focus]==id || app.activeField==id)
 }
-func mcButtonAt(app: App,b: Rect,id: Int64,title: String,focused: Bool,enabled!: Bool=true): Unit {
+func mcButtonAt(app: App,b: Rect,id: Int64,title: String,focused: Bool,enabled!: Bool=true,textScale!: Float32=1.0,pixelRatio!: Float32=1.0,snapText!: Bool=false): Unit {
     let selected=app.hover==id || app.pressed==id || app.activeField==id
     let sy: Float32=if (!enabled) { 46.0 } else if (selected) { 86.0 } else { 66.0 }
     let xs: Array<Float32>=[0.0,2.0,198.0,200.0]; let ys=[sy,sy+2.0,sy+18.0,sy+20.0]
-    let dx=[b.x,b.x+4.0,b.right()-4.0,b.right()]; let dy=[b.y,b.y+4.0,b.bottom()-4.0,b.bottom()]
+    let edge=4.0*textScale
+    let dx=[b.x,b.x+edge,b.right()-edge,b.right()]; let dy=[b.y,b.y+edge,b.bottom()-edge,b.bottom()]
     for (y in 0..3) { for (x in 0..3) {
         app.assets.blit("textures/gui/widgets.png",Rect(dx[x],dy[y],dx[x+1]-dx[x],dy[y+1]-dy[y]),
             source:Some(Rect(xs[x],ys[y],xs[x+1]-xs[x],ys[y+1]-ys[y])))
     } }
     if (app.pressed==id) { app.assets.r.fill(b,Color.rgba(0,0,0,40)) }
-    let scale=min(1.0,(b.w-16.0)/max(1.0,app.font.measure(title)))
-    app.assets.r.pushClip(Rect(b.x+4.0,b.y+4.0,b.w-8.0,b.h-8.0))
-    app.font.draw(title,b.centerX()-app.font.measure(title)*scale/2.0,b.centerY()-8.0*scale,scale:scale,
+    let scale=min(textScale,(b.w-16.0*textScale)/max(1.0,app.font.measure(title)))
+    app.assets.r.pushClip(Rect(b.x+edge,b.y+edge,b.w-2.0*edge,b.h-2.0*edge))
+    app.font.draw(title,b.centerX()-app.font.measure(title)*scale/2.0,b.centerY()-8.0*scale,scale:scale,snap:snapText,pixelRatio:pixelRatio,
         color:if (enabled) { Color.rgb(235,235,224) } else { Color.rgb(150,150,150) }); app.assets.r.popClip()
     if (focused && enabled) { app.assets.r.strokeRect(Rect(b.x-2.0,b.y-2.0,b.w+4.0,b.h+4.0),Pen(width:2.0,color:Color.rgb(234,215,129))) }
 }
@@ -225,7 +226,7 @@ func render(app: App,window: SdlWindow,capture!: String=""): Unit {
         uiText(app,l,app.toolName(app.tool),l.panel.x+16.0,l.toolbar.y+22.0,color:Color.rgb(245,221,143))
     }
     r.pushClip(Rect(20.0,l.height-25.0,l.width-40.0,22.0)); uiText(app,l,if (app.startCell>=0) { app.previewText() } else { app.message },20.0,l.height-23.0,color:Color.rgb(222,220,192)); r.popClip()
-    if (app.menuOpen) { drawMenu(app,l) }
+    if (app.menuOpen) { drawMenu(app,l,pixelRatio:Float32(window.scale)*Float32(window.currentPixelDensity)) }
     r.endScene()
     if (!capture.isEmpty()) {
         r.captureBmp(capture+".bmp")
