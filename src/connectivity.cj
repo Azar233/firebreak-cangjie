@@ -9,7 +9,7 @@ func neighbors(i: Int64,nx: Int64,nz: Int64): Array<Int64> {
     return result.toArray()
 }
 func fuelMask(p: Project,planned: Bool): Array<Bool> {
-    Array<Bool>(CELL_COUNT,{i => p.fuel(i,planned:planned)>0.0})
+    Array<Bool>(p.cells,{i => p.fuel(i,planned:planned)>0.0})
 }
 class Connectivity {
     let labels: Array<Int64>

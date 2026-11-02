@@ -91,13 +91,15 @@ class Layout {
 }
 
 class App {
-    let scene=Scene()
+    var scene=Scene()
+    var sceneLand=Array<Int64>()
+    var sceneFuel=Array<Bool>()
     let work=Workbench()
     let camera=Camera()
     let assets: Assets
     let frameMeter=FrameMeter()
     let font: PixelFont
-    let view: VoxelView
+    var view: VoxelView
     let preferences: Preferences
     var workflowStage:Int64=0
     var menuOpen=false
@@ -161,7 +163,9 @@ class App {
     init(assets: Assets,preferencesPath!: String="",audioEnabled!:Bool=true) {
         preferences=Preferences(preferencesPath)
         agentSettings=DeepSeekSettings(if(preferencesPath.isEmpty()){""}else{"agent.local.json"})
-        this.assets=assets; font=PixelFont(assets); view=VoxelView(scene,assets); syncScene()
+        this.assets=assets; font=PixelFont(assets); view=VoxelView(scene,assets)
+        if(!preferencesPath.isEmpty()){work.acceptLoaded(Project(nx:64,nz:64),"")}
+        syncScene()
         message=t("按 Esc 打开工作台菜单。","Press Esc to open the workbench menu.")
         if (!preferences.loadError.isEmpty()) { message=t("本地设置读取失败，已使用默认语言：","Could not load preferences; using default language: ")+preferences.loadError }
         if(agentSettings.loadError){message=t("智能体配置读取失败，请在菜单中重新填写。","Agent settings could not be loaded. Re-enter them in the menu.")}
@@ -169,14 +173,17 @@ class App {
     }
     func refreshExperimentView(): Unit {
         if (let Some(r) <- experiment.run) { view.setFireState(r.current().age,r.duration) }
-        else { view.setFireState(Array<Int64>(CELL_COUNT,repeat:0),1) }
-        view.setClusters(if (experiment.showConnectivity) { experiment.analysis.labels } else { Array<Int64>(CELL_COUNT,repeat:-1) })
+        else { view.setFireState(Array<Int64>(work.project.cells,repeat:0),1) }
+        view.setClusters(if (experiment.showConnectivity) { experiment.analysis.labels } else { Array<Int64>(work.project.cells,repeat:-1) })
         view.dirty=true
     }
     func updateExperiment(now: UInt64): Unit {
         clockNow=now; syncSuggestions(); pollSearch(); syncComparison(); pollEvaluation(now)
         if (experiment.sync(work.project,work.revision)) { refreshExperimentView() }
-        if (let Some(r) <- experiment.run) { if (r.tick(now)) { refreshExperimentView() } }
+        if (let Some(r) <- experiment.run) {
+            try { if (r.tick(now)) { refreshExperimentView() } }
+            catch(e:Exception){r.running=false;message=t("试验已暂停：","Trial paused: ")+localizedError(e.message,preferences.english)}
+        }
     }
     func clearComparison(): Unit {
         if (let Some(v) <- pairView) { v.close() }; pairView=None; evalResult=None
@@ -253,13 +260,23 @@ class App {
         }
     }
     func setIgnition(i: Int64): Unit {
-        require(i>=0 && i<CELL_COUNT && work.project.fuel(i,planned:experiment.planned)>0.0,t("起火点必须位于当前模式的可燃林地","Ignition must be on fuel in the current mode"))
+        require(i>=0 && i<work.project.cells && work.project.fuel(i,planned:experiment.planned)>0.0,t("起火点必须位于当前模式的可燃林地","Ignition must be on fuel in the current mode"))
         let p=work.project.copy(); p.ignition=i; work.commit(p); pickingIgnition=false; syncScene()
-        message=t("起火点 (${i%GRID_X}, ${i/GRID_X}) 已设置；可开始或单步运行。","Ignition set at (${i%GRID_X}, ${i/GRID_X}). Start or step to run.")
+        message=t("起火点 (${i%work.project.nx}, ${i/work.project.nx}) 已设置；可开始或单步运行。","Ignition set at (${i%work.project.nx}, ${i/work.project.nx}). Start or step to run.")
     }
     func syncScene(): Unit {
+        if(scene.nx!=work.project.nx || scene.nz!=work.project.nz){
+            let canopy=view.showCanopy;view.close();scene=Scene(nx:work.project.nx,nz:work.project.nz,demo:false)
+            sceneLand=Array<Int64>();sceneFuel=Array<Bool>()
+            view=VoxelView(scene,assets);view.showCanopy=canopy
+            camera.resetMap();camera.fitScene(scene,Layout(1280.0,860.0).canvas)
+        }
         experiment.sync(work.project,work.revision); refreshExperimentView()
-        populateScene(scene,work.project,experiment.planned); view.dirty=true
+        let fuel=fuelMask(work.project,experiment.planned)
+        if(sceneLand!=work.project.land || sceneFuel!=fuel){
+            populateScene(scene,work.project,experiment.planned);sceneLand=work.project.land.clone();sceneFuel=fuel
+        }
+        view.dirty=true
         syncComparison(); syncSuggestions()
     }
     func makeReference(p: Project): ?Texture {
@@ -299,18 +316,18 @@ class App {
         if (!l.canvas.contains(x,y)) { return -1 }
         if (mapMode) {
             let b=mapBox(l); if (!b.contains(x,y)) { return -1 }
-            if (let Some(h) <- trace(scene,overheadRay(scene,camera.mapU(Float64((x-b.x)/b.w)),camera.mapV(Float64((y-b.y)/b.h))),groundOnly:true)) { return h.z*GRID_X+h.x }
+            if (let Some(h) <- trace(scene,overheadRay(scene,camera.mapU(Float64((x-b.x)/b.w)),camera.mapV(Float64((y-b.y)/b.h))),groundOnly:true)) { return h.z*work.project.nx+h.x }
             return -1
         }
-        if (let Some(h) <- trace(scene,camera.ray(Float64(x),Float64(y),l.canvas),groundOnly:true)) { return h.z*GRID_X+h.x }
+        if (let Some(h) <- trace(scene,camera.ray(Float64(x),Float64(y),l.canvas),groundOnly:true)) { return h.z*work.project.nx+h.x }
         return -1
     }
     func selection(): Array<Int64> {
         let cells=ArrayList<Int64>()
         if (startCell<0 || endCell<0) { return cells.toArray() }
-        let x0=min(startCell%GRID_X,endCell%GRID_X); let x1=max(startCell%GRID_X,endCell%GRID_X)
-        let z0=min(startCell/GRID_X,endCell/GRID_X); let z1=max(startCell/GRID_X,endCell/GRID_X)
-        for (z in z0..z1+1) { for (x in x0..x1+1) { cells.add(z*GRID_X+x) } }; return cells.toArray()
+        let x0=min(startCell%work.project.nx,endCell%work.project.nx); let x1=max(startCell%work.project.nx,endCell%work.project.nx)
+        let z0=min(startCell/work.project.nx,endCell/work.project.nx); let z1=max(startCell/work.project.nx,endCell/work.project.nx)
+        for (z in z0..z1+1) { for (x in x0..x1+1) { cells.add(z*work.project.nx+x) } }; return cells.toArray()
     }
     func previewText(): String {
         let p=work.project; let cells=selection(); let mask=p.treatment.clone()
@@ -363,7 +380,7 @@ class App {
         if (id>=40 && id<=48) { simulationAction(id); return }
         if (id>=20 && id<=28) { cancel(); pickingIgnition=false; tool=id-20; message=t("工具：","Tool: ")+toolName(tool)+t("；拖动预览，再确认应用。","; drag to preview, then apply."); return }
         match (id) {
-            case 0 => if(mapMode){camera.resetMap()}else{camera.reset()}; message=t("相机已复位。","Camera reset.")
+            case 0 => if(mapMode){camera.resetMap()}else if(work.project.nx!=GRID_X || work.project.nz!=GRID_Z){camera.fitScene(scene,Layout(1280.0,860.0).canvas)}else{camera.focusScene(scene)}; message=t("相机已复位。","Camera reset.")
             case 1 => camera.pitch=1.5707963267948966; mapMode=false; message=t("俯视编辑。","Overhead editing view.")
             case 2 => view.showCanopy = !view.showCanopy
             case 3 => camera.rotate(-20.0,0.0)
@@ -398,10 +415,10 @@ class App {
     }
     func select(x: Float32,y: Float32,l: Layout): Unit {
         let i=cellAt(x,y,l)
-        view.selectedX=if (i>=0) { i%GRID_X } else { -1 }; view.selectedZ=if (i>=0) { i/GRID_X } else { -1 }; view.dirty=true
+        view.selectedX=if (i>=0) { i%work.project.nx } else { -1 }; view.selectedZ=if (i>=0) { i/work.project.nx } else { -1 }; view.dirty=true
         if (i>=0) {
             let p=work.project
-            message=t("格 (${i%GRID_X}, ${i/GRID_X})：","Cell (${i%GRID_X}, ${i/GRID_X}): ")+landName(p.land[i])+t("；相对可燃量 ${p.fuel(i)} / 方案 ${p.fuel(i,planned:true)}","; relative fuel ${p.fuel(i)} / planned ${p.fuel(i,planned:true)}")
+            message=t("格 (${i%work.project.nx}, ${i/work.project.nx})：","Cell (${i%work.project.nx}, ${i/work.project.nx}): ")+landName(p.land[i])+t("；相对可燃量 ${p.fuel(i)} / 方案 ${p.fuel(i,planned:true)}","; relative fuel ${p.fuel(i)} / planned ${p.fuel(i,planned:true)}")
         } else { message=t("当前位置没有地面。","No ground at this position.") }
     }
     func discard(window: SdlWindow): Bool {
@@ -426,7 +443,7 @@ class App {
     }
     func importImage(path: String): Unit {
         let bytes=File.readFrom(path); require(bytes.size<=8000000,t("底图上限 8 MB","Reference image limit: 8 MB"))
-        let p=Project(demo:false); p.image=toBase64String(bytes); p.source=t("用户导入底图","Imported reference"); p.metersWide=0.0
+        let p=Project(demo:false,nx:work.project.nx,nz:work.project.nz); p.image=toBase64String(bytes); p.source=t("用户导入底图","Imported reference"); p.metersWide=0.0
         try (s=Surface.loadBytes(bytes,options:ImageLoadOptions(maxPixels:16000000))) { p.aspect=Float64(s.size().w)/Float64(s.size().h) }
         p.validate()
         // Decode/upload before changing the document so a failed import keeps the current project.
@@ -470,10 +487,10 @@ class App {
         if(id==54 || (id>=10 && id<=13) || id==65 || id==78){playUiClick(this)}
         if(id>=55 && id<=58){enterWorkflow(this,id-55);playUiClick(this);return}
         if(id==59){enterWorkflow(this,min(3,currentWorkflow(this)+1));playUiClick(this);return}
-        if(id==116){action(window,10);return}
+        if(id==116){playUiClick(this);openMenu();menuPage=11;menuFocus=121;return}
         if(id==54){openTerminal(this,false);return}
         if (id==10) {
-            if (discard(window)) { cancel();camera.resetMap(); work.commit(Project()); work.path=""; work.unsaved=true; refreshReference(); syncScene(); message=t("已建立纯森林；请另存项目。","Forest created. Save it as a new project.") }
+            openMenu();menuPage=11;menuFocus=121
         } else if (id==65 || id==78) { requestFile(window,id) } else if (id>=11 && id<=13) { requestFile(window,id) } else { activate(id) }
     }
     func handle(window: SdlWindow,record: UiEventRecord): Bool {
@@ -702,6 +719,14 @@ class App {
             case 81=>commitField();menuPage=9;menuFocus=10
             case 117=>commitField();menuPage=1;menuFocus=33
             case 119=>commitField();menuPage=10;menuFocus=20
+            case 120 | 121 | 122=>
+                require(startCell<0,t("请先应用或取消选区","Apply or cancel the selection first"))
+                if(discard(window)){
+                    let n: Int64=if(id==120){24}else if(id==121){64}else{128};let z: Int64=if(id==120){20}else{n}
+                    cancel();work.commit(Project(nx:n,nz:z));work.path="";work.unsaved=true;refreshReference();syncScene();enterWorkflow(this,0);menuOpen=false
+                    camera.fitScene(scene,Layout(Float32(window.width),Float32(window.height)).canvas)
+                    message=t("已建立 ${n}×${z} 平坦森林；每格是可燃单元，树木为示意。","Created ${n}x${z} flat forest; cells are fuel units, trees are illustrative.")
+                }
             case 118=>activate(18);menuOpen=false
             case 10 | 11 | 12 | 13=>let previous=work.revision;action(window,id);if(dialog.isSome() || work.revision!=previous){menuOpen=false}
             case 14 | 15=>activate(id)

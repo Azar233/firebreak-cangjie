@@ -12,8 +12,8 @@ func completedSearch(p: Project): PlanSearchResult {
 }
 func planningCamp(): Project {
     let p=Project(demo:false)
-    for (z in 3..17) { for (x in 2..23) { if (x<=10 || x>=14) { p.land[z*GRID_X+x]=1 } } }
-    for (x in 11..14) { p.land[9*GRID_X+x]=1 }
+    for (z in 3..17) { for (x in 2..23) { if (x<=10 || x>=14) { p.land[z*GRID_X+x]=1;p.vegetation[z*GRID_X+x]=1 } } }
+    for (x in 11..14) { p.land[9*GRID_X+x]=1;p.vegetation[9*GRID_X+x]=1 }
     p.land[9*GRID_X+23]=4; p.targets[9*GRID_X+23]=1; p.forbidden[3*GRID_X+2]=1
     p.source="双林地连接示例"; p.ignition=9*GRID_X+5; p.spreadProbability=1.0; p.burnSteps=1; return p
 }

@@ -147,8 +147,8 @@ func submitTerminal(app: App): Unit {
         case "/help"=>t.append(app.t("本地命令：/site 当前场地；/clear 清空记录。\nEnter 发送；Shift+Enter 换行；↑↓ 历史；Ctrl+A/C/V 编辑；Ctrl+Shift+C 复制记录。\n填写 API Key 后可用自然语言对话；/stop 停止；/preview 预览候选。","Local commands: /site, /clear.\nEnter sends; Shift+Enter inserts a line; Up/Down history; Ctrl+A/C/V edit; Ctrl+Shift+C copies the transcript.\nWith a saved API key, chat naturally; /stop cancels; /preview opens candidates."))
         case "/site"=>
             let p=app.work.project;var forest: Int64=0;var targets: Int64=0;var forbidden: Int64=0
-            for(i in 0..CELL_COUNT){if(p.land[i]==1){forest++};if(p.targets[i]!=0){targets++};if(p.forbidden[i]!=0){forbidden++}}
-            t.append(app.t("本地场地数据（非模型回答）","Local site data (not a model response)")+"\n24 x 20 | revision ${app.work.revision}\n"+
+            for(i in 0..p.cells){if(p.fuel(i)>0.0){forest++};if(p.targets[i]!=0){targets++};if(p.forbidden[i]!=0){forbidden++}}
+            t.append(app.t("本地场地数据（非模型回答）","Local site data (not a model response)")+"\n${p.nx} x ${p.nz} | revision ${app.work.revision}\n"+
                 app.t("林地 / 保护 / 禁区：","Forest / protected / excluded: ")+"${forest} / ${targets} / ${forbidden}\n"+
                 app.t("预算 / 当前费用：","Budget / treatment cost: ")+money(p.budget)+" / "+money(p.cost()))
         case "/stop"=>if(let Some(job)<-app.agentChat){job.cancel()}

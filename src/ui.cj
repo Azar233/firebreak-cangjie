@@ -41,9 +41,9 @@ func mcButtonAt(app: App,b: Rect,id: Int64,title: String,focused: Bool,enabled!:
     if (focused && enabled) { app.assets.r.strokeRect(Rect(b.x-2.0,b.y-2.0,b.w+4.0,b.h+4.0),Pen(width:2.0,color:Color.rgb(234,215,129))) }
 }
 func cellOutline(app: App,l: Layout,i: Int64,color: Color): Unit {
-    let x=i%GRID_X; let z=i/GRID_X; let r=app.assets.r
+    let x=i%app.work.project.nx; let z=i/app.work.project.nx; let r=app.assets.r
     if (app.mapMode) {
-        let b=app.mapWorldBox(l); r.strokeRect(Rect(b.x+Float32(x)*b.w/24.0,b.y+Float32(z)*b.h/20.0,b.w/24.0,b.h/20.0),Pen(width:2.0,color:color)); return
+        let b=app.mapWorldBox(l); r.strokeRect(Rect(b.x+Float32(x)*b.w/Float32(app.work.project.nx),b.y+Float32(z)*b.h/Float32(app.work.project.nz),b.w/Float32(app.work.project.nx),b.h/Float32(app.work.project.nz)),Pen(width:2.0,color:color)); return
     }
     let y=app.scene.ground(x,z)+0.04
     let p=[Vec(Float64(x),y,Float64(z)),Vec(Float64(x+1),y,Float64(z)),Vec(Float64(x+1),y,Float64(z+1)),Vec(Float64(x),y,Float64(z+1))]
@@ -75,8 +75,8 @@ func drawReference(app: App,l: Layout): Unit {
     let r=app.assets.r; let p=app.work.project; let b=app.mapWorldBox(l)
     r.pushClip(app.mapBox(l));r.fill(app.mapBox(l),Color.rgb(174,166,139))
     if (let Some(t) <- app.reference) { r.textureStyled(t,b) }
-    for (z in 0..GRID_Z) { for (x in 0..GRID_X) {
-        let i=z*GRID_X+x; let box=Rect(b.x+Float32(x)*b.w/24.0,b.y+Float32(z)*b.h/20.0,b.w/24.0,b.h/20.0)
+    for (z in 0..app.work.project.nz) { for (x in 0..app.work.project.nx) {
+        let i=z*app.work.project.nx+x; let box=Rect(b.x+Float32(x)*b.w/Float32(app.work.project.nx),b.y+Float32(z)*b.h/Float32(app.work.project.nz),b.w/Float32(app.work.project.nx),b.h/Float32(app.work.project.nz))
         if (app.reference.isNone() || p.land[i]!=0) {
             r.strokeRect(box,Pen(width:2.0,color:landColor(p.land[i])))
         }
@@ -88,11 +88,11 @@ func drawReference(app: App,l: Layout): Unit {
 func drawOverlays(app: App,l: Layout): Unit {
     let r=app.assets.r; let p=app.work.project
     r.pushClip(if(app.mapMode){app.mapBox(l)}else{l.canvas})
-    for (i in 0..CELL_COUNT) {
+    for (i in 0..app.work.project.cells) {
         if (p.targets[i]!=0) { cellOutline(app,l,i,Color.rgb(103,219,241)) }
         if (p.forbidden[i]!=0) { cellOutline(app,l,i,Color.rgb(237,103,116)) }
     }
-    if (app.view.selectedX>=0 && app.view.selectedZ>=0) { cellOutline(app,l,app.view.selectedZ*GRID_X+app.view.selectedX,Color.rgb(255,235,137)) }
+    if (app.view.selectedX>=0 && app.view.selectedZ>=0) { cellOutline(app,l,app.view.selectedZ*app.work.project.nx+app.view.selectedX,Color.rgb(255,235,137)) }
     if (app.suggestPanel && app.candidateVisible) {
         if (let Some(result) <- app.searchResult) {
             if (!result.entries.isEmpty()) { for (i in result.entries[app.candidateIndex].candidate.added) { cellOutline(app,l,i,Color.rgb(255,215,66)) } }
@@ -108,14 +108,14 @@ func drawOverlays(app: App,l: Layout): Unit {
         let snapshot=run.current(); let flame=app.assets.image("textures/block/fire_0.png")
         let side=flame.width; let count=max(1,Int64(flame.height/side))
         let animation=Int64(app.clockNow/80)%count
-        for (i in 0..CELL_COUNT) {
+        for (i in 0..app.work.project.cells) {
             if (snapshot.exposed[i]) { cellOutline(app,l,i,Color.rgb(255,104,73)) }
             if (snapshot.age[i]<=0) { continue }
-            let x=i%GRID_X; let z=i/GRID_X
+            let x=i%app.work.project.nx; let z=i/app.work.project.nx
             let point=if (app.mapMode) {
-                let b=app.mapWorldBox(l); Point(b.x+(Float32(x)+0.5)*b.w/24.0,b.y+(Float32(z)+0.5)*b.h/20.0)
+                let b=app.mapWorldBox(l); Point(b.x+(Float32(x)+0.5)*b.w/Float32(app.work.project.nx),b.y+(Float32(z)+0.5)*b.h/Float32(app.work.project.nz))
             } else { app.camera.project(app.view.fireAnchor(i),l.canvas) }
-            let size=if (app.mapMode) { max(10.0,min(48.0,app.mapWorldBox(l).w/24.0)) } else { Float32(app.camera.zoom)*1.1 }
+            let size=if (app.mapMode) { max(10.0,min(48.0,app.mapWorldBox(l).w/Float32(app.work.project.nx))) } else { Float32(app.camera.zoom)*1.1 }
             app.assets.blit("textures/block/fire_0.png",Rect(point.x-size/2.0,point.y-(if (app.mapMode) { size/2.0 } else { size }),size,size),
                 source:Some(Rect(0.0,Float32(animation)*side,side,side)))
         }
@@ -141,12 +141,12 @@ func drawSimulationPanel(app: App,l: Layout): Unit {
         let state=if (let Some(run) <- e.run) { app.t("${run.cursor} / ${run.snapshots.size-1} 步","Step ${run.cursor} / ${run.snapshots.size-1}")+(if (run.running) { app.t(" · 运行"," / Running") } else { app.t(" · 暂停"," / Paused") }) }
             else { if (p.ignition<0) { app.t("尚未开始 / 先设置起火点","Set ignition before starting") }
                 else if (p.fuel(p.ignition,planned:e.planned)<=0.0) { app.t("起火格不可燃 / 请重新设置","No fuel at ignition; choose again") }
-                else { app.t("起火点 (${p.ignition%GRID_X},${p.ignition/GRID_X}) / 未开始","Ignition (${p.ignition%GRID_X},${p.ignition/GRID_X}) / Ready") } }
+                else { app.t("起火点 (${p.ignition%app.work.project.nx},${p.ignition/app.work.project.nx}) / 未开始","Ignition (${p.ignition%app.work.project.nx},${p.ignition/app.work.project.nx}) / Ready") } }
         uiText(app,l,state,x,y+46.0,color:Color.rgb(245,221,143))
         let stats=if (let Some(run) <- e.run) { app.t("燃烧 ${run.current().burning()} / 燃尽 ${run.current().burned()} 格","Burning ${run.current().burning()} / Burned ${run.current().burned()}") } else { app.t("相对可燃量：林地为 1","Relative fuel: forest = 1") }
         uiText(app,l,stats,x,y+74.0,color:Color.rgb(206,211,190))
         uiText(app,l,app.t("起始连通 ${e.analysis.sizes.size} 片 / 最大 ${e.analysis.largest} 格","Initial: ${e.analysis.sizes.size} clusters / Largest ${e.analysis.largest}"),x,y+100.0,color:Color.rgb(206,211,190))
-        let span=e.analysis.spansLeftRight(GRID_X,GRID_Z)
+        let span=e.analysis.spansLeftRight(app.work.project.nx,app.work.project.nz)
         uiText(app,l,app.t("起始左右贯通：","Initial L-R span: ")+app.t(if(span){"是"}else{"否"},if(span){"Yes"}else{"No"}),x,y+126.0,color:Color.rgb(245,221,143))
         mcButton(app,l,40,if (let Some(run) <- e.run) { if (run.running) { app.t("暂停","Pause") } else { app.t("开始/继续","Resume") } } else { app.t("开始","Start") })
         mcButton(app,l,41,app.t("单步","Step"))

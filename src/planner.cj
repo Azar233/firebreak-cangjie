@@ -13,7 +13,7 @@ class PlanCandidate {
     init(id: Int64,kind: Int64,p: Project,mask: Array<Int64>) {
         let next=p.copy(); next.treatment=mask.clone(); next.validate()
         let cells=ArrayList<Int64>()
-        for (i in 0..CELL_COUNT) {
+        for (i in 0..p.cells) {
             require(p.treatment[i]==0 || p.treatment[i]==mask[i],"候选不能覆盖已有处理方案")
             if (p.treatment[i]==0 && mask[i]!=0) { cells.add(i) }
         }
@@ -34,40 +34,40 @@ func generateCandidates(p: Project,cancelled: ()->Bool): Array<PlanCandidate> {
     p.validate(); require(p.metersWide>0.0,"请先标定场地宽度再生成建议")
     let result=ArrayList<PlanCandidate>(); var roadCount: Int64=0
     for (axis in 0..2) {
-        let count=if (axis==0) { GRID_Z } else { GRID_X }
+        let count=if (axis==0) { p.nz } else { p.nx }
         for (line in 0..count) {
             if (cancelled()) { return result.toArray() }
             let cells=ArrayList<Int64>()
-            for (i in 0..CELL_COUNT) {
-                if ((if (axis==0) { i/GRID_X } else { i%GRID_X })!=line || p.fuel(i,planned:true)==0.0) { continue }
-                for (n in neighbors(i,GRID_X,GRID_Z)) { if (p.land[n]==2) { cells.add(i); break } }
+            for (i in 0..p.cells) {
+                if ((if (axis==0) { i/p.nx } else { i%p.nx })!=line || p.fuel(i,planned:true)==0.0) { continue }
+                for (n in neighbors(i,p.nx,p.nz)) { if (p.land[n]==2) { cells.add(i); break } }
             }
             let before=result.size
             if (roadCount<8) { addCandidate(result,p,cells.toArray(),1,2) }
             if (result.size>before) { roadCount++ }
         }
     }
+    let targetCells=ArrayList<Int64>();for(i in 0..p.cells){if(p.targets[i]!=0){targetCells.add(i)}}
     for (radius in 1..3) {
         let cells=ArrayList<Int64>()
-        for (i in 0..CELL_COUNT) {
+        for (i in 0..p.cells) {
             if (p.targets[i]!=0 || p.fuel(i,planned:true)==0.0) { continue }
-            for (j in 0..CELL_COUNT) {
-                if (p.targets[j]==0) { continue }
-                let dx=if (i%GRID_X>j%GRID_X) { i%GRID_X-j%GRID_X } else { j%GRID_X-i%GRID_X }
-                let dz=if (i/GRID_X>j/GRID_X) { i/GRID_X-j/GRID_X } else { j/GRID_X-i/GRID_X }
+            for (j in targetCells) {
+                let dx=if (i%p.nx>j%p.nx) { i%p.nx-j%p.nx } else { j%p.nx-i%p.nx }
+                let dz=if (i/p.nx>j/p.nx) { i/p.nx-j/p.nx } else { j/p.nx-i/p.nx }
                 if (dx+dz<=radius) { cells.add(i); break }
             }
         }
         addCandidate(result,p,cells.toArray(),2,2)
     }
-    let fuel=fuelMask(p,true); let before=Connectivity(fuel,GRID_X,GRID_Z)
+    let fuel=fuelMask(p,true); let before=Connectivity(fuel,p.nx,p.nz)
+    let gains=articulationGains(fuel,p.nx,p.nz,before,cancelled)
     let bridgeCells=ArrayList<Int64>(); let bridgeGains=ArrayList<Int64>()
-    for (i in 0..CELL_COUNT) {
+    for (i in 0..p.cells) {
         if (cancelled()) { return result.toArray() }
         if (!fuel[i] || p.targets[i]!=0 || p.forbidden[i]!=0) { continue }
-        fuel[i]=false; let after=Connectivity(fuel,GRID_X,GRID_Z); fuel[i]=true
-        if (after.sizes.size>before.sizes.size) {
-            let gain=before.largest-after.largest; var at: Int64=0
+        if (gains[i]>=0) {
+            let gain=gains[i]; var at: Int64=0
             while (at<bridgeGains.size && bridgeGains[at]>=gain) { at++ }
             bridgeCells.add(i,at:at); bridgeGains.add(gain,at:at)
         }
@@ -77,7 +77,7 @@ func generateCandidates(p: Project,cancelled: ()->Bool): Array<PlanCandidate> {
 }
 func reviewScenarios(p: Project,count: Int64): Array<Scenario> {
     require(count>=1 && count<=64,"评估样本数须为 1 至 64")
-    let cells=ArrayList<Int64>(); for (i in 0..CELL_COUNT) { if (p.fuel(i)>0.0) { cells.add(i) } }
+    let cells=ArrayList<Int64>(); for (i in 0..p.cells) { if (p.fuel(i)>0.0) { cells.add(i) } }
     require(!cells.isEmpty(),"原始场地没有可燃林地，无法生成起火情景")
     let sites=ArrayList<Int64>()
     for (q in 0..4) { let cell=cells[(2*q+1)*(cells.size-1)/8]; if (!sites.contains(cell)) { sites.add(cell) } }
@@ -108,7 +108,7 @@ class PlanEntry {
     init(candidate: PlanCandidate,training: PlanAssessment,review: PlanAssessment,current: PlanAssessment,heldout: PlanAssessment) {
         this.candidate=candidate; this.training=training; this.review=review
         eligible=planImproves(current,training); verified=planImproves(heldout,review)
-        score=((current.mean(2)-training.mean(2))*Float64(CELL_COUNT+1)+training.mean(1)-current.mean(1))/max(1.0,candidate.deltaCost)
+        score=((current.mean(2)-training.mean(2))*Float64(candidate.treatment.size+1)+training.mean(1)-current.mean(1))/max(1.0,candidate.deltaCost)
     }
 }
 class PlanSearchResult {

@@ -34,7 +34,7 @@ let MODEL_MESSAGES=[
     ["格子数量不匹配","Cell count does not match"],
     ["项目文件过大","Project file is too large"],
     ["不支持的项目格式或版本","Unsupported project format or version"],
-    ["P1 支持 24 x 20 标注网格","This version supports a 24 x 20 grid"],
+    ["回放历史达到内存上限，请重置试验或缩小网格","Replay memory limit reached; reset the trial or use a smaller grid"],
     ["不支持的传播规则版本","Unsupported spread rule version"],
     ["底图上限 8 MB","Reference image limit: 8 MB"],
     ["底图尺寸与项目不符","Reference dimensions do not match the project"],

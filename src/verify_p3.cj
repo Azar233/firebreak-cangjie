@@ -12,7 +12,7 @@ func evaluated(p: Project,scenarios: Array<Scenario>): EvaluationResult {
 }
 func evaluationChain(): Project {
     let p=Project(demo:false)
-    for (i in 0..5) { p.land[i]=1 }; p.land[5]=4; p.targets[5]=1
+    for (i in 0..5) { p.land[i]=1;p.vegetation[i]=1 }; p.land[5]=4; p.targets[5]=1
     p.ignition=0; p.spreadProbability=1.0; p.burnSteps=1; return p
 }
 func verifyP3(app: App,w: SdlWindow): Unit {

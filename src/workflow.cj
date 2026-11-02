@@ -23,7 +23,7 @@ func enterWorkflow(app:App,step:Int64):Unit {
     if(step==0){app.tool=1};if(step==2){app.tool=5}
     if(step==0 || step==2){app.experiment.planned=true}
     app.syncScene()
-    if(step!=1){app.view.setFireState(Array<Int64>(CELL_COUNT,repeat:0),1)}
+    if(step!=1){app.view.setFireState(Array<Int64>(app.work.project.cells,repeat:0),1)}
     app.focus=step
     app.message=match(step){
         case 0=>app.t("建立森林：重建纯森林，或使用植林/擦除工具调整林地，再确认修改。","Build: create a forest or edit vegetation with Plant/Erase, then confirm.")
@@ -86,10 +86,10 @@ func drawWorkflowBar(app:App,l:Layout):Unit {
 }
 func drawForestPanel(app:App,l:Layout):Unit {
     let graph=app.experiment.analysis;let x=l.panel.x+18.0;let y=l.panel.y
-    uiText(app,l,workflowName(app,currentWorkflow(app)),x,y+18.0)
-    uiText(app,l,app.t("可燃覆盖 ${money(Float64(graph.total)*100.0/Float64(CELL_COUNT))}%","Fuel cover ${money(Float64(graph.total)*100.0/Float64(CELL_COUNT))}%"),x,y+50.0,color:Color.rgb(245,221,143))
+    uiText(app,l,workflowName(app,currentWorkflow(app))+" / ${app.work.project.nx}×${app.work.project.nz}",x,y+18.0)
+    uiText(app,l,app.t("可燃覆盖 ${money(Float64(graph.total)*100.0/Float64(app.work.project.cells))}%","Fuel cover ${money(Float64(graph.total)*100.0/Float64(app.work.project.cells))}%"),x,y+50.0,color:Color.rgb(245,221,143))
     uiText(app,l,app.t("最大连通片 ${graph.largest} 格","Largest cluster ${graph.largest} cells"),x,y+78.0)
-    uiText(app,l,app.t("${graph.sizes.size} 片 / 左右贯通：","${graph.sizes.size} clusters / L-R span: ")+app.t(if(graph.spansLeftRight(GRID_X,GRID_Z)){"是"}else{"否"},if(graph.spansLeftRight(GRID_X,GRID_Z)){"Yes"}else{"No"}),x,y+106.0)
+    uiText(app,l,app.t("${graph.sizes.size} 片 / 左右贯通：","${graph.sizes.size} clusters / L-R span: ")+app.t(if(graph.spansLeftRight(app.work.project.nx,app.work.project.nz)){"是"}else{"否"},if(graph.spansLeftRight(app.work.project.nx,app.work.project.nz)){"Yes"}else{"No"}),x,y+106.0)
     uiText(app,l,app.t("当前工具：","Tool: ")+app.toolName(app.tool),x,y+134.0,color:Color.rgb(245,221,143))
     mcButton(app,l,116,app.t("重建纯森林","New Forest"))
     mcButton(app,l,14,app.t("撤销","Undo"));mcButton(app,l,15,app.t("重做","Redo"))

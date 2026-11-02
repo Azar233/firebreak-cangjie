@@ -65,6 +65,7 @@ class FireRun {
             cursor++; if (cursor==snapshots.size-1 && current().burning()==0) { running=false }; return true
         }
         let old=current(); if (old.burning()==0) { running=false; return false }
+        require(!keepHistory || snapshots.size<max(2,8388608/fuel.size),"回放历史达到内存上限，请重置试验或缩小网格")
         let next=old.age.clone(); let exposed=old.exposed.clone()
         for (i in 0..fuel.size) { if (old.age[i]>0) {
             next[i]=if (old.age[i]==1) { -1 } else { old.age[i]-1 }

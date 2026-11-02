@@ -76,8 +76,8 @@ class AgentChatJob {
     func event(name:String):Unit {checkActive();synchronized(lock){toolCalls++;require(toolCalls<=8,"Tool limit exceeded");events.add("[tool] "+name)}}
     func site():String {
         event("read_site");let p=readProjectText(source);var forest:Int64=0;var protected:Int64=0;var forbidden:Int64=0
-        for(i in 0..CELL_COUNT){if(p.land[i]==1){forest++};if(p.targets[i]!=0){protected++};if(p.forbidden[i]!=0){forbidden++}}
-        return "revision=${revision}; grid=24x20; forest=${forest}; protected=${protected}; forbidden=${forbidden}; metersWide=${p.metersWide}; budget=${p.budget}; currentCost=${p.cost()}; ignition=${p.ignition}; spreadProbability=${p.spreadProbability}; burnSteps=${p.burnSteps}; seed=${p.seed}. Area units are m2. Model scenario metrics are not real wildfire probabilities."
+        for(i in 0..p.cells){if(p.fuel(i)>0.0){forest++};if(p.targets[i]!=0){protected++};if(p.forbidden[i]!=0){forbidden++}}
+        return "revision=${revision}; grid=${p.nx}x${p.nz}; forest=${forest}; protected=${protected}; forbidden=${forbidden}; metersWide=${p.metersWide}; budget=${p.budget}; currentCost=${p.cost()}; ignition=${p.ignition}; spreadProbability=${p.spreadProbability}; burnSteps=${p.burnSteps}; seed=${p.seed}. Area units are m2. Model scenario metrics are not real wildfire probabilities."
     }
     func candidates(cap:Float64):String {
         let p=readProjectText(source);require(cap>=0.0 && cap<=max(0.0,p.budget-p.cost()),"Additional cost must be within the current remaining budget")

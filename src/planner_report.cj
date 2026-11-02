@@ -37,7 +37,7 @@ func searchParameters(result: PlanSearchResult): String {
     let j=JsonObject(); j.put("format",JsonString("firebreak-candidates")); j.put("version",JsonInt(1))
     j.put("revision",JsonInt(result.revision)); j.put("wind",JsonString("none")); j.put("spreadRuleVersion",JsonInt(1))
     j.put("training",searchScenarioJson(result.current.rows)); j.put("holdout",searchScenarioJson(result.heldout.rows))
-    j.put("contactWeight",JsonInt(CELL_COUNT+1)); j.put("costFloorCny",JsonInt(1))
+    j.put("contactWeight",JsonInt(readProjectText(result.source).cells+1)); j.put("costFloorCny",JsonInt(1))
     j.put("trainingSelectedId",JsonInt(if (result.selected<0) { -1 } else { result.entries[result.selected].candidate.id }))
     j.put("recommendedId",JsonInt(if (result.recommended<0) { -1 } else { result.entries[result.recommended].candidate.id }))
     return j.toJsonString()

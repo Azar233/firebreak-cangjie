@@ -16,6 +16,7 @@ func evaluationCsv(result: EvaluationResult): String {
 }
 func evaluationParameters(result: EvaluationResult): String {
     let p=readProjectText(result.projectText); let j=JsonObject()
+    j.put("nx",JsonInt(p.nx));j.put("nz",JsonInt(p.nz))
     j.put("candidatePreview",JsonBool(result.candidatePreview)); j.put("format",JsonString("firebreak-evaluation")); j.put("version",JsonInt(1)); j.put("revision",JsonInt(result.revision))
     j.put("wind",JsonString("none")); j.put("spreadRuleVersion",JsonInt(1))
     j.put("spreadProbability",JsonString(numberText(p.spreadProbability))); j.put("burnSteps",JsonInt(p.burnSteps))

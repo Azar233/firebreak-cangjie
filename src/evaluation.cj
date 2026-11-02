@@ -11,14 +11,14 @@ class Scenario {
     let wind="none"
     let ruleVersion: Int64=1
     init(id: Int64,ignition: Int64,seed: Int64,weight: Float64) {
-        require(id>=0 && ignition>=0 && ignition<CELL_COUNT && seed>=0 && seed<=2147483647 &&
+        require(id>=0 && ignition>=0 && ignition<16384 && seed>=0 && seed<=2147483647 &&
             weight>0.0 && weight<=1.0 && !weight.isNaN(),"非法评估情景")
         this.id=id; this.ignition=ignition; this.seed=seed; this.weight=weight
     }
 }
 func makeScenarios(p: Project,count: Int64): Array<Scenario> {
     require(count>=1 && count<=64,"评估样本数须为 1 至 64")
-    let fuel=ArrayList<Int64>(); for (i in 0..CELL_COUNT) { if (p.fuel(i)>0.0) { fuel.add(i) } }
+    let fuel=ArrayList<Int64>(); for (i in 0..p.cells) { if (p.fuel(i)>0.0) { fuel.add(i) } }
     require(!fuel.isEmpty(),"原始场地没有可燃林地，无法生成起火情景")
     let sites=ArrayList<Int64>()
     if (p.ignition>=0 && p.fuel(p.ignition)>0.0) { sites.add(p.ignition) }
@@ -37,7 +37,7 @@ class Outcome {
     let ignitionBlocked: Bool
     init(p: Project,run: FireRun,planned: Bool,ignition: Int64) {
         burned=run.current().burned(); cleared=if (planned) { p.count(p.treatment) } else { 0 }
-        var original: Int64=0; for (i in 0..CELL_COUNT) { if (p.fuel(i)>0.0) { original++ } }
+        var original: Int64=0; for (i in 0..p.cells) { if (p.fuel(i)>0.0) { original++ } }
         remaining=original-cleared-burned; contacts=run.current().contacts(); steps=run.current().step
         ignitionBlocked = !run.fuel[ignition]
         require(remaining>=0 && burned+cleared+remaining==original,"评估指标不守恒")
@@ -104,7 +104,7 @@ class EvaluationJob {
         this.keepReplay=keepReplay; this.candidatePreview=candidatePreview
         p.validate(); require(scenarios.size>=1 && scenarios.size<=64,"情景集合不能为空或超过 64")
         let ids=ArrayList<Int64>()
-        for (s in scenarios) { require(p.fuel(s.ignition)>0.0 && !ids.contains(s.id),"情景起火点不可燃或 id 重复"); ids.add(s.id) }
+        for (s in scenarios) { require(s.ignition<p.cells && p.fuel(s.ignition)>0.0 && !ids.contains(s.id),"情景起火点不可燃或 id 重复"); ids.add(s.id) }
         projectText=p.text(); this.revision=revision; this.scenarios=scenarios.clone()
     }
     func cancel(): Unit { synchronized(lock) { cancelled=true } }
@@ -116,13 +116,13 @@ class EvaluationJob {
     func execute(): Unit {
         try {
             let p=readProjectText(projectText); let baseFuel=fuelMask(p,false); let planFuel=fuelMask(p,true)
-            let targets=Array<Bool>(CELL_COUNT,{i => p.targets[i]!=0}); let rows=ArrayList<PairedOutcome>()
+            let targets=Array<Bool>(p.cells,{i => p.targets[i]!=0}); let rows=ArrayList<PairedOutcome>()
             var baselineReplay: ?FireRun=None; var plannedReplay: ?FireRun=None
             for (i in 0..scenarios.size) {
                 if (isCancelled()) { break }
                 let s=scenarios[i]
-                let baseline=FireRun(baseFuel,GRID_X,GRID_Z,s.ignition,p.spreadProbability,p.burnSteps,s.seed,targets:targets,keepHistory:i==0 && keepReplay)
-                let planned=FireRun(planFuel,GRID_X,GRID_Z,s.ignition,p.spreadProbability,p.burnSteps,s.seed,targets:targets,allowBlockedIgnition:true,keepHistory:i==0 && keepReplay)
+                let baseline=FireRun(baseFuel,p.nx,p.nz,s.ignition,p.spreadProbability,p.burnSteps,s.seed,targets:targets,keepHistory:i==0 && keepReplay)
+                let planned=FireRun(planFuel,p.nx,p.nz,s.ignition,p.spreadProbability,p.burnSteps,s.seed,targets:targets,allowBlockedIgnition:true,keepHistory:i==0 && keepReplay)
                 while (baseline.current().burning()>0 || planned.current().burning()>0) {
                     if (isCancelled()) { break }
                     baseline.advance(); planned.advance()

@@ -11,6 +11,7 @@ func verifyWorkflow(app:App,w:SdlWindow):Unit {
     require(forest.count(forest.targets)==0 && forest.count(forest.forbidden)==0 && forest.count(forest.treatment)==0,"New forest retained legacy annotation masks")
     for(land in forest.land){require(land==1,"New forest contains a legacy road or building")}
     for(material in app.scene.blocks){require(material!=6 && material!=7 && material!=8,"New forest still renders legacy building or road voxels")}
+    for(height in app.scene.heights){require(height==1,"Forest display retained decorative terrain steps")}
     pass(true,"Default forest has no camp, road, protected target or exclusion zone in either project data or rendered voxels")
     for(size in [Size(1100.0,780.0),Size(1280.0,860.0),Size(2560.0,1380.0)]){
         let l=Layout(size.w,size.h)

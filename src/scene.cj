@@ -110,7 +110,7 @@ class Scene {
         blocks=Array<UInt8>(nx*ny*nz,repeat:0); heights=Array<Int64>(nx*nz,repeat:0); canopyColumns=Array<Bool>(nx*nz,repeat:true)
         if (!demo) { return }
         for (z in 0..nz) { for (x in 0..nx) {
-            let h=if (x>15 && z>12) { 3 } else if (x>12 && z>10) { 2 } else { 1 }
+            let h: Int64=1
             heights[z*nx+x]=h
             for (y in 0..h) { set(x,y,z,if (y==h-1) { 1 } else { 2 }) }
         } }

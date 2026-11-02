@@ -30,7 +30,7 @@ func verifyMenu(app: App,w: SdlWindow): Unit {
         "tools, land labels and model diagnostics have English text")
     for (size in [Size(1100.0,780.0),Size(1280.0,860.0),Size(2560.0,1380.0)]) {
         let layout=Layout(size.w,size.h); let m=MenuLayout(layout)
-        for (page in 0..11) { for (id in m.controls(page)) {
+        for (page in 0..12) { for (id in m.controls(page)) {
             let b=m.box(id,page:page)
             require(b.w>=44.0 && b.h>=44.0 && b.x>=0.0 && b.y>=0.0 && b.right()<=size.w && b.bottom()<=size.h,"Menu target outside window")
             require(m.hit(b.centerX(),b.centerY(),page)==id,"Menu controls overlap")

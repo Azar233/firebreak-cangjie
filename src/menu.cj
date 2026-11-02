@@ -30,10 +30,12 @@ class MenuLayout {
             case 8=>[114,115,88]
             case 9=>[10,11,12,13,14,15,108,117,118,119,88]
             case 10=>[20,21,22,23,24,25,26,27,28,88]
+            case 11=>[120,121,122,88]
             case _=>[93,94,95]
         }
     }
     func box(id: Int64,page!: Int64=0): Rect {
+        if(page==11 && id>=120 && id<=122){return at(0.0,104.0+Float32(id-120)*72.0,448.0,44.0)}
         if(page==9){
             if(id>=10 && id<=15){return at(Float32((id-10)%2)*228.0,72.0+Float32((id-10)/2)*52.0,220.0,44.0)}
             if(id==108 || id==117){return at(0.0,if(id==108){228.0}else{280.0},448.0,44.0)}
@@ -84,11 +86,15 @@ func menuTitle(app: App): String {
         case 8=>app.t("声音设置","Sound Settings")
         case 9=>app.t("文件与项目","Files & Project")
         case 10=>app.t("高级标注工具","Advanced Annotation")
+        case 11=>app.t("新建平坦森林","New Flat Forest")
         case _=>app.t("工作台菜单","Workbench Menu")
     }
 }
 func menuLabel(app: App,id: Int64): String {
     match(id) {
+        case 120=>app.t("24×20 / 小型网格","24x20 / Small")
+        case 121=>app.t("64×64 / 标准网格","64x64 / Standard")
+        case 122=>app.t("128×128 / 大型网格","128x128 / Large")
         case 80=>app.t("回到工作台","Back to Workbench")
         case 81=>app.t("文件与项目…","Files & Project...")
         case 82=>app.t("显示选项…","Display Options...")

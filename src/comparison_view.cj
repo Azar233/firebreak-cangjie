@@ -2,19 +2,28 @@ package firebreak
 
 import sdl.*
 
-func populateScene(scene: Scene,p: Project,planned: Bool): Unit {
+func fillProjectScene(scene: Scene,p: Project,planned: Bool): Unit {
     scene.clear()
-    for (z in 0..GRID_Z) { for (x in 0..GRID_X) {
-        let i=z*GRID_X+x; let h: Int64=if (p.image.isEmpty() && x>15 && z>12) { 3 } else if (p.image.isEmpty() && x>12 && z>10) { 2 } else { 1 }
+    for (z in 0..p.nz) { for (x in 0..p.nx) {
+        let i=z*p.nx+x; let h: Int64=1
         scene.canopyColumns[i]=p.fuel(i,planned:planned)>0.0; scene.heights[i]=h
         let mat=if (planned && p.treatment[i]!=0) { 8 } else { match(p.land[i]) { case 0=>2; case 2=>8; case 3=>9; case 4=>5; case _=>1 } }
         for (y in 0..h) { scene.set(x,y,z,if (y==h-1) { mat } else { 2 }) }
         if (p.land[i]==4) { for (y in h..h+3) { scene.set(x,y,z,6) }; scene.set(x,h+3,z,7) }
     } }
-    for (z in 0..GRID_Z) { for (x in 0..GRID_X) {
-        let i=z*GRID_X+x
+    for (z in 0..p.nz) { for (x in 0..p.nx) {
+        let i=z*p.nx+x
         if (p.fuel(i,planned:planned)>0.0 && x%4==3 && z%4==3) { scene.tree(x,z) }
     } }
+}
+func populateScene(scene:Scene,p:Project,planned:Bool):Unit {
+    require(scene.nx==p.nx && scene.nz==p.nz,"Display grid does not match project")
+    let next=Scene(nx:p.nx,nz:p.nz,demo:false);fillProjectScene(next,p,planned)
+    for(z in 0..scene.nz){for(x in 0..scene.nx){
+        let cell=z*scene.nx+x;scene.heights[cell]=next.heights[cell];scene.canopyColumns[cell]=next.canopyColumns[cell]
+        for(y in 0..scene.ny){let value=next.get(x,y,z);if(scene.get(x,y,z)!=value){scene.set(x,y,z,value)}}
+    }}
+    scene.trees=next.trees
 }
 func fittedMap(canvas: Rect,aspect: Float64): Rect {
     let a=Float32(aspect); let w=min(canvas.w-96.0,(canvas.h-96.0)*a)
@@ -25,8 +34,8 @@ func compareBox(canvas: Rect,right: Bool): Rect {
     return Rect(canvas.x+(if (right) { width+16.0 } else { 0.0 }),canvas.y+34.0,width,canvas.h-34.0)
 }
 class ComparisonView <: Resource {
-    let baselineScene=Scene()
-    let plannedScene=Scene()
+    let baselineScene:Scene
+    let plannedScene:Scene
     let baseline: VoxelView
     let planned: VoxelView
     let result: EvaluationResult
@@ -39,6 +48,7 @@ class ComparisonView <: Resource {
     var closed=false
     init(result: EvaluationResult,assets: Assets) {
         this.result=result; let p=readProjectText(result.projectText); aspect=p.aspect
+        baselineScene=Scene(nx:p.nx,nz:p.nz,demo:false);plannedScene=Scene(nx:p.nx,nz:p.nz,demo:false)
         populateScene(baselineScene,p,false); populateScene(plannedScene,p,true)
         baseline=VoxelView(baselineScene,assets); planned=VoxelView(plannedScene,assets)
         maxStep=max(result.baselineReplay.snapshots.size,result.plannedReplay.snapshots.size)-1
