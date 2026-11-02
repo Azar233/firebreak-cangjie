@@ -24,12 +24,16 @@ class MenuLayout {
             case 1=>[33,34,35,36,88]
             case 2=>[90,91,92,100,101,102,88]
             case 3=>[49,50,51,88]
-            case 4=>[88]
+            case 4=>[104,105,106,107,88]
             case 6=>[96,97,88]
             case _=>[93,94,95]
         }
     }
     func box(id: Int64,page!: Int64=0): Rect {
+        if(page==4){
+            if(id==104 || id==105){return at(0.0,104.0+Float32(id-104)*88.0,448.0,44.0)}
+            if(id==106 || id==107){return at(Float32(id-106)*228.0,260.0,220.0,44.0)}
+        }
         if(page==2){
             let ids=[90,91,92,100,101,102]
             for(i in 0..ids.size){if(id==ids[i]){return at(0.0,72.0+Float32(i)*52.0,448.0,44.0)}}
@@ -81,6 +85,9 @@ func menuLabel(app: App,id: Int64): String {
         case 100=>app.t("右上角显示帧率：","Top-right FPS: ")+app.t(if (app.preferences.showFps) { "开" } else { "关" },if (app.preferences.showFps) { "On" } else { "Off" })
         case 101=>app.t("场景渲染：","Scene renderer: ")+(if(app.preferences.gpuEnabled){"GPU / Auto"}else{"CPU"})
         case 102=>app.t("光影 / Shader：","Lighting / Shader: ")+(if(app.preferences.shadersEnabled){app.t("开","On")}else{app.t("关","Off")})+" (GPU)"
+        case 104 | 105=>agentFieldLabel(app,id)
+        case 106=>app.t("保存 DeepSeek 配置","Save DeepSeek Settings")
+        case 107=>app.t("保存并测试连接","Save & Test Connection")
         case 90=>app.t("树冠：","Canopy: ")+app.t(if (app.view.showCanopy) { "显示" } else { "隐藏" },if (app.view.showCanopy) { "Shown" } else { "Hidden" })
         case 91=>app.t("视图：","View: ")+app.t(if (app.mapMode) { "二维地图" } else { "三维场景" },if (app.mapMode) { "Top-down Map" } else { "3D Scene" })
         case 92=>app.t("相机复位","Reset Camera")
@@ -104,10 +111,12 @@ func drawMenu(app: App,l: Layout,pixelRatio!: Float32=1.0): Unit {
     }
     if (app.menuPage==3) { f.draw(app.t("四邻接 / 无风；修改后旧评估失效","Four neighbors / no wind; edits invalidate results"),m.left,m.top+340.0*m.scale,scale:0.85*m.scale,snap:true,pixelRatio:pixelRatio) }
     if (app.menuPage==4) {
-        let lines=[app.t("状态：尚未接入模型","Status: model not connected"),app.t("计划使用 CangjieMagic 智能体","Planned integration: CangjieMagic"),
-            app.t("主界面：电脑终端；/ 快捷输入","Computer terminal + / quick input"),app.t("模型、连接与生成参数将在 P5 提供","Model, connection and generation options in P5"),
-            app.t("当前无需联网即可编辑、评估和导出","Editing, evaluation and export work offline")]
-        for (i in 0..lines.size) { f.draw(lines[i],m.left,m.top+(96.0+Float32(i)*40.0)*m.scale,scale:0.85*m.scale,snap:true,pixelRatio:pixelRatio) }
+        f.draw(app.agentSettings.baseUrl,m.left,m.top+54.0*m.scale,scale:0.85*m.scale,shadow:false,snap:true,pixelRatio:pixelRatio)
+        f.draw(app.t("模型名称","Model name"),m.left,m.top+80.0*m.scale,scale:m.scale,snap:true,pixelRatio:pixelRatio)
+        f.draw("API Key "+app.t("（仅保存在本机）","(stored locally)"),m.left,m.top+168.0*m.scale,scale:m.scale,snap:true,pixelRatio:pixelRatio)
+        drawAgentSignal(app.assets,m.at(0.0,324.0,20.0,16.0),app.agentSettings.connectionState,app.agentSettings.latencyMillis,app.clockNow)
+        f.draw(app.t("状态：","Status: ")+agentConnectionLabel(app),m.left+28.0*m.scale,m.top+324.0*m.scale,scale:0.85*m.scale,snap:true,pixelRatio:pixelRatio)
+        f.draw(app.t("Enter 完成输入 / Esc 取消当前输入","Enter: finish input / Esc: cancel input"),m.left,m.top+354.0*m.scale,scale:0.8*m.scale,snap:true,pixelRatio:pixelRatio)
     }
     if (app.menuPage==5) {
         f.center(app.t("当前项目或编辑预览尚未保存。","Your project or edit preview is unsaved."),m.at(0.0,82.0,448.0,24.0),scale:m.scale,snap:true,pixelRatio:pixelRatio)

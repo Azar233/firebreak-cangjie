@@ -12,6 +12,7 @@
 | Minecraft textures/font | User-provided resource files listed in assets/manifest.json | Original resources excluded from Git; provide MINECRAFT_ASSETS for a fresh build |
 | Minecraft grass/dirt textures | Java 1.21.1 official client, SHA1 `30c73b1c5da787909b2f73340419fdf13b9def88` | `tools/prepare-grass-textures.ps1` extracts four textures; client cache and original textures remain excluded from Git |
 | README oak-sapling icon | A PNG frame from the application's generated icon, based on the user-provided Minecraft oak sapling | Included as a single README illustration at the user's explicit request; the full resource pack remains excluded |
+| Windows WinHTTP | Windows system HTTPS API | Cangjie calls the system DLL for authenticated DeepSeek connectivity checks, using OS certificate validation; no additional runtime is redistributed |
 
 Retain upstream license notices when packaging native runtime distributions. The
 repository contains selected application screenshots for review, not the original

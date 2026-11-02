@@ -8,7 +8,7 @@ import std.math.floor
 import std.fs.{File,exists}
 import stdx.encoding.base64.toBase64String
 
-let CONTROLS=[0,1,2,3,4,5,6,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,30,31,32,33,34,35,36,40,41,42,43,44,45,46,47,48,49,50,51,52,53,60,61,62,63,64,65,66,67,70,71,72,73,74,75,76,77,78]
+let CONTROLS=[0,1,2,3,4,5,6,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,30,31,32,33,34,35,36,40,41,42,43,44,45,46,47,48,49,50,51,52,54,53,60,61,62,63,64,65,66,67,70,71,72,73,74,75,76,77,78]
 let TOOL_NAMES=["选择","林地","道路","水域","建筑","清理植被","隔离带","保护目标","禁止处理"]
 
 class Layout {
@@ -29,6 +29,7 @@ class Layout {
             let row=match(id) { case 76=>0; case 78=>1; case _=>2 }
             return Rect(panel.x+18.0,panel.y+336.0+Float32(row)*52.0,238.0,44.0)
         }
+        if (id==54) { return Rect(width-484.0,28.0,110.0,44.0) }
         if (id==53) { return Rect(width-366.0,28.0,110.0,44.0) }
         if (id==52) { return Rect(956.0,94.0,124.0,44.0) }
         if (id>=60) {
@@ -60,7 +61,7 @@ class Layout {
         }
     }
     func available(id: Int64,settings: Bool,simulation!: Bool=false,parameters!: Bool=false,comparison!: Bool=false,suggestions!: Bool=false): Bool {
-        if (id==52 || id==53) { return true }
+        if (id==52 || id==53 || id==54) { return true }
         if (id>=70) { return suggestions }
         if (suggestions) { return id<=1 || (id>=10 && id<=16) || id==19 || id==52 }
         if (id>=60) { return comparison }
@@ -95,6 +96,13 @@ class App {
     var quitReturnFocus: Int64=80
     var quitAfterSave=false
     let experiment=Experiment()
+    let terminal=AgentTerminal()
+    let agentSettings: DeepSeekSettings
+    var agentConnection: ?AgentConnectionJob=None
+    let agentModelEditor=TerminalEditor()
+    let agentKeyEditor=TerminalEditor()
+    var agentField: Int64= -1
+    var agentOriginal=""
     var suggestPanel=false
     var searchJob: ?PlanSearchJob=None
     var searchResult: ?PlanSearchResult=None
@@ -134,9 +142,11 @@ class App {
     var dialogKind: Int64=0
     init(assets: Assets,preferencesPath!: String="") {
         preferences=Preferences(preferencesPath)
+        agentSettings=DeepSeekSettings(if(preferencesPath.isEmpty()){""}else{"agent.local.json"})
         this.assets=assets; font=PixelFont(assets); view=VoxelView(scene,assets); syncScene()
         message=t("按 Esc 打开工作台菜单。","Press Esc to open the workbench menu.")
         if (!preferences.loadError.isEmpty()) { message=t("本地设置读取失败，已使用默认语言：","Could not load preferences; using default language: ")+preferences.loadError }
+        if(agentSettings.loadError){message=t("智能体配置读取失败，请在菜单中重新填写。","Agent settings could not be loaded. Re-enter them in the menu.")}
     }
     func refreshExperimentView(): Unit {
         if (let Some(r) <- experiment.run) { view.setFireState(r.current().age,r.duration) }
@@ -437,6 +447,7 @@ class App {
         }
     }
     func action(window: SdlWindow,id: Int64): Unit {
+        if(id==54){openTerminal(this,false);return}
         if (id==10) {
             if (discard(window)) { cancel();camera.resetMap(); work.commit(Project()); work.path=""; work.unsaved=true; refreshReference(); syncScene(); message=t("已建立示例；请另存项目。","Demo created. Save it as a new project.") }
         } else if (id==65 || id==78) { requestFile(window,id) } else if (id>=11 && id<=13) { requestFile(window,id) } else { activate(id) }
@@ -455,6 +466,7 @@ class App {
             case _=>()
         }
         if (menuOpen) { return handleMenu(window,record,l) }
+        if (terminal.open) { return handleTerminalInput(this,record,l) }
         match (record.event) {
             case UiEvent.MouseMove(x,y) =>
                 hover=l.hit(x,y,settings:settings,simulation:simPanel,parameters:simParameters,comparison:comparePanel,suggestions:suggestPanel)
@@ -544,6 +556,7 @@ class App {
                     case Key.Letter(68) => camera.panX+=12.0; view.dirty=true
                     case Key.PageUp => activate(5)
                     case Key.PageDown => activate(6)
+                    case Key.RawScancode(56) => if(!repeat && !record.metadata.modifiers.shift){openTerminal(this,true);terminal.suppressSlash=true}
                     case Key.Escape => if (!repeat) { if (startCell>=0 || pickingIgnition) { cancel(); pickingIgnition=false; message=t("已取消当前操作。","Current action cancelled.") } else { openMenu() } }
                     case _ => ()
                 }
@@ -639,6 +652,7 @@ class App {
     }
     func menuEnabled(id: Int64): Bool {
         if (dialog.isSome()) { return false }
+        if(id==107){return agentConnection.isNone()}
         if (id==102) { return preferences.gpuEnabled && view.gpuError.isEmpty() }
         if (id==96) { return bookPage>0 }
         if (id==97) { return bookPage<BOOK_PAGES-1 }
@@ -656,7 +670,19 @@ class App {
         if (!menuEnabled(id)) { return }
         match(id) {
             case 80=>closeMenu()
-            case 81 | 82 | 83 | 84=>commitField(); menuPage=id-80; menuFocus=MenuLayout(Layout(Float32(window.width),Float32(window.height))).controls(menuPage)[0]
+            case 81 | 82 | 83 | 84=>commitField(); menuPage=id-80; menuFocus=MenuLayout(Layout(Float32(window.width),Float32(window.height))).controls(menuPage)[0];if(id==84){openAgentSettings(this)}
+            case 104 | 105=>agentField=id;agentOriginal=agentEditor(this).text;window.setTextInputArea(MenuLayout(Layout(Float32(window.width),Float32(window.height))).box(id,page:4))
+            case 106=>
+                try{agentSettings.save(agentModelEditor.text,agentKeyEditor.text);agentField = -1;message=t("DeepSeek 配置已保存；尚未进行连接验证。","DeepSeek settings saved; connection has not been verified.")}
+                catch(_:Exception){message=t("保存失败，请检查模型名、API Key 格式或本地文件权限。","Save failed. Check the model name, key format and local file access.")}
+            case 107=>
+                try{
+                    require(!agentKeyEditor.text.isEmpty(),"Missing API key")
+                    agentSettings.save(agentModelEditor.text,agentKeyEditor.text);agentField = -1
+                    let job=AgentConnectionJob(agentSettings.generation,agentSettings.model,agentSettings.apiKey)
+                    agentConnection=Some(job);agentSettings.connectionState=1;job.start()
+                    message=t("正在验证 DeepSeek API 与模型；此检测不生成对话。","Checking DeepSeek API/model; this probe does not generate a conversation.")
+                }catch(_:Exception){message=t("请检查 API Key、模型名称与本地文件权限。","Check the API key, model name and local file access.")}
             case 85=>
                 preferences.setEnglish(!preferences.english)
                 window.setTitle(t("断火线 · 场地规划工作台","Firebreak - Site Planning Workbench"))
@@ -683,6 +709,7 @@ class App {
     }
     func handleMenu(window: SdlWindow,record: UiEventRecord,l: Layout): Bool {
         let m=MenuLayout(l)
+        if(handleAgentSettings(this,window,record)){return true}
         match(record.event) {
             case UiEvent.MouseMove(x,y)=>hover=m.hit(x,y,menuPage)
             case UiEvent.MouseDown(MouseButton.Left,x,y)=>

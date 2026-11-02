@@ -33,6 +33,7 @@ vendor/SDL/.sdl3/
 *.p12
 secrets*.json
 agent.local*.json
+/agent.local.json.writing
 artifacts/*
 !artifacts/*.png
 !artifacts/p0-checks.log
@@ -67,4 +68,6 @@ artifacts/*
 !artifacts/smooth-lighting-benchmark.log
 !artifacts/smooth-lighting-flat-control.log
 !artifacts/meadow-grass-checks.log
+!artifacts/p5-terminal-checks.log
+!artifacts/p5-agent-transport.log
 artifacts/readme-home-*.png

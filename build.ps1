@@ -16,8 +16,8 @@ try {
     $files = @($manifest.files)
     $files += @($manifest.blocks | ForEach-Object { "textures/block/$_.png" })
     $files += @($manifest.items | ForEach-Object { "textures/item/$_.png" })
-    $sourceText = (Get-ChildItem -LiteralPath 'src' -Filter '*.cj' | Get-Content -Raw -Encoding utf8) -join "`n"
-    $pages = @($sourceText.ToCharArray() | Where-Object { [int]$_ -ge 127 -and [int]$_ -le 65535 } | ForEach-Object { '{0:x2}' -f ([int]$_ -shr 8) } | Sort-Object -Unique)
+    # Dynamic terminal/model text is not limited to characters present in source.
+    $pages = @(Get-ChildItem -LiteralPath (Join-Path $source 'textures/font') -Filter 'unicode_page_*.png' | ForEach-Object { $_.BaseName.Substring(13) } | Sort-Object -Unique)
     $files += @($pages | ForEach-Object { "textures/font/unicode_page_$_.png" })
     foreach ($relative in $files) {
         $assetPath = Join-Path $source $relative
@@ -40,10 +40,10 @@ try {
         $previousErrorAction = $ErrorActionPreference
         try {
             $ErrorActionPreference = 'Continue'
-            & './target/release/bin/main.exe' --verify 2>&1 | Tee-Object -FilePath 'artifacts/smooth-lighting-checks.log'
+            & './target/release/bin/main.exe' --verify 2>&1 | Tee-Object -FilePath 'artifacts/p5-terminal-checks.log'
             $checkExit = $LASTEXITCODE
         } finally { $ErrorActionPreference = $previousErrorAction }
-        if ($checkExit -ne 0) { throw "Workbench checks failed ($checkExit). See artifacts/smooth-lighting-checks.log." }
+        if ($checkExit -ne 0) { throw "Workbench checks failed ($checkExit). See artifacts/p5-terminal-checks.log." }
     }
     if ($VerifyMagic) { & './tools/verify-magic.ps1' }
     if ($Run) { & './target/release/bin/main.exe' }

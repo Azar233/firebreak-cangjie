@@ -158,6 +158,7 @@ func drawSimulationPanel(app: App,l: Layout): Unit {
     mcButton(app,l,48,if (app.simParameters) { app.t("返回火势实验","Back to Trial") } else { app.t("传播参数与 seed","Experiment Settings") })
 }
 func render(app: App,window: SdlWindow,capture!: String=""): Unit {
+    pollAgentConnection(app)
     app.frameMeter.tick(app.frameMeter.clock.ms())
     let r=window.renderer; let p=app.work.project
     let l=Layout(Float32(window.width),Float32(window.height))
@@ -173,6 +174,7 @@ func render(app: App,window: SdlWindow,capture!: String=""): Unit {
     uiText(app,l,app.t("断火线","Firebreak"),30.0,26.0,scale:if (app.preferences.english) { 1.6 } else { 2.0 })
     uiText(app,l,app.t("P4 / 方案建议","P4 / Plan Suggestions")+(if (app.work.dirty()) { app.t(" * 未保存"," * Unsaved") } else if (app.work.path.isEmpty()) { app.t(" / 未另存"," / Not Saved") } else { app.t(" / 已保存"," / Saved") }),if (app.preferences.english) { 250.0 } else { 164.0 },40.0,color:Color.rgb(222,220,192))
     mcButton(app,l,53,app.t("菜单 [Esc]","Menu [Esc]"))
+    mcButton(app,l,54,app.t("研究员","Researcher"))
     mcButton(app,l,0,app.t("相机复位","Reset Camera")); mcButton(app,l,1,app.t("俯视编辑","Overhead"))
     let titles=[app.t("新建","New"),app.t("打开","Open"),app.t("另存为","Save As"),app.t("导入底图","Import Image"),app.t("撤销","Undo"),app.t("重做","Redo"),if (app.mapMode) { app.t("三维场景","3D Scene") } else { app.t("二维地图","2D Map") }]
     for (i in 0..7) { mcButton(app,l,10+i,titles[i]) }
@@ -239,6 +241,7 @@ func render(app: App,window: SdlWindow,capture!: String=""): Unit {
     r.pushClip(Rect(20.0,l.height-25.0,l.width-40.0,22.0)); uiText(app,l,app.view.backendName()+" | "+(if (app.startCell>=0) { app.previewText() } else if(!app.view.gpuError.isEmpty()){app.view.gpuError}else{app.message}),20.0,l.height-23.0,color:Color.rgb(222,220,192)); r.popClip()
     if (app.menuOpen) { drawMenu(app,l,pixelRatio:Float32(window.scale)*Float32(window.currentPixelDensity)) }
     if (app.preferences.showFps) { drawFps(app.font,app.frameMeter,l.canvas) }
+    drawTerminal(app,l,window)
     r.endScene()
     if (!capture.isEmpty()) {
         r.captureBmp(capture+".bmp")

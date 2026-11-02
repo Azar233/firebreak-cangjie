@@ -55,7 +55,7 @@ func verifyMenu(app: App,w: SdlWindow): Unit {
     menuClick(app,w,82); let canopy=app.view.showCanopy; menuClick(app,w,90); menuClick(app,w,91); menuClick(app,w,92)
     pass(app.view.showCanopy!=canopy && app.camera.panX==0.0 && app.camera.zoom==20.0,"display settings apply to actual canopy, projection and camera state")
     event(app,w,UiEvent.KeyDown(Key.Escape,false)); menuClick(app,w,84)
-    pass(menuTitle(app)=="Agent Settings" && MenuLayout(l).controls(4)==[88],"agent settings honestly shows disconnected status without fake active controls")
+    pass(menuTitle(app)=="Agent Settings" && MenuLayout(l).controls(4)==[104,105,106,107,88],"agent settings offers actual local model/key fields, save and connection test while honestly remaining disconnected")
     event(app,w,UiEvent.KeyDown(Key.Escape,false)); menuClick(app,w,98)
     let bookTexture=app.assets.image("textures/gui/book.png")
     pass(app.menuPage==6 && bookTexture.width==256.0 && bookTexture.height==256.0 && !app.menuEnabled(96),
