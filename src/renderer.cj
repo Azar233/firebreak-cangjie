@@ -39,6 +39,7 @@ class VoxelView <: Resource {
     var fireAge: Array<Int64>
     var burnStages: Array<Int64>
     var clusterLabels: Array<Int64>
+    var rasterPixels=Array<Color>()
     init(scene: Scene,assets: Assets) {
         this.scene=scene; this.assets=assets
         fireAge=Array<Int64>(scene.nx*scene.nz,repeat:0); burnStages=Array<Int64>(scene.nx*scene.nz,repeat:0)
@@ -73,20 +74,37 @@ class VoxelView <: Resource {
     func cancelRefinement(): Unit {
         if (let Some(s) <- pending) { s.close() }; pending=None; nextRow=0
     }
-    func rows(surface: Surface,camera: Camera,b: Rect,width: Int64,height: Int64,from: Int64,to: Int64): Unit {
+    func rows(surface: Surface,camera: Camera,b: Rect,width: Int64,height: Int64,from: Int64,to: Int64,parallel!: Bool=true): Unit {
         // Orthographic rays share direction and basis; compute trigonometry once per batch.
         let right=camera.right(); let up=camera.up(); let outward=camera.outward()
         let base=camera.target().add(outward.mul(camera.distance)); let direction=outward.mul(-1.0)
-        for (y in from..to) { for (x in 0..width) {
+        let visible=projectedSceneBounds(scene,camera,b)
+        let pixel={x: Int64,y: Int64=>
             if (topDown) {
-                surface.writePixel(Int32(x),Int32(y),color(overheadRay(scene,(Float64(x)+0.5)/Float64(width),(Float64(y)+0.5)/Float64(height))))
-                continue
+                return color(overheadRay(scene,(Float64(x)+0.5)/Float64(width),(Float64(y)+0.5)/Float64(height)))
             }
             let sx=Float64(b.x)+(Float64(x)+0.5)/Float64(width)*Float64(b.w)
             let sy=Float64(b.y)+(Float64(y)+0.5)/Float64(height)*Float64(b.h)
+            if (!visible.contains(Float32(sx),Float32(sy))) { return Color.rgb(122,155,169) }
             let origin=base.add(right.mul((sx-Float64(b.centerX())-camera.panX)/camera.zoom)).add(up.mul(-(sy-Float64(b.centerY())-camera.panY)/camera.zoom))
-            surface.writePixel(Int32(x),Int32(y),color(Ray(origin,direction)))
-        } }
+            return color(Ray(origin,direction))
+        }
+        if (!parallel || width*(to-from)<16384) { surface.writeRgbaRows(from,to,pixel); return }
+        // Workers read immutable scene/atlas state and fill disjoint managed rows.
+        // SDL locking, upload and presentation stay on the owning thread. Join all
+        // workers even on failure before callers may close assets or change scenes.
+        if (rasterPixels.size<width*(to-from)) { rasterPixels=Array<Color>(width*(to-from),repeat:Color.rgb(0,0,0)) }
+        let pixels=rasterPixels
+        let fill={part: Int64=>
+            let first=from+(to-from)*part/4; let last=from+(to-from)*(part+1)/4
+            for(y in first..last){for(x in 0..width){pixels[(y-from)*width+x]=pixel(x,y)}}
+        }
+        let first=spawn { fill(0) }; let second=spawn { fill(1) }; let third=spawn { fill(2) }
+        var failure: ?Exception=None
+        try { fill(3) } catch(e: Exception) { failure=Some(e) }
+        for (worker in [first,second,third]) { try { worker.get() } catch(e: Exception) { failure=Some(e) } }
+        if (let Some(e) <- failure) { throw e }
+        surface.writeRgbaRows(from,to,{x,y=>pixels[(y-from)*width+x]})
     }
     func publish(surface: Surface): Unit {
         let replacement=assets.r.textureFromSurface(surface)
@@ -126,7 +144,8 @@ class VoxelView <: Resource {
         }
         let surface=pending.getOrThrow(); let start=window.ticks()
         // Progressive rows keep the SDL thread responsive without cross-thread native resources.
-        let end=if (forceFull) { targetHeight } else { min(targetHeight,nextRow+32) }
+        if (forceFull) { rows(surface,camera,b,targetWidth,targetHeight,nextRow,targetHeight); nextRow=targetHeight }
+        let end=min(targetHeight,nextRow+32)
         while (nextRow<end) {
             let to=min(end,nextRow+4)
             rows(surface,camera,b,targetWidth,targetHeight,nextRow,to); nextRow=to
@@ -143,7 +162,20 @@ class VoxelView <: Resource {
     public func close(): Unit {
         if (closed) { return }; closed=true
         cancelRefinement()
+        rasterPixels=Array<Color>()
         if (let Some(t) <- texture) { t.close() }; texture=None
     }
     public func isClosed(): Bool { closed }
+}
+
+// Conservative projected AABB intersected with the canvas. Rays outside this
+// region cannot touch any voxel; partial/chunk visibility remains handled by DDA.
+func projectedSceneBounds(scene: Scene,camera: Camera,b: Rect): Rect {
+    var left=b.right(); var top=b.bottom(); var right=b.x; var bottom=b.y
+    for(x in [0,scene.nx]){for(y in [0,scene.ny]){for(z in [0,scene.nz]){
+        let p=camera.project(Vec(Float64(x),Float64(y),Float64(z)),b)
+        left=min(left,p.x); top=min(top,p.y); right=max(right,p.x); bottom=max(bottom,p.y)
+    }}}
+    left=max(b.x,left-2.0); top=max(b.y,top-2.0); right=min(b.right(),right+2.0); bottom=min(b.bottom(),bottom+2.0)
+    return Rect(left,top,max(0.0,right-left),max(0.0,bottom-top))
 }

@@ -13,7 +13,7 @@ func click(app: App,w: SdlWindow,id: Int64): Unit {
 }
 func flatScene(): Scene {
     let s=Scene()
-    for (i in 0..s.blocks.size) { s.blocks[i]=0 }
+    s.clear()
     for (z in 0..s.nz) { for (x in 0..s.nx) { s.heights[z*s.nx+x]=1; s.set(x,0,z,1) } }
     return s
 }

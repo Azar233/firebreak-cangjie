@@ -52,6 +52,10 @@ class Camera {
         zoom=min(Float64(b.w),Float64(b.h))*0.7/Float64(max(scene.nx,scene.nz))
         minimumZoom=zoom/4.0; maximumZoom=40.0
     }
+    func focusScene(scene: Scene): Unit {
+        centerX=Float64(scene.nx)/2.0; centerZ=Float64(scene.nz)/2.0; distance=60.0
+        minimumZoom=8.0; maximumZoom=40.0; reset()
+    }
     func project(p: Vec,b: Rect): Point {
         let d=p.sub(target())
         return Point(b.centerX()+Float32(panX+d.dot(right())*zoom),b.centerY()+Float32(panY-d.dot(up())*zoom))
@@ -68,7 +72,10 @@ class Scene {
     let nx: Int64
     let ny: Int64
     let nz: Int64
-    let blocks: Array<Int64>
+    let blocks: Array<UInt8>
+    let chunkCounts: Array<Int64>
+    let chunksX: Int64
+    let chunksY: Int64
     let heights: Array<Int64>
     let canopyColumns: Array<Bool>
     var trees: Int64 = 0
@@ -76,7 +83,9 @@ class Scene {
         require(nx>0 && nx<=2048 && nz>0 && nz<=2048 && ny>=8 && ny<=64 && nx*nz*ny<=67108864,"Scene dimensions exceed stress-test allocation bound")
         require(!demo || (nx==24 && nz==20 && ny==14),"Demo scene requires the original dimensions")
         this.nx=nx; this.ny=ny; this.nz=nz
-        blocks=Array<Int64>(nx*ny*nz,repeat:0); heights=Array<Int64>(nx*nz,repeat:0); canopyColumns=Array<Bool>(nx*nz,repeat:true)
+        chunksX=(nx+7)/8; chunksY=(ny+7)/8
+        chunkCounts=Array<Int64>(chunksX*chunksY*((nz+7)/8),repeat:0)
+        blocks=Array<UInt8>(nx*ny*nz,repeat:0); heights=Array<Int64>(nx*nz,repeat:0); canopyColumns=Array<Bool>(nx*nz,repeat:true)
         if (!demo) { return }
         for (z in 0..nz) { for (x in 0..nx) {
             let h=if (x>15 && z>12) { 3 } else if (x>12 && z>10) { 2 } else { 1 }
@@ -95,8 +104,17 @@ class Scene {
     }
     func index(x: Int64,y: Int64,z: Int64): Int64 { (z*ny+y)*nx+x }
     func inside(x: Int64,y: Int64,z: Int64): Bool { x>=0 && x<nx && y>=0 && y<ny && z>=0 && z<nz }
-    func get(x: Int64,y: Int64,z: Int64): Int64 { if (inside(x,y,z)) { blocks[index(x,y,z)] } else { 0 } }
-    func set(x: Int64,y: Int64,z: Int64,value: Int64): Unit { if (inside(x,y,z)) { blocks[index(x,y,z)]=value } }
+    func get(x: Int64,y: Int64,z: Int64): Int64 { if (inside(x,y,z)) { Int64(blocks[index(x,y,z)]) } else { 0 } }
+    func chunkIndex(x: Int64,y: Int64,z: Int64): Int64 { ((z/8)*chunksY+y/8)*chunksX+x/8 }
+    func clear(): Unit { for(i in 0..blocks.size) { blocks[i]=0 }; for(i in 0..chunkCounts.size) { chunkCounts[i]=0 }; trees=0 }
+    func set(x: Int64,y: Int64,z: Int64,value: Int64): Unit {
+        if (inside(x,y,z)) {
+            require(value>=0 && value<=255,"Invalid voxel material")
+            let i=index(x,y,z); let before=blocks[i]>0; let after=value>0
+            if (before!=after) { chunkCounts[chunkIndex(x,y,z)]+=if (after) { 1 } else { -1 } }
+            blocks[i]=UInt8(value)
+        }
+    }
     func ground(x: Int64,z: Int64): Float64 { Float64(heights[z*nx+x]) }
     func tree(x: Int64,z: Int64): Unit {
         let base=heights[z*nx+x]
@@ -148,15 +166,14 @@ func fireDisplayMaterial(scene: Scene,material: Int64,x: Int64,y: Int64,z: Int64
 // groundOnly ignores canopy/buildings and finds the actual terrain under the pointer.
 func trace(scene: Scene,ray: Ray,groundOnly!: Bool = false,leavesOpaque!: Bool = false,
     atlas!: ?Assets = None,showCanopy!: Bool = true,fireStages!: ?Array<Int64> = None): ?Hit {
-    let o=[ray.origin.x,ray.origin.y,ray.origin.z]
-    let d=[ray.direction.x,ray.direction.y,ray.direction.z]
-    let sizes=[scene.nx,scene.ny,scene.nz]
     var near=0.0; var far=10000.0; var axis: Int64 = 1
     for (a in 0..3) {
-        if (abs(d[a])<1.0e-12) {
-            if (o[a]<0.0 || o[a]>=Float64(sizes[a])) { return None }
+        let o=component(ray.origin,a); let d=component(ray.direction,a)
+        let size=Float64(if (a==0) { scene.nx } else if (a==1) { scene.ny } else { scene.nz })
+        if (abs(d)<1.0e-12) {
+            if (o<0.0 || o>=size) { return None }
         } else {
-            let t1=-o[a]/d[a]; let t2=(Float64(sizes[a])-o[a])/d[a]
+            let t1=-o/d; let t2=(size-o)/d
             let lo=min(t1,t2); let hi=max(t1,t2)
             if (lo>near) { near=lo; axis=a }; far=min(far,hi)
         }
@@ -164,14 +181,29 @@ func trace(scene: Scene,ray: Ray,groundOnly!: Bool = false,leavesOpaque!: Bool =
     if (near>=far || far<0.0) { return None }
     var distance=near+1.0e-7
     let p=ray.origin.add(ray.direction.mul(distance))
-    let cell=[Int64(floor(p.x)),Int64(floor(p.y)),Int64(floor(p.z))]
-    let step=Array<Int64>(3,{ a => if (d[a]>0.0) { 1 } else { -1 } })
-    let next=Array<Float64>(3,{ a => if (abs(d[a])<1.0e-12) { 1.0e30 }
-        else { (Float64(cell[a]+(if (step[a]>0) { 1 } else { 0 }))-o[a])/d[a] } })
-    let delta=Array<Float64>(3,{ a => if (abs(d[a])<1.0e-12) { 1.0e30 } else { abs(1.0/d[a]) } })
+    var x=Int64(floor(p.x)); var y=Int64(floor(p.y)); var z=Int64(floor(p.z))
+    let dx=ray.direction.x; let dy=ray.direction.y; let dz=ray.direction.z
+    let stepX: Int64=if(dx>0.0){1}else{-1}; let stepY: Int64=if(dy>0.0){1}else{-1}; let stepZ: Int64=if(dz>0.0){1}else{-1}
+    var tx=voxelExit(ray.origin.x,dx,x,1); var ty=voxelExit(ray.origin.y,dy,y,1); var tz=voxelExit(ray.origin.z,dz,z,1)
+    let deltaX=voxelDelta(dx); let deltaY=voxelDelta(dy); let deltaZ=voxelDelta(dz)
     for (_ in 0..scene.nx+scene.ny+scene.nz+4) {
-        let x=cell[0]; let y=cell[1]; let z=cell[2]
         if (!scene.inside(x,y,z) || distance>far) { break }
+        // Two-level traversal: skip only chunks with no base voxel at all.
+        // Burn filtering only removes geometry, so this remains conservative.
+        if (scene.chunkCounts[scene.chunkIndex(x,y,z)]==0) {
+            let bx=voxelExit(ray.origin.x,dx,x,8); let by=voxelExit(ray.origin.y,dy,y,8); let bz=voxelExit(ray.origin.z,dz,z,8)
+            let exit=min(bx,min(by,bz))
+            let tied=(if(abs(bx-exit)<1.0e-9){1}else{0})+(if(abs(by-exit)<1.0e-9){1}else{0})+(if(abs(bz-exit)<1.0e-9){1}else{0})
+            // Preserve the reference's axis ordering at exact edges/corners.
+            if (tied==1) {
+                axis=if (bx<by && bx<bz) { 0 } else if (by<bz) { 1 } else { 2 }
+                distance=exit+1.0e-7
+                let q=ray.origin.add(ray.direction.mul(distance))
+                x=Int64(floor(q.x)); y=Int64(floor(q.y)); z=Int64(floor(q.z))
+                tx=voxelExit(ray.origin.x,dx,x,1); ty=voxelExit(ray.origin.y,dy,y,1); tz=voxelExit(ray.origin.z,dz,z,1)
+                continue
+            }
+        }
         var mat=scene.get(x,y,z)
         if (!groundOnly) {
             if (let Some(stages) <- fireStages) { mat=fireDisplayMaterial(scene,mat,x,y,z,stages[z*scene.nx+x]) }
@@ -185,8 +217,18 @@ func trace(scene: Scene,ray: Ray,groundOnly!: Bool = false,leavesOpaque!: Bool =
             if (mat!=4 || leavesOpaque || groundOnly) { return Some(hit) }
             if (let Some(a) <- atlas) { if (a.sample(hit).a>=UInt8(128)) { return Some(hit) } }
         }
-        axis=if (next[0]<next[1] && next[0]<next[2]) { 0 } else if (next[1]<next[2]) { 1 } else { 2 }
-        distance=next[axis]+1.0e-7; cell[axis]+=step[axis]; next[axis]+=delta[axis]
+        axis=if (tx<ty && tx<tz) { 0 } else if (ty<tz) { 1 } else { 2 }
+        if (axis==0) { distance=tx+1.0e-7; x+=stepX; tx+=deltaX }
+        else if (axis==1) { distance=ty+1.0e-7; y+=stepY; ty+=deltaY }
+        else { distance=tz+1.0e-7; z+=stepZ; tz+=deltaZ }
     }
     return None
+}
+
+func component(v: Vec,axis: Int64): Float64 { if(axis==0){v.x}else if(axis==1){v.y}else{v.z} }
+func voxelDelta(d: Float64): Float64 { if(abs(d)<1.0e-12){1.0e30}else{abs(1.0/d)} }
+func voxelExit(o: Float64,d: Float64,cell: Int64,span: Int64): Float64 {
+    if (abs(d)<1.0e-12) { return 1.0e30 }
+    let boundary=(cell/span+(if(d>0.0){1}else{0}))*span
+    return (Float64(boundary)-o)/d
 }

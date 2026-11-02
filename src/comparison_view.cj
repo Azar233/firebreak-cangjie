@@ -3,7 +3,7 @@ package firebreak
 import sdl.*
 
 func populateScene(scene: Scene,p: Project,planned: Bool): Unit {
-    for (i in 0..scene.blocks.size) { scene.blocks[i]=0 }; scene.trees=0
+    scene.clear()
     for (z in 0..GRID_Z) { for (x in 0..GRID_X) {
         let i=z*GRID_X+x; let h: Int64=if (p.image.isEmpty() && x>15 && z>12) { 3 } else if (p.image.isEmpty() && x>12 && z>10) { 2 } else { 1 }
         scene.canopyColumns[i]=p.fuel(i,planned:planned)>0.0; scene.heights[i]=h

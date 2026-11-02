@@ -28,7 +28,7 @@ func stressFrame(w: SdlWindow,view: VoxelView,font: PixelFont,top: Bool,title: S
     font.draw("Viewport ${view.targetWidth} x ${view.targetHeight}",x,y+172.0,scale:0.85)
     font.draw("Tab: 2D / 3D",x,y+224.0)
     font.draw("C: Largest cluster",x,y+256.0)
-    font.draw("Home: Fit scene",x,y+288.0)
+    font.draw("Home: Overview / F: Local",x,y+288.0,scale:0.85)
     font.draw("Right drag: Rotate",x,y+320.0)
     font.draw("Middle drag: Pan",x,y+352.0)
     font.draw("Wheel: Zoom / Esc: Exit",x,y+384.0,scale:0.85)
@@ -43,8 +43,8 @@ func runForestLab(w: SdlWindow,assets: Assets,spec: ForestSpec): Unit {
     let clock=PerformanceClock(); let example=ForestExample(spec,clock); let font=PixelFont(assets); let meter=FrameMeter()
     println("Forest loaded: ${example.occupied} fuel cells / ${example.scene.trees} tree instances; field ${example.fieldMs} ms / voxels ${example.voxelMs} ms")
     try (view=VoxelView(example.scene,assets)) {
-        let camera=Camera(); camera.fitScene(example.scene,Layout(Float32(w.width),Float32(w.height)).canvas)
-        var top=true; var dragging=false; var panning=false; var x0: Float32=0.0; var y0: Float32=0.0
+        let camera=Camera(); camera.focusScene(example.scene)
+        var top=false; var dragging=false; var panning=false; var x0: Float32=0.0; var y0: Float32=0.0
         var running=true; var clusters=false; var labels=Array<Int64>(); var title="Density "+money(spec.density)
         while (running) {
             while (let Some(e) <- w.pollEventRecord()) {
@@ -58,6 +58,7 @@ func runForestLab(w: SdlWindow,assets: Assets,spec: ForestSpec): Unit {
                         case Key.Escape=>running=false
                         case Key.Tab=>top = !top; view.dirty=true
                         case Key.Home=>camera.fitScene(example.scene,Layout(Float32(w.width),Float32(w.height)).canvas); view.dirty=true
+                        case Key.Letter(70)=>camera.focusScene(example.scene); top=false; view.dirty=true
                         case Key.Letter(67)=>
                             if (labels.isEmpty()) { labels=example.largestLabels(clock) }
                             clusters = !clusters
@@ -91,11 +92,11 @@ class RenderLoopResult {
     let frames: FrameStats
     init(fps: Float64,frames: FrameStats) { this.fps=fps; this.frames=frames }
 }
-func measureStressLoop(w: SdlWindow,view: VoxelView,camera: Camera,font: PixelFont,top: Bool,changing: Bool,clock: PerformanceClock): RenderLoopResult {
+func measureStressLoop(w: SdlWindow,view: VoxelView,camera: Camera,font: PixelFont,top: Bool,changing: Bool,clock: PerformanceClock,panning!:Bool=false): RenderLoopResult {
     let samples=ArrayList<Float64>(); let meter=FrameMeter(); var wall=0.0
     for (i in 0..27) {
         checkBenchmarkEvents(w)
-        if (changing) { if (!top) { camera.rotate(2.0,0.0) }; view.dirty=true }
+        if (changing) { if (!top) { if(panning){camera.panX+=2.0; camera.panY+=1.0}else{camera.rotate(2.0,0.0)} }; view.dirty=true }
         let start=clock.ms(); if (i==3) { wall=start }
         view.prepare(camera,stressBox(w,view.scene,top),w,topDown:top,interacting:changing)
         stressFrame(w,view,font,top,if (changing) { "BENCH / Refresh" } else { "BENCH / Cached" },meter)
@@ -105,9 +106,10 @@ func measureStressLoop(w: SdlWindow,view: VoxelView,camera: Camera,font: PixelFo
 }
 class ForestBenchmark {
     let clock=PerformanceClock()
-    let rows=ArrayList<String>(["case,grid_x,grid_z,forest_cells,tree_instances,projection,window_w,window_h,render_w,render_h,field_ms,voxel_ms,connectivity_ms,largest_cluster,raw_voxel_mib,raster_median_ms,settle_ms,cached_loop_fps,cached_render_median_ms,refresh_loop_fps,refresh_render_median_ms,refresh_render_p95_ms,working_set_mib,peak_working_mib,commit_mib,vsync,driver"])
-    func measure(w: SdlWindow,assets: Assets,scene: Scene,name: String,occupied: Int64,field: Float64,voxel: Float64,connectivity: Float64,largest: Int64,top: Bool): Unit {
+    let rows=ArrayList<String>(["case,grid_x,grid_z,forest_cells,tree_instances,projection,window_w,window_h,render_w,render_h,field_ms,voxel_ms,connectivity_ms,largest_cluster,raw_voxel_mib,raster_median_ms,settle_ms,cached_loop_fps,cached_render_median_ms,refresh_loop_fps,refresh_render_median_ms,refresh_render_p95_ms,working_set_mib,peak_working_mib,commit_mib,vsync,driver,pan_loop_fps,pan_render_median_ms"])
+    func measure(w: SdlWindow,assets: Assets,scene: Scene,name: String,occupied: Int64,field: Float64,voxel: Float64,connectivity: Float64,largest: Int64,top: Bool,local!:Bool=false): Unit {
         checkBenchmarkEvents(w); let camera=Camera(); camera.fitScene(scene,Layout(Float32(w.width),Float32(w.height)).canvas)
+        if(local){camera.focusScene(scene)}
         let font=PixelFont(assets); let b=stressBox(w,scene,top)
         try (view=VoxelView(scene,assets)) {
             let native=canvasResolution(b,Float64(w.scale)*Float64(w.currentPixelDensity)); let samples=ArrayList<Float64>()
@@ -124,13 +126,14 @@ class ForestBenchmark {
             require(view.nativeReady(),"Native refinement did not finish"); let settle=clock.ms()-start
             let cached=measureStressLoop(w,view,camera,font,top,false,clock)
             let changing=measureStressLoop(w,view,camera,font,top,true,clock)
-            if (scene.nx==1536 && !top && w.width==1280) { view.prepare(camera,b,w,topDown:false,forceFull:true); stressFrame(w,view,font,false,"1536 / Native frame",FrameMeter(),capture:"artifacts/forest-stress-3d.png") }
+            let pan=if(local){measureStressLoop(w,view,camera,font,top,true,clock,panning:true)}else{RenderLoopResult(0.0,FrameStats([0.0]))}
+            if (scene.nx==1536 && !top && w.width==1280) { view.prepare(camera,b,w,topDown:false,forceFull:true); stressFrame(w,view,font,false,"1536 / Native frame",FrameMeter(),capture:if(local){"artifacts/forest-local-3d.png"}else{"artifacts/forest-stress-3d.png"}) }
             let memory=ProcessMemory(); let raster=FrameStats(samples.toArray())
             rows.add(name+",${scene.nx},${scene.nz},${occupied},${scene.trees},"+(if (top) { "top_down" } else { "3d" })+
                 ",${w.width},${w.height},${native.width},${native.height},"+numberText(field)+","+numberText(voxel)+","+numberText(connectivity)+",${largest},"+
-                numberText(Float64(scene.blocks.size*8)/1048576.0)+","+numberText(raster.median)+","+numberText(settle)+","+
+                numberText(Float64(scene.blocks.size)/1048576.0)+","+numberText(raster.median)+","+numberText(settle)+","+
                 numberText(cached.fps)+","+numberText(cached.frames.median)+","+numberText(changing.fps)+","+numberText(changing.frames.median)+","+numberText(changing.frames.p95)+","+
-                numberText(memory.workingMiB)+","+numberText(memory.peakWorkingMiB)+","+numberText(memory.commitMiB)+",${w.renderer.vsync()},"+w.renderer.driverName())
+                numberText(memory.workingMiB)+","+numberText(memory.peakWorkingMiB)+","+numberText(memory.commitMiB)+",${w.renderer.vsync()},"+w.renderer.driverName()+","+numberText(pan.fps)+","+numberText(pan.frames.median))
             File.writeTo("artifacts/forest-benchmark.csv",(String.join(rows.toArray(),delimiter:"\n")+"\n").toArray())
             println("${name} ${scene.nx} ${top}: trees ${scene.trees}; raster ${money(raster.median)}ms; cached ${money(cached.fps)} FPS; refresh ${money(changing.fps)} FPS; WS ${money(memory.workingMiB)} MiB")
         }
@@ -142,8 +145,10 @@ class ForestBenchmark {
         println("Built ${example.occupied} fuel cells, ${example.scene.trees} tree instances; field ${money(example.fieldMs)}ms, voxels ${money(example.voxelMs)}ms, connectivity ${money(example.connectivityMs)}ms")
         for (top in [false,true]) { measure(w,assets,example.scene,"forest",example.occupied,example.fieldMs,example.voxelMs,example.connectivityMs,example.largest,top) }
         if (size==1536) {
+            measure(w,assets,example.scene,"forest_local",example.occupied,example.fieldMs,example.voxelMs,example.connectivityMs,example.largest,false,local:true)
             w.setSize(2560,1380); w.refreshSize()
             for (top in [false,true]) { measure(w,assets,example.scene,"forest_fullscreen",example.occupied,example.fieldMs,example.voxelMs,example.connectivityMs,example.largest,top) }
+            measure(w,assets,example.scene,"forest_local_fullscreen",example.occupied,example.fieldMs,example.voxelMs,example.connectivityMs,example.largest,false,local:true)
             w.setSize(1280,860); w.refreshSize()
         }
     }
@@ -166,19 +171,29 @@ func measureWorkbench(w: SdlWindow,assets: Assets,clock: PerformanceClock): Unit
         for (size in [Size(1280.0,860.0),Size(2560.0,1380.0)]) {
             w.setSize(Int32(size.w),Int32(size.h)); w.refreshSize(); app.camera.reset()
             app.view.prepare(app.camera,Layout(size.w,size.h).canvas,w,forceFull:true)
-            for (changing in [false,true]) {
+            for (mode in 0..3) {
+                let changing=mode==1
+                if (mode==2) {
+                    let p=Project(); p.ignition=75; p.spreadProbability=1.0; p.burnSteps=3
+                    app.work.acceptLoaded(p,""); app.syncScene(); app.experiment.planned=true
+                    let run=app.experiment.create(p); for(_ in 0..12){run.advance()}; app.simPanel=true
+                }
                 let values=ArrayList<Float64>(); var wall=0.0
                 for (i in 0..27) {
                     checkBenchmarkEvents(w)
                     if (changing) { app.camera.rotate(2.0,0.0); app.view.dirty=true }
-                    let start=clock.ms(); if (i==3) { wall=start }; render(app,w)
+                    let start=clock.ms(); if (i==3) { wall=start }
+                    if(mode==2){let run=app.experiment.run.getOrThrow(); run.seek(1+i%max(1,run.snapshots.size-1)); app.refreshExperimentView(); app.clockNow=UInt64(i*80)}
+                    render(app,w)
                     if (i>=3) { values.add(clock.ms()-start) }; w.delay(12)
                 }
                 let stats=FrameStats(values.toArray()); let fps=24000.0/(clock.ms()-wall)
-                rows.add("${w.width},${w.height},"+(if (changing) { "camera_rotation" } else { "cached" })+","+numberText(fps)+","+numberText(stats.median)+","+numberText(stats.p95)+",${w.renderer.vsync()},"+w.renderer.driverName())
+                let name=if(mode==2){"fire_replay"}else if(changing){"camera_rotation"}else{"cached"}
+                rows.add("${w.width},${w.height},"+name+","+numberText(fps)+","+numberText(stats.median)+","+numberText(stats.p95)+",${w.renderer.vsync()},"+w.renderer.driverName())
                 File.writeTo("artifacts/forest-workbench.csv",(String.join(rows.toArray(),delimiter:"\n")+"\n").toArray())
-                println("Workbench ${w.width} ${changing}: ${money(fps)} FPS, render ${money(stats.median)}ms")
+                println("Workbench ${w.width} ${name}: ${money(fps)} FPS, render ${money(stats.median)}ms")
             }
+            app.experiment.run=None; app.work.acceptLoaded(Project(),""); app.syncScene(); app.simPanel=false
         }
     } finally { app.close(); w.setSize(1280,860); w.refreshSize() }
 }

@@ -46,3 +46,5 @@ artifacts/*
 !artifacts/forest-workbench.csv
 !artifacts/forest-hardware.json
 !artifacts/forest-default-heap.csv
+!artifacts/forest-baseline.csv
+!artifacts/forest-workbench-baseline.csv

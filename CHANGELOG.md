@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.4.2 — Chunk skipping and viewport rendering (2026-11-02)
+
+- Pack voxel materials into bytes and maintain 8³ chunk occupancy across edits; skip empty chunks while preserving reference hit ordering at boundaries.
+- Remove per-ray arrays, batch locked RGBA row writes, compute large batches in four joined CPU tasks and reuse pixel buffers. Keep SDL operations on the owning thread.
+- Reject pixels outside conservative projected scene bounds. Default the large-forest lab to a local 3D view, with separate overview/local shortcuts and measured panning cases.
+- Add real fire-replay workload measurements, preserve the v0.4.1 benchmark baseline, and validate 247 native checks including 41,472 reference rays and serial/parallel pixel equivalence. GPU chunk meshes and P5 remain deferred; see docs/RENDERING_OPTIMIZATION.md.
+
 ## v0.4.1 — FPS display and large-forest diagnostics (2026-11-02)
 
 - Add an optional top-right FPS counter in Esc / Display Options, with bilingual labels, local persistence and legacy-settings compatibility. Count actual elapsed frame time including stalls and waits.
