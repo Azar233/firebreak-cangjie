@@ -4,6 +4,11 @@ tools/magic-probe/target/
 target/
 .codegraph/
 /TODO.md
+/AGENTS.md
+/CHANGELOG.md
+/PROJECT_PLAN.md
+/README.en.md
+/docs/
 /.tools/
 /.reference/
 vendor/SDL/.sdl3/

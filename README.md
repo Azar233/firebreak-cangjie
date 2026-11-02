@@ -9,8 +9,6 @@
   标注林地、设计隔离带，在相同起火情景下比较处理前后的火势与成本。
 </p>
 
-<p align="right">简体中文 · <a href="README.en.md">English</a></p>
-
 <p align="center">
   <img src="https://img.shields.io/badge/Cangjie-1.0.5-3277AE?style=flat-square" alt="Cangjie 1.0.5">
   <img src="https://img.shields.io/badge/SDL-3-568B42?style=flat-square" alt="SDL 3">
@@ -19,7 +17,7 @@
 </p>
 
 <p align="center">
-  <a href="#功能">功能</a> · <a href="#界面预览">界面预览</a> · <a href="#运行">运行</a> · <a href="#技术与文档">技术与文档</a>
+  <a href="#功能">功能</a> · <a href="#界面预览">界面预览</a> · <a href="#运行">运行</a> · <a href="#技术说明">技术说明</a>
 </p>
 
 ## 功能
@@ -64,10 +62,10 @@ $env:MINECRAFT_ASSETS = 'D:\path\to\minecraft-assets'
 
 首次体验可打开 [双林地窄桥示例](examples/connector-camp.firebreak)，编辑处理带后使用“火势实验”或“方案对比”。**Esc** 打开菜单，**H** 切换树冠，右键旋转、中键平移、滚轮缩放。
 
-## 技术与文档
+## 技术说明
 
 业务、仿真与图形主机代码使用仓颉，SDL3 提供窗口与界面；D3D11/HLSL 在 GPU 上执行区块跳过、体素射线遍历及表面着色。运行 `./build.ps1 -Verify` 可执行原生逻辑与 GPU 检查。
 
 项目将渗流连通性与离散传播用于方案比较。正式规划网格为 **24×20**，采用四邻接、无风的简化模型；输出用于教学与相对方案分析，不代表现实火灾预测。大森林示例是独立的渲染诊断。
 
-[模型说明](docs/P2_MODEL.md) · [方案评估](docs/P3_EVALUATION.md) · [预算规划](docs/P4_PLANNING.md) · [GPU 渲染](docs/GPU_RENDERING.md) · [平滑光照](docs/SMOOTH_LIGHTING.md) · [第三方资源](THIRD_PARTY.md)
+[第三方资源与来源说明](THIRD_PARTY.md)
