@@ -81,6 +81,7 @@ class App {
     let work=Workbench()
     let camera=Camera()
     let assets: Assets
+    let frameMeter=FrameMeter()
     let font: PixelFont
     let view: VoxelView
     let preferences: Preferences
@@ -647,6 +648,7 @@ class App {
             case 90=>view.showCanopy = !view.showCanopy; view.dirty=true
             case 91=>mapMode = !mapMode; referenceMode=false; view.dirty=true
             case 92=>camera.reset(); view.dirty=true
+            case 100=>preferences.setShowFps(!preferences.showFps)
             case 93=>saveFromMenu(window,true)
             case 94=>exitReady=true
             case 95=>menuOpen=quitReturnMenu; menuPage=quitReturnPage; menuFocus=quitReturnFocus

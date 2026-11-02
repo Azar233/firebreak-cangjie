@@ -41,3 +41,8 @@ artifacts/*
 !artifacts/menu-checks.log
 
 !artifacts/p4-checks.log
+!artifacts/forest-checks.log
+!artifacts/forest-benchmark.csv
+!artifacts/forest-workbench.csv
+!artifacts/forest-hardware.json
+!artifacts/forest-default-heap.csv

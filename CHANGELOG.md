@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.4.1 — FPS display and large-forest diagnostics (2026-11-02)
+
+- Add an optional top-right FPS counter in Esc / Display Options, with bilingual labels, local persistence and legacy-settings compatibility. Count actual elapsed frame time including stalls and waits.
+- Add a deterministic, independent forest diagnostic and native benchmark spanning 128–1536 cells per side. Reuse existing tree geometry and renderer; preserve the 24×20 planning/fire contracts and defer P5.
+- Record a default-heap allocation failure at 1536 and complete testing with a launcher-scoped 2GB heap. 109,253 tree instances render successfully, but rotation remains about 13–17 FPS; document the limits rather than claiming smooth large-scale rendering.
+- 238 native checks passed. Include CSV measurements, hardware summary and representative native captures; see docs/FOREST_STRESS_TEST.md.
+
 ## v0.4.0 — P4 constrained candidate planning (2026-11-02)
 
 - Generate up to 14 feasible road-adjacent, target-perimeter and articulation-cell additions while preserving existing treatment and enforcing calibration, target/exclusion and total-budget constraints.

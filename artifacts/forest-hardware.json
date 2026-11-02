@@ -1,0 +1,14 @@
+﻿{
+    "gpu":  [
+                "GameViewer Virtual Display Adapter",
+                "Intel(R) Iris(R) Xe Graphics",
+                "NVIDIA GeForce RTX 4060 Laptop GPU"
+            ],
+    "cpu":  [
+                {
+                    "Name":  "13th Gen Intel(R) Core(TM) i7-13700H",
+                    "NumberOfLogicalProcessors":  20
+                }
+            ],
+    "ramGiB":  15.64
+}

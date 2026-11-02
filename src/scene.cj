@@ -31,15 +31,27 @@ class Camera {
     var zoom: Float64 = 20.0
     var panX: Float64 = 0.0
     var panY: Float64 = 0.0
+    var centerX: Float64 = 12.0
+    var centerZ: Float64 = 10.0
+    var distance: Float64 = 60.0
+    var minimumZoom: Float64 = 8.0
+    var maximumZoom: Float64 = 40.0
     func reset(): Unit { yaw=0.64; pitch=0.67; zoom=20.0; panX=0.0; panY=0.0 }
     func rotate(dx: Float64,dy: Float64): Unit {
         yaw += dx*0.008; pitch=clamp(pitch+dy*0.006,0.25,1.5707963267948966)
     }
-    func scale(wheel: Float64): Unit { zoom=clamp(zoom*1.12**clamp(wheel,-4.0,4.0),8.0,40.0) }
+    func scale(wheel: Float64): Unit { zoom=clamp(zoom*1.12**clamp(wheel,-4.0,4.0),minimumZoom,maximumZoom) }
     func right(): Vec { Vec(cos(yaw),0.0,-sin(yaw)) }
     func up(): Vec { Vec(-sin(yaw)*sin(pitch),cos(pitch),-cos(yaw)*sin(pitch)) }
     func outward(): Vec { Vec(sin(yaw)*cos(pitch),sin(pitch),cos(yaw)*cos(pitch)) }
-    func target(): Vec { Vec(12.0,1.5,10.0) }
+    func target(): Vec { Vec(centerX,1.5,centerZ) }
+    func fitScene(scene: Scene,b: Rect): Unit {
+        centerX=Float64(scene.nx)/2.0; centerZ=Float64(scene.nz)/2.0
+        distance=Float64(max(scene.nx,scene.nz)*2+scene.ny*2)
+        yaw=0.64; pitch=0.67; panX=0.0; panY=0.0
+        zoom=min(Float64(b.w),Float64(b.h))*0.7/Float64(max(scene.nx,scene.nz))
+        minimumZoom=zoom/4.0; maximumZoom=40.0
+    }
     func project(p: Vec,b: Rect): Point {
         let d=p.sub(target())
         return Point(b.centerX()+Float32(panX+d.dot(right())*zoom),b.centerY()+Float32(panY-d.dot(up())*zoom))
@@ -47,20 +59,25 @@ class Camera {
     func ray(x: Float64,y: Float64,b: Rect): Ray {
         let sx=(x-Float64(b.centerX())-panX)/zoom
         let sy=-(y-Float64(b.centerY())-panY)/zoom
-        return Ray(target().add(outward().mul(60.0)).add(right().mul(sx)).add(up().mul(sy)),outward().mul(-1.0))
+        return Ray(target().add(outward().mul(distance)).add(right().mul(sx)).add(up().mul(sy)),outward().mul(-1.0))
     }
 }
 
 // 0 air, 1 grass, 2 dirt, 3 oak log, 4 leaves, 5 stone, 6 planks, 7 brick, 8 path.
 class Scene {
-    let nx: Int64 = 24
-    let ny: Int64 = 14
-    let nz: Int64 = 20
-    let blocks=Array<Int64>(24*14*20,repeat: 0)
-    let heights=Array<Int64>(24*20,repeat: 0)
-    let canopyColumns=Array<Bool>(24*20,repeat:true)
+    let nx: Int64
+    let ny: Int64
+    let nz: Int64
+    let blocks: Array<Int64>
+    let heights: Array<Int64>
+    let canopyColumns: Array<Bool>
     var trees: Int64 = 0
-    init() {
+    init(nx!: Int64=24,nz!: Int64=20,ny!: Int64=14,demo!: Bool=true) {
+        require(nx>0 && nx<=2048 && nz>0 && nz<=2048 && ny>=8 && ny<=64 && nx*nz*ny<=67108864,"Scene dimensions exceed stress-test allocation bound")
+        require(!demo || (nx==24 && nz==20 && ny==14),"Demo scene requires the original dimensions")
+        this.nx=nx; this.ny=ny; this.nz=nz
+        blocks=Array<Int64>(nx*ny*nz,repeat:0); heights=Array<Int64>(nx*nz,repeat:0); canopyColumns=Array<Bool>(nx*nz,repeat:true)
+        if (!demo) { return }
         for (z in 0..nz) { for (x in 0..nx) {
             let h=if (x>15 && z>12) { 3 } else if (x>12 && z>10) { 2 } else { 1 }
             heights[z*nx+x]=h

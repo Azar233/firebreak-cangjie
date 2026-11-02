@@ -36,13 +36,17 @@ class VoxelView <: Resource {
     var lastChange: UInt64=0
     var needsFull=true
     var topDown=false
-    var fireAge=Array<Int64>(CELL_COUNT,repeat:0)
-    var burnStages=Array<Int64>(CELL_COUNT,repeat:0)
-    var clusterLabels=Array<Int64>(CELL_COUNT,repeat:-1)
-    init(scene: Scene,assets: Assets) { this.scene=scene; this.assets=assets }
+    var fireAge: Array<Int64>
+    var burnStages: Array<Int64>
+    var clusterLabels: Array<Int64>
+    init(scene: Scene,assets: Assets) {
+        this.scene=scene; this.assets=assets
+        fireAge=Array<Int64>(scene.nx*scene.nz,repeat:0); burnStages=Array<Int64>(scene.nx*scene.nz,repeat:0)
+        clusterLabels=Array<Int64>(scene.nx*scene.nz,repeat:-1)
+    }
     func setFireState(age: Array<Int64>,duration: Int64): Unit {
-        require(age.size==CELL_COUNT && duration>=1 && duration<=8,"Invalid display fire state")
-        fireAge=age; burnStages=Array<Int64>(CELL_COUNT,{i => burnVisualStage(age[i],duration)}); dirty=true
+        require(age.size==scene.nx*scene.nz && duration>=1 && duration<=8,"Invalid display fire state")
+        fireAge=age; burnStages=Array<Int64>(age.size,{i => burnVisualStage(age[i],duration)}); dirty=true
     }
     func fireAnchor(cell: Int64): Vec {
         let x=cell%scene.nx; let z=cell/scene.nx
@@ -72,7 +76,7 @@ class VoxelView <: Resource {
     func rows(surface: Surface,camera: Camera,b: Rect,width: Int64,height: Int64,from: Int64,to: Int64): Unit {
         // Orthographic rays share direction and basis; compute trigonometry once per batch.
         let right=camera.right(); let up=camera.up(); let outward=camera.outward()
-        let base=camera.target().add(outward.mul(60.0)); let direction=outward.mul(-1.0)
+        let base=camera.target().add(outward.mul(camera.distance)); let direction=outward.mul(-1.0)
         for (y in from..to) { for (x in 0..width) {
             if (topDown) {
                 surface.writePixel(Int32(x),Int32(y),color(overheadRay(scene,(Float64(x)+0.5)/Float64(width),(Float64(y)+0.5)/Float64(height))))

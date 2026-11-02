@@ -157,6 +157,7 @@ func drawSimulationPanel(app: App,l: Layout): Unit {
     mcButton(app,l,48,if (app.simParameters) { app.t("返回火势实验","Back to Trial") } else { app.t("传播参数与 seed","Experiment Settings") })
 }
 func render(app: App,window: SdlWindow,capture!: String=""): Unit {
+    app.frameMeter.tick(app.frameMeter.clock.ms())
     let r=window.renderer; let p=app.work.project
     let l=Layout(Float32(window.width),Float32(window.height))
     let reference=app.mapMode && app.referenceMode && app.reference.isSome()
@@ -233,6 +234,7 @@ func render(app: App,window: SdlWindow,capture!: String=""): Unit {
     }
     r.pushClip(Rect(20.0,l.height-25.0,l.width-40.0,22.0)); uiText(app,l,if (app.startCell>=0) { app.previewText() } else { app.message },20.0,l.height-23.0,color:Color.rgb(222,220,192)); r.popClip()
     if (app.menuOpen) { drawMenu(app,l,pixelRatio:Float32(window.scale)*Float32(window.currentPixelDensity)) }
+    if (app.preferences.showFps) { drawFps(app.font,app.frameMeter,l.width) }
     r.endScene()
     if (!capture.isEmpty()) {
         r.captureBmp(capture+".bmp")
@@ -241,3 +243,8 @@ func render(app: App,window: SdlWindow,capture!: String=""): Unit {
     r.present()
 }
 
+
+func drawFps(font: PixelFont,meter: FrameMeter,width: Float32): Unit {
+    font.assets.r.fill(Rect(width-130.0,4.0,122.0,22.0),Color.rgba(0,0,0,210))
+    font.draw(if (meter.fps>0.0) { "FPS: "+meter.fps.format(".0") } else { "FPS: --" },width-122.0,7.0)
+}
