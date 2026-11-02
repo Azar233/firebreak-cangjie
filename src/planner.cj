@@ -137,6 +137,7 @@ class PlanSearchProgress {
     }
 }
 class PlanSearchJob {
+    let abort:()->Bool
     let source: String
     let revision: Int64
     let training: Array<Scenario>
@@ -149,11 +150,12 @@ class PlanSearchJob {
     var cancelled=false
     var error=""
     var result: ?PlanSearchResult=None
-    init(p: Project,revision: Int64) {
+    init(p: Project,revision: Int64,abort!:()->Bool={=>false}) {
+        this.abort=abort
         p.validate(); require(p.metersWide>0.0,"请先标定场地宽度再生成建议")
         source=p.text(); this.revision=revision; training=makeScenarios(p,8); review=reviewScenarios(p,8)
     }
-    func isCancelled(): Bool { synchronized(lock) { return cancelled } }
+    func isCancelled(): Bool { synchronized(lock) { return cancelled || abort() } }
     func cancel(): Unit { synchronized(lock) { cancelled=true; if (let Some(job) <- active) { job.cancel() } } }
     func progress(): PlanSearchProgress { synchronized(lock) { return PlanSearchProgress(completed,total,done,cancelled,error,result) } }
     func assess(p: Project,scenarios: Array<Scenario>): PlanAssessment {

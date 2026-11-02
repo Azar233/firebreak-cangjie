@@ -44,6 +44,7 @@ func drawTerminal(app: App,l: Layout,w: SdlWindow): Unit {
     if(t.cachedRevision!=t.revision || t.cachedWidth!=m.output.w || t.cachedScale!=s){
         t.cachedLines.clear()
         for(message in t.messages){for(row in terminalRows(f,(if(message.user){"> "}else{""})+message.text,m.output.w,s,user:message.user)){t.cachedLines.add(row)}}
+        if(!t.streamText.isEmpty()){for(row in terminalRows(f,t.streamText,m.output.w,s)){t.cachedLines.add(row)}}
         t.cachedRevision=t.revision;t.cachedWidth=m.output.w;t.cachedScale=s
     }
     let visible=max(1,Int64(m.output.h/m.lineHeight));t.scroll=max(0,min(max(0,t.cachedLines.size-visible),t.scroll))
@@ -81,8 +82,8 @@ func drawTerminal(app: App,l: Layout,w: SdlWindow): Unit {
     terminalButton(app,m.control(0),"",s);terminalButton(app,m.control(1),if(t.quick){"+"}else{"-"},s)
     terminalButton(app,m.control(2),app.t("复制记录","Copy log"),s)
     terminalButton(app,m.control(3),app.t("设置","Settings"),s)
-    terminalButton(app,m.control(4),app.t("发送","Send"),s)
-    terminalButton(app,m.control(5),app.t("停止","Stop"),s,enabled:false)
+    terminalButton(app,m.control(4),app.t("发送","Send"),s,enabled:app.agentChat.isNone())
+    terminalButton(app,m.control(5),app.t("停止","Stop"),s,enabled:app.agentChat.isSome())
     // Power indicator: amber means no configured model, not an active task.
     let power=m.control(0)
     r.strokeRect(Rect(power.x+9.0*s,power.y+10.0*s,14.0*s,14.0*s),Pen(width:2.0*s,color:Color.rgb(132,50,35)))
@@ -97,6 +98,7 @@ func terminalAction(app: App,id: Int64): Unit {
         case 2=>Clipboard.setText(t.transcript())
         case 3=>t.editor.composition="";app.openMenu();openAgentSettings(app)
         case 4=>if(t.editor.composition.isEmpty()){submitTerminal(app)}
+        case 5=>if(let Some(job)<-app.agentChat){job.cancel()}
         case _=>()
     }
 }

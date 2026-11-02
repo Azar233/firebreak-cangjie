@@ -220,7 +220,7 @@ PASS Fire-only GPU updates replace compact column state without uploading geomet
 PASS Scene revision uploads changed geometry, occupancy and columns consistently
 PASS GPU viewport resize replaces target and supports odd workgroup boundaries
 PASS Native GPU timestamp queries measure completed dispatch and presentation copy
-GPU adapter: NVIDIA GeForce RTX 4060 Laptop GPU; GPU completed 0.08 ms
+GPU adapter: NVIDIA GeForce RTX 4060 Laptop GPU; GPU completed 0.07 ms
 PASS Switching to CPU releases GPU resources and renders a complete CPU frame
 PASS Switching back recreates a working GPU backend
 PASS Unavailable GPU keeps an explicit functional CPU fallback
@@ -298,6 +298,21 @@ PASS Quick and computer views share the same editor and transcript
 PASS Terminal transcript evicts oldest entries at its display bound
 PASS Terminal wheel scrolls retained conversation instead of the world camera
 PASS Focus loss clears transient composition while preserving the draft
+PASS SSE decoding preserves split Chinese/emoji, CRLF, heartbeats, usage-only chunks and DONE
+PASS Malformed SSE fails instead of becoming a model answer
+PASS Agent invokes real registered CangjieMagic site and planning tools
+PASS Successful agent answer retains complete evaluated candidates and conversation
+PASS Framework file imports are disabled, including the local API configuration
+PASS Model and planning tools cannot alter the source project
+PASS Agent candidate map preview preserves the scene until manual apply
+PASS Manual apply commits agent candidate as one undoable edit
+PASS Undo restores the original scene after manual agent candidate apply
+PASS Revision changes invalidate old agent previews even after undo
+PASS Cancelled agent cannot begin tools or publish partial candidates
+PASS Changing API settings invalidates the active agent request
+PASS Expired agent requests cannot call tools and report a timeout
+PASS Structured spending limits reject negative and over-budget requests before evaluation
+PASS A zero additional spending cap yields no paid candidates without changing the project
 PASS 72 world/screen/ground round trips across rotation, top view, zoom and pan
 PASS zoom upper bound
 PASS zoom lower bound
@@ -332,7 +347,7 @@ PASS interaction publishes preview and defers native refinement
 PASS idle refinement advances in bounded row batches
 PASS camera change cancels stale refinement surface
 PASS normal idle ticks replace preview with complete native frame
-P0 first scene rasterization: 24 ms; cached while camera is unchanged
+P0 first scene rasterization: 33 ms; cached while camera is unchanged
 PASS native SDL screenshot generated
 PASS bitmap font pages and UI textures load
 PASS unchanged camera reuses rendered scene texture

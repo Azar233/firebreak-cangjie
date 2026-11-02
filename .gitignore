@@ -70,4 +70,6 @@ artifacts/*
 !artifacts/meadow-grass-checks.log
 !artifacts/p5-terminal-checks.log
 !artifacts/p5-agent-transport.log
+!artifacts/p5-agent-checks.log
+!artifacts/p5-agent-live-checks.log
 artifacts/readme-home-*.png

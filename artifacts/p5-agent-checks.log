@@ -1,0 +1,17 @@
+PASS SSE decoding preserves split Chinese/emoji, CRLF, heartbeats, usage-only chunks and DONE
+PASS Malformed SSE fails instead of becoming a model answer
+PASS Agent invokes real registered CangjieMagic site and planning tools
+PASS Successful agent answer retains complete evaluated candidates and conversation
+PASS Framework file imports are disabled, including the local API configuration
+PASS Model and planning tools cannot alter the source project
+PASS Agent candidate map preview preserves the scene until manual apply
+PASS Manual apply commits agent candidate as one undoable edit
+PASS Undo restores the original scene after manual agent candidate apply
+PASS Revision changes invalidate old agent previews even after undo
+PASS Cancelled agent cannot begin tools or publish partial candidates
+PASS Changing API settings invalidates the active agent request
+PASS Expired agent requests cannot call tools and report a timeout
+PASS Structured spending limits reject negative and over-budget requests before evaluation
+PASS Planning tool rejects textual spending values instead of silently coercing arguments
+PASS Planning tool rejects unknown parameters at its executable boundary
+PASS A zero additional spending cap yields no paid candidates without changing the project

@@ -99,6 +99,7 @@ class App {
     let terminal=AgentTerminal()
     let agentSettings: DeepSeekSettings
     var agentConnection: ?AgentConnectionJob=None
+    var agentChat:?AgentChatJob=None
     let agentModelEditor=TerminalEditor()
     let agentKeyEditor=TerminalEditor()
     var agentField: Int64= -1
@@ -757,5 +758,5 @@ class App {
         }
         return !exitReady
     }
-    func close(): Unit { if (let Some(job) <- searchJob) { job.cancel() }; if (let Some(job) <- evalJob) { job.cancel() }; clearComparison(); view.close(); if (let Some(t) <- reference) { t.close() }; reference=None }
+    func close(): Unit { if(let Some(job)<-agentChat){job.cancel();job.wait()}; if (let Some(job) <- searchJob) { job.cancel() }; if (let Some(job) <- evalJob) { job.cancel() }; clearComparison(); view.close(); if (let Some(t) <- reference) { t.close() }; reference=None }
 }

@@ -7,6 +7,7 @@ try {
     if (!$sdk -or !(Test-Path "$sdk/envsetup.ps1")) { throw 'Cangjie SDK 1.0.5 required. Set CANGJIE_HOME.' }
     . "$sdk/envsetup.ps1"
     & './tools/prepare-runtime.ps1'
+    & './tools/prepare-magic.ps1'
     $stdx = (Resolve-Path '../.tools/stdx-1.0.5.1/windows_x86_64_cjnative/dynamic/stdx').Path
     $env:Path = $stdx + ';' + $env:Path
     $manifest = Get-Content -LiteralPath 'assets/manifest.json' -Raw -Encoding utf8 | ConvertFrom-Json
@@ -34,8 +35,13 @@ try {
     & './tools/prepare-grass-textures.ps1'
     & "$sdk/tools/bin/cjpm.exe" build
     if ($LASTEXITCODE -ne 0) { throw 'Firebreak build failed.' }
+    # With the Magic dependency cjpm names the entry binary after the package.
+    # Preserve the existing launcher/verification executable contract.
+    Copy-Item -LiteralPath 'target/release/bin/firebreak.exe' -Destination 'target/release/bin/main.exe' -Force
     & './tools/set-app-icon.ps1' -SourceImage 'assets/minecraft/textures/block/oak_sapling.png' -Executable 'target/release/bin/main.exe'
     Get-ChildItem -LiteralPath 'vendor/SDL/.sdl3' -Filter '*.dll' | Copy-Item -Destination 'target/release/bin' -Force
+    Get-ChildItem -LiteralPath 'target/release/magic' -Filter '*.dll' -Recurse | Copy-Item -Destination 'target/release/bin' -Force
+    Copy-Item -LiteralPath '../.reference/CangjieMagic/LICENSE' -Destination 'target/release/bin/CangjieMagic-LICENSE.txt' -Force
     if ($Verify) {
         $previousErrorAction = $ErrorActionPreference
         try {

@@ -35,7 +35,7 @@ func verifyTerminal(app: App,w: SdlWindow): Unit {
     let t=app.terminal
     pass(t.messages.size==3 && t.messages[2].text.contains("24 x 20") && t.editor.text.isEmpty(),"Local site command reports actual project state without a model call")
     event(app,w,UiEvent.TextInput("请在预算内保护营地"));terminalKey(app,w,Key.Enter)
-    pass(t.messages[t.messages.size-1].text.contains("尚未发送"),"Unconfigured natural-language input is explicitly retained locally and never presented as an AI answer")
+    pass(t.messages[t.messages.size-1].text.contains("API Key"),"Unconfigured natural-language input is explicitly retained locally and never presented as an AI answer")
     terminalKey(app,w,Key.Up);pass(t.editor.text=="请在预算内保护营地","Terminal input history recalls the previous request")
     terminalKey(app,w,Key.Down);pass(t.editor.text.isEmpty(),"Input history restores the pending empty draft")
     event(app,w,UiEvent.TextInput("中文草稿"));event(app,w,UiEvent.TextEditing("拼音",0,2));let count=t.messages.size

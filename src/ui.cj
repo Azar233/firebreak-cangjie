@@ -159,6 +159,7 @@ func drawSimulationPanel(app: App,l: Layout): Unit {
 }
 func render(app: App,window: SdlWindow,capture!: String=""): Unit {
     pollAgentConnection(app)
+    pollAgentChat(app)
     app.frameMeter.tick(app.frameMeter.clock.ms())
     let r=window.renderer; let p=app.work.project
     let l=Layout(Float32(window.width),Float32(window.height))

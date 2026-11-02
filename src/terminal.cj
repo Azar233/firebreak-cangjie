@@ -41,6 +41,13 @@ class TerminalMessage {
     init(text: String,user!:Bool=false){this.text=text;this.user=user}
 }
 class AgentTerminal {
+    var epoch:Int64=0
+    var seenEvents:Int64=0
+    var streamText=""
+    var rounds=ArrayList<(String,String)>()
+    var agentPlan:?PlanSearchResult=None
+    var planSource=""
+    var planRevision:Int64= -1
     var open=false
     var quick=false
     let editor=TerminalEditor()
@@ -119,7 +126,7 @@ class TerminalLayout {
             case _=>Rect(screen.right()-90.0*scale,input.y+Float32(id-4)*36.0*scale,78.0*scale,30.0*scale)
         }
     }
-    func hit(x: Float32,y: Float32): Int64 {for(id in 0..5){if(control(id).contains(x,y)){return id}};return -1}
+    func hit(x: Float32,y: Float32): Int64 {for(id in 0..6){if(control(id).contains(x,y)){return id}};return -1}
 }
 
 func openTerminal(app: App,quick: Bool): Unit {
@@ -127,23 +134,26 @@ func openTerminal(app: App,quick: Bool): Unit {
     let t=app.terminal;t.open=true;t.quick=quick;t.pressed = -1;t.editor.composition=""
     app.painting=false;app.dragging=false;app.panning=false;app.pressed = -1;app.hover = -1
     if(let Some(run)<-app.experiment.run){run.running=false};if(let Some(pair)<-app.pairView){pair.playing=false}
-    if(t.messages.isEmpty()){t.append(app.t("断火线研究员终端\n模型未连接。/help 查看命令；/site 读取当前场地。","Firebreak researcher terminal\nModel not connected. /help for commands; /site reads the site."))}
+    if(t.messages.isEmpty()){t.append(app.t("断火线研究员终端\n/help 查看命令；/site 读取场地；/preview 预览建议。","Firebreak researcher terminal\n/help for commands; /site reads the site; /preview opens suggestions."))}
 }
 func submitTerminal(app: App): Unit {
     let t=app.terminal;let text=t.editor.text
+    if(text!="/stop" && text!="/clear" && app.agentChat.isSome()){return}
     var meaningful=false;for(ch in text.runes()){if(UInt32(ch)>32){meaningful=true}}
     if(!meaningful){return}
     t.history.add(text);while(t.history.size>64){t.history.remove(at:0)};t.historyAt=t.history.size;t.savedDraft=""
     t.append(text,user:true);t.editor.set("");t.inputFirst=0
     match(text){
-        case "/help"=>t.append(app.t("本地命令：/site 当前场地；/clear 清空记录。\nEnter 发送；Shift+Enter 换行；↑↓ 历史；Ctrl+A/C/V 编辑；Ctrl+Shift+C 复制记录。\n模型尚未连接，自然语言请求不会执行规划或网络调用。","Local commands: /site, /clear.\nEnter sends; Shift+Enter inserts a line; Up/Down history; Ctrl+A/C/V edit; Ctrl+Shift+C copies the transcript.\nModel not connected; natural-language requests do not run planning or network calls."))
+        case "/help"=>t.append(app.t("本地命令：/site 当前场地；/clear 清空记录。\nEnter 发送；Shift+Enter 换行；↑↓ 历史；Ctrl+A/C/V 编辑；Ctrl+Shift+C 复制记录。\n填写 API Key 后可用自然语言对话；/stop 停止；/preview 预览候选。","Local commands: /site, /clear.\nEnter sends; Shift+Enter inserts a line; Up/Down history; Ctrl+A/C/V edit; Ctrl+Shift+C copies the transcript.\nWith a saved API key, chat naturally; /stop cancels; /preview opens candidates."))
         case "/site"=>
             let p=app.work.project;var forest: Int64=0;var targets: Int64=0;var forbidden: Int64=0
             for(i in 0..CELL_COUNT){if(p.land[i]==1){forest++};if(p.targets[i]!=0){targets++};if(p.forbidden[i]!=0){forbidden++}}
             t.append(app.t("本地场地数据（非模型回答）","Local site data (not a model response)")+"\n24 x 20 | revision ${app.work.revision}\n"+
                 app.t("林地 / 保护 / 禁区：","Forest / protected / excluded: ")+"${forest} / ${targets} / ${forbidden}\n"+
                 app.t("预算 / 当前费用：","Budget / treatment cost: ")+money(p.budget)+" / "+money(p.cost()))
-        case "/clear"=>t.messages.clear();t.revision++;t.append(app.t("记录已清空。模型未连接。","Transcript cleared. Model not connected."))
-        case _=>t.append(if(app.agentSettings.connectionState==2){app.t("API 连接已验证，但对话工具链尚未接入；本条内容尚未发送。","API verified, but the conversation toolchain is not connected; this message was not sent.")}else{app.t("模型未连接：本条内容仅保留在会话中，尚未发送。可使用 /site 查看真实场地数据。","Model not connected: this message is retained locally and was not sent. Use /site for actual site data.")})
+        case "/stop"=>if(let Some(job)<-app.agentChat){job.cancel()}
+        case "/preview"=>previewAgentPlan(app)
+        case "/clear"=>if(let Some(job)<-app.agentChat){job.cancel()};t.epoch++;t.rounds.clear();t.agentPlan=None;t.streamText="";t.messages.clear();t.revision++;t.append(app.t("会话已清空。","Conversation cleared."))
+        case _=>startAgentChat(app,text)
     }
 }

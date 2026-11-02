@@ -30,4 +30,20 @@ $old = './libs/cangjie-stdx-windows-x64-1.0.0.1/windows_x86_64_llvm/dynamic/stdx
 $new = '../../.tools/stdx-1.0.5.1/windows_x86_64_cjnative/dynamic/stdx'
 if (!$text.Contains($old) -and !$text.Contains($new)) { throw 'Unexpected CangjieMagic stdx configuration; inspect manually.' }
 if ($text.Contains($old)) { [IO.File]::WriteAllText($file, $text.Replace($old,$new), [Text.UTF8Encoding]::new($false)) }
-Write-Output "Prepared CangjieMagic $pinnedCommit with stdx 1.0.5.1. Source implementation unchanged."
+# Public factories for the pinned framework's protected streaming constructors.
+# Keep its transport unused: Firebreak retains native Windows TLS validation.
+$interop = @'
+package magic.core.model
+import magic.core.message.Message
+public func firebreakChunk(text: String, done!: Bool = false): AsyncChatChunk {
+    AsyncChatChunk(message: Message.assistant(text), done: done)
+}
+public func firebreakStream(model: String, chunks: Iterator<AsyncChatChunk>): AsyncChatResponse {
+    AsyncChatResponse(model, chunks)
+}
+'@
+$interopPath = Join-Path $magic 'src/core/model/firebreak_interop.cj'
+if (!(Test-Path -LiteralPath $interopPath) -or [IO.File]::ReadAllText($interopPath) -ne $interop) {
+    [IO.File]::WriteAllText($interopPath, $interop, [Text.UTF8Encoding]::new($false))
+}
+Write-Output "Prepared CangjieMagic $pinnedCommit with stdx 1.0.5.1 and streaming constructor factories."
