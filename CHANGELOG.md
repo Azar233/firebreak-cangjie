@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.4.3 — Native GPU voxel rendering (2026-11-02)
+
+- Add a real D3D11 compute backend through public SDL device/texture interop, with Cangjie host code and an independent HLSL two-level voxel kernel. Preserve original MC alpha textures, damage stages and overlays.
+- Reuse uploaded geometry during camera motion; separate packed fire/cluster state updates. Render native canvas pixels during interaction without CPU image readback or progressive previews.
+- Add a persisted GPU/Auto versus CPU menu switch, actual backend/fallback status, resource lifecycle checks, real adapter identification and completed GPU timestamp measurements.
+- Validate 260 native checks including GPU pixel readback, state/geometry invalidation, resizing, fallback and menu integration. Record same-forest GPU/CPU comparisons and real fire replay; see docs/GPU_RENDERING.md. P5 remains deferred.
+
 ## v0.4.2 — Chunk skipping and viewport rendering (2026-11-02)
 
 - Pack voxel materials into bytes and maintain 8³ chunk occupancy across edits; skip empty chunks while preserving reference hit ordering at boundaries.

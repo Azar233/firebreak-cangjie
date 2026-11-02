@@ -79,6 +79,7 @@ class Scene {
     let heights: Array<Int64>
     let canopyColumns: Array<Bool>
     var trees: Int64 = 0
+    var revision: Int64=0
     init(nx!: Int64=24,nz!: Int64=20,ny!: Int64=14,demo!: Bool=true) {
         require(nx>0 && nx<=2048 && nz>0 && nz<=2048 && ny>=8 && ny<=64 && nx*nz*ny<=67108864,"Scene dimensions exceed stress-test allocation bound")
         require(!demo || (nx==24 && nz==20 && ny==14),"Demo scene requires the original dimensions")
@@ -106,13 +107,15 @@ class Scene {
     func inside(x: Int64,y: Int64,z: Int64): Bool { x>=0 && x<nx && y>=0 && y<ny && z>=0 && z<nz }
     func get(x: Int64,y: Int64,z: Int64): Int64 { if (inside(x,y,z)) { Int64(blocks[index(x,y,z)]) } else { 0 } }
     func chunkIndex(x: Int64,y: Int64,z: Int64): Int64 { ((z/8)*chunksY+y/8)*chunksX+x/8 }
-    func clear(): Unit { for(i in 0..blocks.size) { blocks[i]=0 }; for(i in 0..chunkCounts.size) { chunkCounts[i]=0 }; trees=0 }
+    func clear(): Unit { for(i in 0..blocks.size) { blocks[i]=0 }; for(i in 0..chunkCounts.size) { chunkCounts[i]=0 }; trees=0; revision++ }
     func set(x: Int64,y: Int64,z: Int64,value: Int64): Unit {
         if (inside(x,y,z)) {
             require(value>=0 && value<=255,"Invalid voxel material")
             let i=index(x,y,z); let before=blocks[i]>0; let after=value>0
+            if(blocks[i]==UInt8(value)){return}
             if (before!=after) { chunkCounts[chunkIndex(x,y,z)]+=if (after) { 1 } else { -1 } }
             blocks[i]=UInt8(value)
+            revision++
         }
     }
     func ground(x: Int64,z: Int64): Float64 { Float64(heights[z*nx+x]) }

@@ -48,3 +48,6 @@ artifacts/*
 !artifacts/forest-default-heap.csv
 !artifacts/forest-baseline.csv
 !artifacts/forest-workbench-baseline.csv
+!artifacts/gpu-checks.log
+!artifacts/gpu-benchmark.csv
+!artifacts/gpu-workbench.csv

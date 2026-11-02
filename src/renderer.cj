@@ -39,6 +39,11 @@ class VoxelView <: Resource {
     var fireAge: Array<Int64>
     var burnStages: Array<Int64>
     var clusterLabels: Array<Int64>
+    var displayRevision: Int64=0
+    var useGpu=false
+    var gpuActive=false
+    var gpuError=""
+    var gpu: ?GpuVoxels=None
     var rasterPixels=Array<Color>()
     init(scene: Scene,assets: Assets) {
         this.scene=scene; this.assets=assets
@@ -47,8 +52,9 @@ class VoxelView <: Resource {
     }
     func setFireState(age: Array<Int64>,duration: Int64): Unit {
         require(age.size==scene.nx*scene.nz && duration>=1 && duration<=8,"Invalid display fire state")
-        fireAge=age; burnStages=Array<Int64>(age.size,{i => burnVisualStage(age[i],duration)}); dirty=true
+        fireAge=age; burnStages=Array<Int64>(age.size,{i => burnVisualStage(age[i],duration)}); displayRevision++; dirty=true
     }
+    func setClusters(labels: Array<Int64>): Unit {require(labels.size==scene.nx*scene.nz,"Invalid cluster display state");clusterLabels=labels;displayRevision++;dirty=true}
     func fireAnchor(cell: Int64): Vec {
         let x=cell%scene.nx; let z=cell/scene.nx
         let ray=overheadRay(scene,(Float64(x)+0.5)/Float64(scene.nx),(Float64(z)+0.5)/Float64(scene.nz))
@@ -111,6 +117,7 @@ class VoxelView <: Resource {
         if (let Some(old) <- texture) { old.close() }; texture=Some(replacement)
     }
     func nativeReady(): Bool {
+        if(gpuActive){return !dirty && !needsFull}
         if (let Some(t) <- texture) { return !dirty && !needsFull && Int64(t.width)==targetWidth && Int64(t.height)==targetHeight }
         return false
     }
@@ -121,6 +128,23 @@ class VoxelView <: Resource {
         if (resolution.width!=targetWidth || resolution.height!=targetHeight ||
             b.x!=lastBox.x || b.y!=lastBox.y || b.w!=lastBox.w || b.h!=lastBox.h) {
             dirty=true; targetWidth=resolution.width; targetHeight=resolution.height; lastBox=b
+        }
+        if(useGpu && gpuError.isEmpty()){
+            try {
+                if(gpu.isNone()){gpu=Some(GpuVoxels(assets))}
+                require(gpu.getOrThrow().engine.isCurrent(),"GPU device generation expired")
+                if(dirty || needsFull || !gpuActive){
+                    let start=window.ticks(); cancelRefinement()
+                    gpu.getOrThrow().prepare(this,camera,b,targetWidth,targetHeight)
+                    lastRenderMs=window.ticks()-start; dirty=false; needsFull=false; gpuActive=true
+                }
+                return
+            }catch(e: Exception){
+                gpuError=e.message; eprintln("GPU unavailable, using CPU: "+gpuError)
+                if(let Some(g)<-gpu){g.close()};gpu=None;gpuActive=false;dirty=true
+            }
+        }else if(gpuActive){
+            if(let Some(g)<-gpu){g.close()};gpu=None;gpuActive=false;dirty=true
         }
         if (dirty) {
             cancelRefinement(); lastChange=window.ticks(); needsFull=true
@@ -155,6 +179,10 @@ class VoxelView <: Resource {
         if (nextRow==targetHeight) { publish(surface); cancelRefinement(); needsFull=false }
     }
     func draw(b: Rect): Unit {
+        if(gpuActive){
+            if(let Some(g)<-gpu){if(let Some(t)<-g.texture){assets.r.textureStyled(t,b,style:TextureStyle(sampling:TextureScaleMode.Nearest))}}
+            return
+        }
         if (let Some(t) <- texture) {
             assets.r.textureStyled(t,b,style:TextureStyle(sampling:TextureScaleMode.Nearest))
         }
@@ -162,10 +190,12 @@ class VoxelView <: Resource {
     public func close(): Unit {
         if (closed) { return }; closed=true
         cancelRefinement()
+        if(let Some(g)<-gpu){g.close()};gpu=None;gpuActive=false
         rasterPixels=Array<Color>()
         if (let Some(t) <- texture) { t.close() }; texture=None
     }
     public func isClosed(): Bool { closed }
+    func backendName(): String {if(gpuActive){"GPU D3D11"}else if(!gpuError.isEmpty()){"CPU (GPU fallback)"}else{"CPU"}}
 }
 
 // Conservative projected AABB intersected with the canvas. Rays outside this

@@ -139,7 +139,7 @@ class App {
     func refreshExperimentView(): Unit {
         if (let Some(r) <- experiment.run) { view.setFireState(r.current().age,r.duration) }
         else { view.setFireState(Array<Int64>(CELL_COUNT,repeat:0),1) }
-        view.clusterLabels=if (experiment.showConnectivity) { experiment.analysis.labels } else { Array<Int64>(CELL_COUNT,repeat:-1) }
+        view.setClusters(if (experiment.showConnectivity) { experiment.analysis.labels } else { Array<Int64>(CELL_COUNT,repeat:-1) })
         view.dirty=true
     }
     func updateExperiment(now: UInt64): Unit {
@@ -649,6 +649,7 @@ class App {
             case 91=>mapMode = !mapMode; referenceMode=false; view.dirty=true
             case 92=>camera.reset(); view.dirty=true
             case 100=>preferences.setShowFps(!preferences.showFps)
+            case 101=>preferences.setGpu(!preferences.gpuEnabled);view.gpuError="";view.dirty=true
             case 93=>saveFromMenu(window,true)
             case 94=>exitReady=true
             case 95=>menuOpen=quitReturnMenu; menuPage=quitReturnPage; menuFocus=quitReturnFocus

@@ -22,7 +22,7 @@ class MenuLayout {
         match(page) {
             case 0=>[80,81,82,83,84,85,98,86,99,87]
             case 1=>[33,34,35,36,88]
-            case 2=>[90,91,92,100,88]
+            case 2=>[90,91,92,100,101,88]
             case 3=>[49,50,51,88]
             case 4=>[88]
             case 6=>[96,97,88]
@@ -35,6 +35,7 @@ class MenuLayout {
             return bookAt(if (id==96) { 48.0 } else { 342.0 },482.0,48.0,44.0)
         }
         if (id==100) { return at(0.0,274.0,448.0,44.0) }
+        if (id==101) { return at(0.0,334.0,448.0,44.0) }
         if (id==86 || id==99) { return at(if (id==99) { 228.0 } else { 0.0 },296.0,220.0,44.0) }
         if (id==85 || id==98) { return at(if (id==98) { 228.0 } else { 0.0 },244.0,220.0,44.0) }
         if (id>=33 && id<=36) { return at(0.0,94.0+Float32(id-33)*76.0,448.0,44.0) }
@@ -74,6 +75,7 @@ func menuLabel(app: App,id: Int64): String {
         case 87=>app.t("退出软件","Quit to Desktop")
         case 88=>app.t("完成","Done")
         case 100=>app.t("右上角显示帧率：","Top-right FPS: ")+app.t(if (app.preferences.showFps) { "开" } else { "关" },if (app.preferences.showFps) { "On" } else { "Off" })
+        case 101=>app.t("场景渲染：","Scene renderer: ")+(if(app.preferences.gpuEnabled){"GPU / Auto"}else{"CPU"})
         case 90=>app.t("树冠：","Canopy: ")+app.t(if (app.view.showCanopy) { "显示" } else { "隐藏" },if (app.view.showCanopy) { "Shown" } else { "Hidden" })
         case 91=>app.t("视图：","View: ")+app.t(if (app.mapMode) { "二维地图" } else { "三维场景" },if (app.mapMode) { "Top-down Map" } else { "3D Scene" })
         case 92=>app.t("相机复位","Reset Camera")
