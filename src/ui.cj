@@ -32,9 +32,11 @@ func mcButtonAt(app: App,b: Rect,id: Int64,title: String,focused: Bool,enabled!:
             source:Some(Rect(xs[x],ys[y],xs[x+1]-xs[x],ys[y+1]-ys[y])))
     } }
     if (app.pressed==id) { app.assets.r.fill(b,Color.rgba(0,0,0,40)) }
-    let scale=min(textScale,(b.w-16.0*textScale)/max(1.0,app.font.measure(title)))
+    let icon=if(title.isEmpty()){""}else{controlIcon(id)};let inset:Float32=if(icon.isEmpty()){0.0}else{30.0*textScale}
+    if(!icon.isEmpty()){app.assets.blit(icon,Rect(b.x+7.0*textScale,b.centerY()-12.0*textScale,24.0*textScale,24.0*textScale),tint:if(enabled){Color.rgb(255,255,255)}else{Color.rgb(135,135,135)})}
+    let scale=min(textScale,(b.w-16.0*textScale-inset)/max(1.0,app.font.measure(title)))
     app.assets.r.pushClip(Rect(b.x+edge,b.y+edge,b.w-2.0*edge,b.h-2.0*edge))
-    app.font.draw(title,b.centerX()-app.font.measure(title)*scale/2.0,b.centerY()-8.0*scale,scale:scale,snap:snapText,pixelRatio:pixelRatio,
+    app.font.draw(title,b.centerX()+inset/2.0-app.font.measure(title)*scale/2.0,b.centerY()-8.0*scale,scale:scale,snap:snapText,pixelRatio:pixelRatio,
         color:if (enabled) { Color.rgb(235,235,224) } else { Color.rgb(150,150,150) }); app.assets.r.popClip()
     if (focused && enabled) { app.assets.r.strokeRect(Rect(b.x-2.0,b.y-2.0,b.w+4.0,b.h+4.0),Pen(width:2.0,color:Color.rgb(234,215,129))) }
 }
@@ -135,7 +137,7 @@ func drawSimulationPanel(app: App,l: Layout): Unit {
         uiText(app,l,app.t("修改参数会清除旧试验。","Edits invalidate previous trials."),x,y+332.0,color:Color.rgb(206,211,190))
         uiText(app,l,app.t("仿真步不代表现实秒数。","Steps are not real-world seconds."),x,y+364.0,color:Color.rgb(245,221,143))
     } else {
-        uiText(app,l,app.t("火势实验 / 四邻接无风","Fire Trial / 4 neighbors, no wind"),x,y+18.0)
+        uiText(app,l,app.t("观察森林 / 单次传播","Observe / Single Fire"),x,y+18.0)
         let state=if (let Some(run) <- e.run) { app.t("${run.cursor} / ${run.snapshots.size-1} 步","Step ${run.cursor} / ${run.snapshots.size-1}")+(if (run.running) { app.t(" · 运行"," / Running") } else { app.t(" · 暂停"," / Paused") }) }
             else { if (p.ignition<0) { app.t("尚未开始 / 先设置起火点","Set ignition before starting") }
                 else if (p.fuel(p.ignition,planned:e.planned)<=0.0) { app.t("起火格不可燃 / 请重新设置","No fuel at ignition; choose again") }
@@ -143,25 +145,24 @@ func drawSimulationPanel(app: App,l: Layout): Unit {
         uiText(app,l,state,x,y+46.0,color:Color.rgb(245,221,143))
         let stats=if (let Some(run) <- e.run) { app.t("燃烧 ${run.current().burning()} / 燃尽 ${run.current().burned()} 格","Burning ${run.current().burning()} / Burned ${run.current().burned()}") } else { app.t("相对可燃量：林地为 1","Relative fuel: forest = 1") }
         uiText(app,l,stats,x,y+74.0,color:Color.rgb(206,211,190))
-        uiText(app,l,app.t("连通 ${e.analysis.sizes.size} 片 / 最大 ${e.analysis.largest} 格","${e.analysis.sizes.size} clusters / Largest ${e.analysis.largest}"),x,y+100.0,color:Color.rgb(206,211,190))
-        let contacts=if (let Some(run) <- e.run) { app.t("目标接触 ${run.current().contacts()} 格","Target contact: ${run.current().contacts()} cells") }
-            else { if (e.analysis.path.isEmpty()) { app.t("无可燃路径到目标邻域","No fuel path to target perimeter") } else { app.t("可燃路径到目标邻域 ${e.analysis.path.size} 格","Path to target: ${e.analysis.path.size} cells") } }
-        uiText(app,l,contacts,x,y+126.0,color:Color.rgb(245,221,143))
+        uiText(app,l,app.t("起始连通 ${e.analysis.sizes.size} 片 / 最大 ${e.analysis.largest} 格","Initial: ${e.analysis.sizes.size} clusters / Largest ${e.analysis.largest}"),x,y+100.0,color:Color.rgb(206,211,190))
+        let span=e.analysis.spansLeftRight(GRID_X,GRID_Z)
+        uiText(app,l,app.t("起始左右贯通：","Initial L-R span: ")+app.t(if(span){"是"}else{"否"},if(span){"Yes"}else{"No"}),x,y+126.0,color:Color.rgb(245,221,143))
         mcButton(app,l,40,if (let Some(run) <- e.run) { if (run.running) { app.t("暂停","Pause") } else { app.t("开始/继续","Resume") } } else { app.t("开始","Start") })
         mcButton(app,l,41,app.t("单步","Step"))
         mcButton(app,l,42,app.t("重置","Reset"))
         mcButton(app,l,45,if (app.pickingIgnition) { app.t("点击林地","Pick Fuel") } else { app.t("设置起火","Ignition") })
         mcButton(app,l,43,app.t("上一快照","Previous")); mcButton(app,l,44,app.t("下一快照","Next"))
         mcButton(app,l,46,if (e.showConnectivity) { app.t("连通覆盖：开","Clusters: On") } else { app.t("连通覆盖：关","Clusters: Off") })
-        mcButton(app,l,47,if (e.planned) { app.t("当前：处理方案","Mode: Treatment") } else { app.t("当前：原始场地","Mode: Baseline") })
+        mcButton(app,l,47,if (e.planned) { app.t("干预林地","Treatment") } else { app.t("原始林地","Baseline") })
     }
-    mcButton(app,l,48,if (app.simParameters) { app.t("返回火势实验","Back to Trial") } else { app.t("传播参数与 seed","Experiment Settings") })
+    mcButton(app,l,48,if (app.simParameters) { app.t("返回观察","Back") } else { app.t("参数","Settings") })
 }
 func render(app: App,window: SdlWindow,capture!: String=""): Unit {
     pollAgentConnection(app)
     pollAgentChat(app)
     app.frameMeter.tick(app.frameMeter.clock.ms())
-    let r=window.renderer; let p=app.work.project
+    let r=window.renderer
     let l=Layout(Float32(window.width),Float32(window.height))
     let reference=app.mapMode && app.referenceMode && app.reference.isSome()
     app.view.useGpu=app.preferences.gpuEnabled
@@ -173,15 +174,10 @@ func render(app: App,window: SdlWindow,capture!: String=""): Unit {
     r.beginScene(l.width,l.height,Color.rgb(34,38,32))
     frame(r,Rect(12.0,12.0,l.width-24.0,76.0))
     uiText(app,l,app.t("断火线","Firebreak"),30.0,26.0,scale:if (app.preferences.english) { 1.6 } else { 2.0 })
-    uiText(app,l,app.t("P4 / 方案建议","P4 / Plan Suggestions")+(if (app.work.dirty()) { app.t(" * 未保存"," * Unsaved") } else if (app.work.path.isEmpty()) { app.t(" / 未另存"," / Not Saved") } else { app.t(" / 已保存"," / Saved") }),if (app.preferences.english) { 250.0 } else { 164.0 },40.0,color:Color.rgb(222,220,192))
+    uiText(app,l,app.t("森林实验 / ","Forest Lab / ")+workflowName(app,currentWorkflow(app))+(if (app.work.dirty()) { app.t(" * 未保存"," * Unsaved") } else if (app.work.path.isEmpty()) { app.t(" / 未另存"," / Not Saved") } else { app.t(" / 已保存"," / Saved") }),if (app.preferences.english) { 250.0 } else { 164.0 },40.0,color:Color.rgb(222,220,192))
     mcButton(app,l,53,app.t("菜单 [Esc]","Menu [Esc]"))
     mcButton(app,l,54,app.t("研究员","Researcher"))
-    mcButton(app,l,0,app.t("相机复位","Reset Camera")); mcButton(app,l,1,app.t("俯视编辑","Overhead"))
-    let titles=[app.t("新建","New"),app.t("打开","Open"),app.t("另存为","Save As"),app.t("导入底图","Import Image"),app.t("撤销","Undo"),app.t("重做","Redo"),if (app.mapMode) { app.t("三维场景","3D Scene") } else { app.t("二维地图","2D Map") }]
-    for (i in 0..7) { mcButton(app,l,10+i,titles[i]) }
-    if (!app.comparePanel && !app.suggestPanel) { mcButton(app,l,18,if (reference) { app.t("纹理俯视","Texture Map") } else { app.t("参照底图","Reference") }) }
-    mcButton(app,l,19,if (app.simPanel) { app.t("场地编辑","Site Editor") } else { app.t("火势实验","Fire Trial") })
-    mcButton(app,l,52,if (app.comparePanel) { app.t("返回编辑","Back to Editor") } else { app.t("方案对比","Compare Plans") })
+    drawWorkflowBar(app,l)
     if (app.comparePanel) { drawComparison(app,l) }
     else {
         if (app.mapMode) {
@@ -208,38 +204,31 @@ func render(app: App,window: SdlWindow,capture!: String=""): Unit {
         }
         uiText(app,l,app.t("点击数值编辑 / Ctrl+A 清空","Click to edit / Ctrl+A: Clear"),x,y+316.0,color:Color.rgb(206,211,190))
     } else {
-        uiText(app,l,app.t("24 x 20 场地标注","24 x 20 Site Annotation"),x,y+18.0)
-        uiText(app,l,app.t("工具：","Tool: ")+app.toolName(app.tool),x,y+48.0,color:Color.rgb(245,221,143))
-        uiText(app,l,if (p.metersWide>0.0) { app.t("每格 ${money(p.cellArea())} 平方米","${money(p.cellArea())} m2 per cell") } else { app.t("未标定：面积/费用不可用","Uncalibrated: area/cost unavailable") },x,y+78.0,color:Color.rgb(206,211,190))
-        uiText(app,l,app.t("处理 ${p.count(p.treatment)} 格 / ￥${money(p.cost())}","Treated ${p.count(p.treatment)} / CNY ${money(p.cost())}"),x,y+108.0,color:Color.rgb(245,221,143))
-        uiText(app,l,app.t("预算 ￥${money(p.budget)}","Budget CNY ${money(p.budget)}"),x,y+138.0,color:Color.rgb(206,211,190))
-        uiText(app,l,app.t("保护 ${p.count(p.targets)} 格 / 禁区 ${p.count(p.forbidden)} 格","Protected ${p.count(p.targets)} / Excluded ${p.count(p.forbidden)}"),x,y+164.0,color:Color.rgb(206,211,190))
-        mcButton(app,l,2,if (app.view.showCanopy) { app.t("隐藏树冠 [H]","Hide Canopy [H]") } else { app.t("显示树冠 [H]","Show Canopy [H]") })
-        mcButton(app,l,3,app.t("向左旋转","Rotate Left")); mcButton(app,l,4,app.t("向右旋转","Rotate Right"))
-        mcButton(app,l,5,app.t("放大 +","Zoom In +")); mcButton(app,l,6,app.t("缩小 -","Zoom Out -"))
+        drawForestPanel(app,l)
     }
-    if (!app.simPanel && !app.comparePanel && !app.suggestPanel) {
-        mcButton(app,l,30,if (app.erase) { app.t("擦除模式：开","Erase: On") } else { app.t("擦除模式：关","Erase: Off") })
-        mcButton(app,l,31,app.t("确认应用","Apply")); mcButton(app,l,32,app.t("取消选区","Cancel"))
-        mcButton(app,l,17,if (app.settings) { app.t("返回场地信息","Back to Site Info") } else { app.t("尺度与预算设置","Project Settings") })
+    if(app.simPanel && !app.simParameters){mcButton(app,l,59,app.t("下一步：设计干预","Next: Intervene"))}
+    if(!app.suggestPanel){
+        mcButton(app,l,16,if(app.mapMode){app.t("三维","3D")}else{app.t("地图","Map")})
+        mcButton(app,l,0,app.t("复位","Reset"));mcButton(app,l,2,app.t("树冠","Canopy"))
     }
-    let status=if (app.suggestPanel) { app.t("金色边框：新增候选，尚未应用 | 每个候选共用情景，不保证全局最优","Gold outlines: unapplied candidate | Shared scenarios; no global-optimum guarantee") } else if (app.comparePanel) { app.t("同步相机 / 同步仿真步 | 回放：情景 1 | 汇总：全部情景 | H 树冠","Shared camera / time | Replay: scenario 1 | Summary: all | H: Canopy") } else if (app.startCell>=0) { app.t("预览 ${app.selection().size} 格 | Enter 应用 / Esc 取消 | 青色保护 / 红色禁区","Preview ${app.selection().size} cells | Enter: Apply / Esc: Cancel | Cyan: Protected / Red: Excluded") }
+    let status=if(app.simPanel){app.t("当前为单次火灾 | 设置起火 → 开始/单步 | H 树冠 | 滚轮缩放","Single-fire trial | Pick ignition -> Start/Step | H canopy | Wheel zoom")}else if (app.suggestPanel) { app.t("金色边框：新增候选，尚未应用 | 每个候选共用情景，不保证全局最优","Gold outlines: unapplied candidate | Shared scenarios; no global-optimum guarantee") } else if (app.comparePanel) { app.t("同步相机 / 同步仿真步 | 回放：情景 1 | 汇总：全部情景 | H 树冠","Shared camera / time | Replay: scenario 1 | Summary: all | H: Canopy") } else if (app.startCell>=0) { app.t("预览 ${app.selection().size} 格 | Enter 应用 / Esc 取消 | 青色保护 / 红色禁区","Preview ${app.selection().size} cells | Enter: Apply / Esc: Cancel | Cyan: Protected / Red: Excluded") }
         else if(app.mapMode){app.t("滚轮缩放 | 中键平移 | 左键框选 | 相机复位：整图 | Ctrl+S 保存","Wheel: Zoom | Middle: Pan | Drag: Select | Reset: Fit Map | Ctrl+S: Save")}
-        else { app.t("左键框选 | 右键旋转 / 中键平移 | 1-9 工具 | Ctrl+S 保存 | Ctrl+Z 撤销","Drag: Select | Right: Rotate / Middle: Pan | 1-9: Tools | Ctrl+S: Save | Esc: Menu") }
+        else { app.t("左键框选 | 右键旋转 / 中键平移 | 1-4 选择/植林/清理/隔离 | Ctrl+S 保存 | Ctrl+Z 撤销","Drag: Select | Right: Rotate / Middle: Pan | 1-4: Select/Plant/Clear/Break | Ctrl+S: Save | Esc: Menu") }
     r.pushClip(Rect(20.0,l.canvas.bottom()+6.0,l.canvas.w,24.0)); uiText(app,l,status,20.0,l.canvas.bottom()+10.0,color:Color.rgb(190,199,170)); r.popClip()
-    if (!app.comparePanel && !app.suggestPanel) {
-        app.assets.blit("textures/gui/widgets.png",l.toolbar,source:Some(Rect(0.0,0.0,182.0,22.0)))
-        app.assets.blit("textures/gui/widgets.png",Rect(l.toolbar.x+Float32(app.tool)*60.0-3.0,l.toolbar.y,72.0,66.0),source:Some(Rect(0.0,22.0,24.0,22.0)))
-        for (i in 0..9) {
-            let b=l.control(20+i)
-            if (app.hover==20+i) { r.fill(b,Color.rgba(255,255,255,25)) }
-            let icon=if (i==1) { "textures/block/oak_leaves.png" } else if (i==4) { "textures/block/bricks.png" } else { "textures/item/"+TOOL_PATHS[i]+".png" }
-            app.assets.blit(icon,Rect(b.x+10.0,b.y+8.0,40.0,40.0),tint:if (i==1) { Color.rgb(91,157,57) } else { Color.rgb(255,255,255) })
-            if (CONTROLS[app.focus]==20+i) { r.strokeRect(b,Pen(width:2.0,color:Color.rgb(234,215,129))) }
+    if(!app.comparePanel && !app.suggestPanel && !app.simPanel && !app.settings){
+        for(slot in 0..PRIMARY_TOOLS.size){
+            let tool=PRIMARY_TOOLS[slot];let id=20+tool;let b=l.control(id)
+            mcButtonAt(app,b,id,"",app.tool==tool)
+            app.assets.blit(controlIcon(id),Rect(b.x+14.0,b.y+4.0,32.0,32.0))
+            let zh=["选择","植林","清理","隔离"];let en=["Select","Plant","Clear","Break"]
+            app.font.center(app.t(zh[slot],en[slot]),Rect(b.x,b.y+39.0,b.w,20.0),scale:1.0,shadow:false,snap:true,pixelRatio:Float32(window.scale)*Float32(window.currentPixelDensity))
         }
-        uiText(app,l,app.toolName(app.tool),l.panel.x+16.0,l.toolbar.y+22.0,color:Color.rgb(245,221,143))
     }
-    r.pushClip(Rect(20.0,l.height-25.0,l.width-40.0,22.0)); uiText(app,l,app.view.backendName()+" | "+(if (app.startCell>=0) { app.previewText() } else if(!app.view.gpuError.isEmpty()){app.view.gpuError}else{app.message}),20.0,l.height-23.0,color:Color.rgb(222,220,192)); r.popClip()
+    if(!app.menuOpen && !app.terminal.open){
+        let id=if(app.hover>=0){app.hover}else{CONTROLS[app.focus]};let tip=workflowTip(app,id)
+        if(!tip.isEmpty()){r.fill(Rect(20.0,l.canvas.bottom()+6.0,l.canvas.w,26.0),Color.rgb(34,38,32));r.pushClip(Rect(20.0,l.canvas.bottom()+6.0,l.canvas.w,26.0));uiText(app,l,tip,20.0,l.canvas.bottom()+10.0,color:Color.rgb(235,222,156));r.popClip()}
+    }
+    r.pushClip(Rect(20.0,l.height-25.0,l.width-40.0,22.0)); uiText(app,l,app.view.backendName()+" | "+(if (app.startCell>=0) { app.t("选区 ${app.selection().size} 格；Enter应用 / Esc取消","${app.selection().size} selected cells; Enter applies / Esc cancels") } else if(!app.view.gpuError.isEmpty()){app.view.gpuError}else{app.message}),20.0,l.height-23.0,color:Color.rgb(222,220,192)); r.popClip()
     if (app.menuOpen) { drawMenu(app,l,pixelRatio:Float32(window.scale)*Float32(window.currentPixelDensity)) }
     if (app.preferences.showFps) { drawFps(app.font,app.frameMeter,l.canvas) }
     drawTerminal(app,l,window)

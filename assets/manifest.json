@@ -8,7 +8,7 @@
     "tint": "#83BB6D (Java meadow)"
   },
   "blocks": ["grass_block_top", "grass_block_side", "dirt", "oak_log", "oak_log_top", "oak_leaves", "stone", "oak_planks", "bricks", "dirt_path_top"],
-  "items": ["iron_axe", "iron_shovel", "flint_and_steel", "water_bucket", "map", "compass_16", "paper", "oak_sign", "barrier"],
+  "items": ["iron_axe", "iron_shovel", "flint_and_steel", "water_bucket", "map", "compass_16", "paper", "oak_sign", "barrier", "spyglass", "comparator", "repeater", "book", "knowledge_book", "clock_00"],
   "files": ["textures/gui/widgets.png", "textures/gui/icons.png", "textures/gui/book.png", "textures/gui/container/generic_54.png", "textures/map/map_background.png", "textures/block/fire_0.png", "textures/block/oak_sapling.png", "textures/font/ascii.png", "font/glyph_sizes.bin"],
   "unicode_pages": "All available original Unicode pages; loaded on demand for dynamic terminal text",
   "widget_regions": {

@@ -3,6 +3,9 @@ package firebreak
 import sdl.*
 
 func verifyTopMap(app: App,w: SdlWindow): Unit {
+    // Exercise legacy imported materials explicitly; new forests have no road or house.
+    let annotated=Project();annotated.land[9*GRID_X+2]=2;annotated.land[4*GRID_X+17]=4
+    app.work.acceptLoaded(annotated,"");app.syncScene()
     let l=Layout(Float32(w.width),Float32(w.height))
     app.mapMode=true; app.referenceMode=false; app.camera.yaw=2.3; app.camera.pitch=0.4
     app.view.selectedX = -1; app.view.selectedZ = -1

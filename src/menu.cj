@@ -28,10 +28,18 @@ class MenuLayout {
             case 6=>[96,97,88]
             case 7=>[109,110,111,112,88]
             case 8=>[114,115,88]
+            case 9=>[10,11,12,13,14,15,108,117,118,119,88]
+            case 10=>[20,21,22,23,24,25,26,27,28,88]
             case _=>[93,94,95]
         }
     }
     func box(id: Int64,page!: Int64=0): Rect {
+        if(page==9){
+            if(id>=10 && id<=15){return at(Float32((id-10)%2)*228.0,72.0+Float32((id-10)/2)*52.0,220.0,44.0)}
+            if(id==108 || id==117){return at(0.0,if(id==108){228.0}else{280.0},448.0,44.0)}
+            if(id==118 || id==119){return at(Float32(id-118)*228.0,332.0,220.0,44.0)}
+        }
+        if(page==10 && id>=20 && id<=28){return at(Float32((id-20)%3)*152.0,88.0+Float32((id-20)/3)*72.0,144.0,52.0)}
         if(page==7 && id>=109 && id<=112){return at(0.0,72.0+Float32(id-109)*60.0,448.0,44.0)}
         if(page==0 && (id==103 || id==108)){return at(if(id==103){0.0}else{228.0},348.0,220.0,44.0)}
         if(page==0 && id==87){return at(0.0,400.0,448.0,44.0)}
@@ -72,15 +80,17 @@ func menuTitle(app: App): String {
         case 3=>app.t("实验参数","Experiment Settings")
         case 4=>app.t("智能体设置","Agent Settings")
         case 5=>app.t("退出前保存？","Save before quitting?")
-        case 7=>app.t("示例场景（合成场地）","Examples (Synthetic Sites)")
+        case 7=>app.t("旧版小案例（合成场地）","Legacy Examples (Synthetic)")
         case 8=>app.t("声音设置","Sound Settings")
+        case 9=>app.t("文件与项目","Files & Project")
+        case 10=>app.t("高级标注工具","Advanced Annotation")
         case _=>app.t("工作台菜单","Workbench Menu")
     }
 }
 func menuLabel(app: App,id: Int64): String {
     match(id) {
         case 80=>app.t("回到工作台","Back to Workbench")
-        case 81=>app.t("项目设置…","Project Settings...")
+        case 81=>app.t("文件与项目…","Files & Project...")
         case 82=>app.t("显示选项…","Display Options...")
         case 83=>app.t("实验参数…","Experiment Settings...")
         case 84=>app.t("智能体设置…","Agent Settings...")
@@ -96,10 +106,20 @@ func menuLabel(app: App,id: Int64): String {
         case 104 | 105=>agentFieldLabel(app,id)
         case 106=>app.t("保存 DeepSeek 配置","Save DeepSeek Settings")
         case 107=>app.t("保存并测试连接","Save & Test Connection")
-        case 108=>app.t("示例场景…","Example Scenarios...")
+        case 108=>app.t("旧版小案例…","Legacy Examples...")
         case 103=>app.t("声音设置…","Sound Settings...")
         case 114=>app.t("按键音效：","UI Sounds: ")+"${audioLevel(app,114)}%"
         case 115=>app.t("背景音乐：","Music: ")+"${audioLevel(app,115)}%"
+        case 10=>app.t("新建场景","New Scene")
+        case 11=>app.t("打开项目","Open Project")
+        case 12=>app.t("另存为…","Save As...")
+        case 13=>app.t("导入底图…","Import Image...")
+        case 14=>app.t("撤销","Undo")
+        case 15=>app.t("重做","Redo")
+        case 117=>app.t("高级：标定与预算…","Advanced: Scale & Budget...")
+        case 118=>app.t("参照底图","Reference Image")
+        case 119=>app.t("高级标注…","Advanced Tools...")
+        case 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28=>app.toolName(id-20)
         case 109 | 110 | 111 | 112=>caseLabel(app,id-109)
         case 90=>app.t("树冠：","Canopy: ")+app.t(if (app.view.showCanopy) { "显示" } else { "隐藏" },if (app.view.showCanopy) { "Shown" } else { "Hidden" })
         case 91=>app.t("视图：","View: ")+app.t(if (app.mapMode) { "二维地图" } else { "三维场景" },if (app.mapMode) { "Top-down Map" } else { "3D Scene" })

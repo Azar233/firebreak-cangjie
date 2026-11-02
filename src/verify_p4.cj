@@ -22,7 +22,8 @@ func verifyP4(app: App,w: SdlWindow): Unit {
     var bridge=false; var perimeter=false
     for (c in generated) { c.project(p).validate(); if (c.kind==3) { bridge=true }; if (c.kind==2) { perimeter=true } }
     pass(bridge && perimeter && generated.size<=14 && p.text()==original,"candidate generation finds target perimeters and articulation cuts without altering the original plan")
-    let road=Project(); let roads=generateCandidates(road,{=>false}); var hasRoad=false
+    let road=Project();for(x in 0..GRID_X){road.land[9*GRID_X+x]=2}
+    let roads=generateCandidates(road,{=>false}); var hasRoad=false
     for (c in roads) { if (c.kind==1) { hasRoad=true } }
     pass(hasRoad && roads.size<=14,"road-adjacent family is generated within the finite 14-candidate bound")
     let budget=p.copy(); budget.budget=50.0

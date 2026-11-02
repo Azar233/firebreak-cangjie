@@ -75,6 +75,7 @@ artifacts/*
 !artifacts/p6-case-checks.log
 !artifacts/p6-audio-checks.log
 !artifacts/p6-checks.log
+!artifacts/workflow-checks.log
 !artifacts/p6-case-results.json
 !artifacts/p6-chain-metrics.csv
 !artifacts/p6-chain-parameters.json

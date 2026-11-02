@@ -8,7 +8,7 @@ import std.math.floor
 import std.fs.{File,exists}
 import stdx.encoding.base64.toBase64String
 
-let CONTROLS=[0,1,2,3,4,5,6,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,30,31,32,33,34,35,36,40,41,42,43,44,45,46,47,48,49,50,51,52,54,53,60,61,62,63,64,65,66,67,70,71,72,73,74,75,76,77,78]
+let CONTROLS=[55,56,57,58,59,116,0,1,2,3,4,5,6,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,30,31,32,33,34,35,36,40,41,42,43,44,45,46,47,48,49,50,51,52,54,53,60,61,62,63,64,65,66,67,70,71,72,73,74,75,76,77,78]
 let TOOL_NAMES=["选择","林地","道路","水域","建筑","清理植被","隔离带","保护目标","禁止处理"]
 
 class Layout {
@@ -21,16 +21,22 @@ class Layout {
         this.width=width; this.height=height
         canvas=Rect(20.0,152.0,width-330.0,height-282.0)
         panel=Rect(width-294.0,152.0,274.0,height-282.0)
-        toolbar=Rect(20.0+(canvas.w-546.0)/2.0,height-96.0,546.0,66.0)
+        toolbar=Rect(20.0,height-96.0,246.0,66.0)
     }
     func control(id: Int64): Rect {
+        if(id>=55 && id<=58){let w=(width-64.0)/4.0;return Rect(20.0+Float32(id-55)*(w+8.0),94.0,w,44.0)}
+        if(id==59){return Rect(panel.x+18.0,panel.y+446.0,238.0,44.0)}
+        if(id==116){return Rect(panel.x+18.0,panel.y+186.0,238.0,44.0)}
+        if(id==0 || id==16 || id==2){let n=if(id==16){0}else if(id==0){1}else{2};return Rect(canvas.right()-342.0+Float32(n)*114.0,toolbar.y+11.0,108.0,44.0)}
+        if(id==14 || id==15){return Rect(panel.x+18.0+Float32(id-14)*122.0,panel.y+238.0,116.0,44.0)}
+        if(id==47 || id==48){return Rect(panel.x+18.0+Float32(id-47)*122.0,panel.y+362.0,116.0,44.0)}
         if (id>=70 && id<=78) {
             if (id<=75) { return Rect(panel.x+18.0+Float32((id-70)%2)*122.0,panel.y+180.0+Float32((id-70)/2)*52.0,116.0,44.0) }
             let row=match(id) { case 76=>0; case 78=>1; case _=>2 }
             return Rect(panel.x+18.0,panel.y+336.0+Float32(row)*52.0,238.0,44.0)
         }
-        if (id==54) { return Rect(width-484.0,28.0,110.0,44.0) }
-        if (id==53) { return Rect(width-366.0,28.0,110.0,44.0) }
+        if (id==54) { return Rect(width-248.0,28.0,110.0,44.0) }
+        if (id==53) { return Rect(width-130.0,28.0,110.0,44.0) }
         if (id==52) { return Rect(956.0,94.0,124.0,44.0) }
         if (id>=60) {
             if (id<=63) { return Rect(panel.x+18.0+Float32((id-60)%2)*122.0,panel.y+184.0+Float32((id-60)/2)*52.0,116.0,44.0) }
@@ -46,7 +52,7 @@ class Layout {
         }
         if (id>=46 && id<=48) { return Rect(panel.x+18.0,panel.y+310.0+Float32(id-46)*52.0,238.0,44.0) }
         if (id==18) { return Rect(748.0,94.0,98.0,44.0) }
-        if (id>=20 && id<=28) { return Rect(toolbar.x+3.0+Float32(id-20)*60.0,toolbar.y+3.0,60.0,60.0) }
+        if (id>=20 && id<=28) { let slot=match(id){case 20=>0;case 21=>1;case 25=>2;case 26=>3;case _=>id-20};return Rect(toolbar.x+3.0+Float32(slot)*60.0,toolbar.y+3.0,60.0,60.0) }
         if (id>=10 && id<=16) { return Rect(20.0+Float32(id-10)*104.0,94.0,98.0,44.0) }
         if (id>=33 && id<=36) { return Rect(panel.x+18.0,panel.y+56.0+Float32(id-33)*76.0,238.0,44.0) }
         return match (id) {
@@ -55,17 +61,24 @@ class Layout {
             case 2 => Rect(panel.x+18.0,panel.y+186.0,238.0,44.0)
             case 3 | 4 => Rect(panel.x+18.0+Float32(id-3)*122.0,panel.y+238.0,116.0,44.0)
             case 5 | 6 => Rect(panel.x+18.0+Float32(id-5)*122.0,panel.y+290.0,116.0,44.0)
-            case 30 => Rect(panel.x+18.0,panel.y+342.0,238.0,44.0)
-            case 31 | 32 => Rect(panel.x+18.0+Float32(id-31)*122.0,panel.y+394.0,116.0,44.0)
+            case 30 => Rect(panel.x+18.0,panel.y+290.0,238.0,44.0)
+            case 31 | 32 => Rect(panel.x+18.0+Float32(id-31)*122.0,panel.y+342.0,116.0,44.0)
             case _ => Rect(panel.x+18.0,panel.y+446.0,238.0,44.0)
         }
     }
     func available(id: Int64,settings: Bool,simulation!: Bool=false,parameters!: Bool=false,comparison!: Bool=false,suggestions!: Bool=false): Bool {
-        if (id==52 || id==53 || id==54) { return true }
+        if(id==53 || id==54 || (id>=55 && id<=58)){return true}
+        if(id==59){return !comparison && !suggestions && !settings && (!simulation || !parameters)}
+        if(id==116){return !simulation && !comparison && !suggestions && !settings}
+        if(id==1 || (id>=3 && id<=6) || (id>=10 && id<=13) || id==17 || id==18 || id==19 || id==52 || (id>=22 && id<=24) || id==27 || id==28){return false}
+        if(id==0 || id==2 || id==16){return !suggestions}
+        if(id==14 || id==15){return !simulation && !comparison && !suggestions && !settings}
+        if(id>=30 && id<=32){return !simulation && !comparison && !suggestions && !settings}
+        if(id>=20 && id<=28){return !simulation && !comparison && !suggestions && !settings}
         if (id>=70) { return suggestions }
-        if (suggestions) { return id<=1 || (id>=10 && id<=16) || id==19 || id==52 }
+        if (suggestions) { return false }
         if (id>=60) { return comparison }
-        if (comparison) { return id<=1 || (id>=10 && id<=16) || id==19 }
+        if (comparison) { return false }
         if (id>=40) { return simulation && (if (id==48) { true } else if (id>=49) { parameters } else { !parameters }) }
         if (simulation && ((id>=2 && id<=6) || id==17 || (id>=30 && id<=36))) { return false }
         if (id>=33 && id<=36) { return settings }
@@ -86,6 +99,7 @@ class App {
     let font: PixelFont
     let view: VoxelView
     let preferences: Preferences
+    var workflowStage:Int64=0
     var menuOpen=false
     var bookPage: Int64=0
     var menuPage: Int64=0
@@ -454,9 +468,12 @@ class App {
     }
     func action(window: SdlWindow,id: Int64): Unit {
         if(id==54 || (id>=10 && id<=13) || id==65 || id==78){playUiClick(this)}
+        if(id>=55 && id<=58){enterWorkflow(this,id-55);playUiClick(this);return}
+        if(id==59){enterWorkflow(this,min(3,currentWorkflow(this)+1));playUiClick(this);return}
+        if(id==116){action(window,10);return}
         if(id==54){openTerminal(this,false);return}
         if (id==10) {
-            if (discard(window)) { cancel();camera.resetMap(); work.commit(Project()); work.path=""; work.unsaved=true; refreshReference(); syncScene(); message=t("已建立示例；请另存项目。","Demo created. Save it as a new project.") }
+            if (discard(window)) { cancel();camera.resetMap(); work.commit(Project()); work.path=""; work.unsaved=true; refreshReference(); syncScene(); message=t("已建立纯森林；请另存项目。","Forest created. Save it as a new project.") }
         } else if (id==65 || id==78) { requestFile(window,id) } else if (id>=11 && id<=13) { requestFile(window,id) } else { activate(id) }
     }
     func handle(window: SdlWindow,record: UiEventRecord): Bool {
@@ -552,7 +569,7 @@ class App {
                     case Key.Home => activate(0)
                     case Key.Letter(84) => activate(1)
                     case Key.Letter(72) => activate(2)
-                    case Key.Digit(n) => if (!comparePanel && !suggestPanel && n>=49 && n<=57) { activate(20+Int64(n-49)) }
+                    case Key.Digit(n) => if (!simPanel && !comparePanel && !suggestPanel && n>=49 && n<=52) { activate(20+PRIMARY_TOOLS[Int64(n-49)]) }
                     case Key.Left => camera.rotate(-8.0,0.0); view.dirty=true
                     case Key.Right => camera.rotate(8.0,0.0); view.dirty=true
                     case Key.Up => camera.rotate(0.0,8.0); view.dirty=true
@@ -574,7 +591,7 @@ class App {
 
     func openSuggestions(): Unit {
         require(startCell<0,t("请先应用或取消编辑预览","Apply or cancel the edit preview first"))
-        commitField(); suggestPanel=true; comparePanel=false; simPanel=false; settings=false; referenceMode=false; pickingIgnition=false
+        commitField(); workflowStage=2; suggestPanel=true; comparePanel=false; simPanel=false; settings=false; referenceMode=false; pickingIgnition=false
         if (let Some(run) <- experiment.run) { run.running=false }
         if (let Some(pair) <- pairView) { pair.playing=false }
         experiment.planned=true; experiment.run=None; experiment.showConnectivity=false; syncScene()
@@ -682,7 +699,14 @@ class App {
             case 114 | 115=>()
             case 108=>commitField();menuPage=7;menuFocus=109
             case 109 | 110 | 111 | 112=>if(discard(window)){openExample(this,id-109)}
-            case 81 | 82 | 83 | 84=>commitField(); menuPage=id-80; menuFocus=MenuLayout(Layout(Float32(window.width),Float32(window.height))).controls(menuPage)[0];if(id==84){openAgentSettings(this)}
+            case 81=>commitField();menuPage=9;menuFocus=10
+            case 117=>commitField();menuPage=1;menuFocus=33
+            case 119=>commitField();menuPage=10;menuFocus=20
+            case 118=>activate(18);menuOpen=false
+            case 10 | 11 | 12 | 13=>let previous=work.revision;action(window,id);if(dialog.isSome() || work.revision!=previous){menuOpen=false}
+            case 14 | 15=>activate(id)
+            case 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28=>enterWorkflow(this,if(id==25 || id==26){2}else{0});activate(id);menuOpen=false
+            case 82 | 83 | 84=>commitField(); menuPage=id-80; menuFocus=MenuLayout(Layout(Float32(window.width),Float32(window.height))).controls(menuPage)[0];if(id==84){openAgentSettings(this)}
             case 104 | 105=>agentField=id;agentOriginal=agentEditor(this).text;window.setTextInputArea(MenuLayout(Layout(Float32(window.width),Float32(window.height))).box(id,page:4))
             case 106=>
                 try{agentSettings.save(agentModelEditor.text,agentKeyEditor.text);agentField = -1;message=t("DeepSeek 配置已保存；尚未进行连接验证。","DeepSeek settings saved; connection has not been verified.")}
@@ -696,7 +720,7 @@ class App {
                 }catch(_:Exception){message=t("请检查 API Key、模型名称与本地文件权限。","Check the API key, model name and local file access.")}
             case 85=>
                 preferences.setEnglish(!preferences.english)
-                window.setTitle(t("断火线 · 场地规划工作台","Firebreak - Site Planning Workbench"))
+                window.setTitle(t("断火线 · 森林实验","Firebreak - Forest Lab"))
                 message=t("语言已切换为简体中文。","Language changed to English.")
             case 86=>saveFromMenu(window,false)
             case 87=>requestExit()

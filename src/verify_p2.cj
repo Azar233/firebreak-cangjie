@@ -124,7 +124,7 @@ func verifyP2(app: App,w: SdlWindow): Unit {
     app.work.apply([4*24+3],6,false); app.syncScene()
     pass(app.experiment.run.isNone() && app.view.fireAge[75]==0 && app.work.project.treatment[4*24+3]==2,"committed treatment invalidates trial and refreshes exact fuel topology")
     click(app,w,47)
-    pass(!app.experiment.planned && app.experiment.analysis.total==app.work.project.count(app.work.project.land)-48-16 && oldRun.snapshots.size>=2,
+    pass(!app.experiment.planned && app.experiment.analysis.total==CELL_COUNT && oldRun.snapshots.size>=2,
         "baseline mode restores fuel removed by plan without mutating old frozen snapshots")
     // Compare masks directly, rather than relying on scene geometry or tree counts.
     pass(fuelMask(app.work.project,false)[4*24+3] && !fuelMask(app.work.project,true)[4*24+3],"baseline and plan masks distinguish treatment from wildfire losses")

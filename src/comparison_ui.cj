@@ -45,7 +45,7 @@ func drawComparisonPanel(app: App,l: Layout): Unit {
         uiText(app,l,app.t("烧损 ${money(result.mean(false,0))} → ${money(result.mean(true,0))}","Burned ${money(result.mean(false,0))} -> ${money(result.mean(true,0))}"),x,y+70.0)
         uiText(app,l,app.t("剩余 ${money(result.mean(false,1))} → ${money(result.mean(true,1))}","Remaining ${money(result.mean(false,1))} -> ${money(result.mean(true,1))}"),x,y+96.0)
         uiText(app,l,app.t("规划清理 ${money(result.mean(true,3))} 格","Planned clearing: ${money(result.mean(true,3))} cells"),x,y+122.0)
-        uiText(app,l,app.t("目标接触样本 ${result.exposedSamples(false)} → ${result.exposedSamples(true)}","Contact samples ${result.exposedSamples(false)} -> ${result.exposedSamples(true)}"),x,y+148.0)
+        uiText(app,l,app.t("同起火点 / 同随机输入","Same ignition / random inputs"),x,y+148.0)
     } else if (let Some(job) <- app.evalJob) {
         let progress=job.progress(); uiText(app,l,app.t("正在评估 ${progress.completed}/${progress.total}","Evaluating ${progress.completed}/${progress.total}"),x,y+50.0)
         uiText(app,l,app.t("保持相同起火点和随机输入","Shared ignition and random input"),x,y+86.0)
@@ -55,6 +55,8 @@ func drawComparisonPanel(app: App,l: Layout): Unit {
     mcButton(app,l,64,if (let Some(v) <- app.pairView) { if (v.playing) { app.t("暂停回放","Pause Replay") } else { app.t("播放情景 1","Play Scenario 1") } } else { app.t("播放情景 1","Play Scenario 1") })
     mcButton(app,l,66,app.t("下次样本数：${app.sampleCount}","Next Sample Count: ${app.sampleCount}"))
     mcButton(app,l,65,app.t("导出报告与地图","Export Report & Maps")); mcButton(app,l,67,app.t("查看最终状态","View Final State"))
+    app.assets.r.pushClip(Rect(l.canvas.x,l.toolbar.y,max(0.0,l.canvas.w-356.0),66.0))
     if (let Some(v) <- app.pairView) { uiText(app,l,app.t("情景 1 / 同步 ${v.step}/${v.maxStep} 步","Scenario 1 / Shared step ${v.step}/${v.maxStep}"),l.canvas.x+12.0,l.toolbar.y+10.0) }
     uiText(app,l,app.t("样本比例不是现实概率","Sample rates are not real probabilities"),l.canvas.x+12.0,l.toolbar.y+38.0,color:Color.rgb(245,221,143))
+    app.assets.r.popClip()
 }

@@ -7,6 +7,18 @@ import std.fs.exists
 func pass(ok: Bool,name: String): Unit { require(ok,"FAIL "+name); println("PASS "+name) }
 func event(app: App,w: SdlWindow,e: UiEvent): Unit { require(app.handle(w,UiEventRecord(e)),"Unexpected quit") }
 func click(app: App,w: SdlWindow,id: Int64): Unit {
+    // Exercise the new visible route for controls deliberately moved off the canvas.
+    if(id==19){click(app,w,if(app.simPanel){55}else{56});return}
+    if(id==52){click(app,w,if(app.comparePanel){55}else{58});return}
+    if(id==1){event(app,w,UiEvent.KeyDown(Key.Letter(84),false));return}
+    if((id>=10 && id<=13) || id==18 || id==17 || (id>=22 && id<=24) || id==27 || id==28){
+        click(app,w,53);menuClick(app,w,81)
+        if(id>=20 && id<=28){menuClick(app,w,119);menuClick(app,w,id)}
+        else if(id==18){menuClick(app,w,118)}
+        else if(id==17){menuClick(app,w,117)}
+        else{menuClick(app,w,id)}
+        return
+    }
     let b=Layout(Float32(w.width),Float32(w.height)).control(id)
     event(app,w,UiEvent.MouseDown(MouseButton.Left,b.centerX(),b.centerY()))
     event(app,w,UiEvent.MouseUp(MouseButton.Left,b.centerX(),b.centerY()))
@@ -122,12 +134,12 @@ func verifyP0(app: App,w: SdlWindow): Unit {
         require(layout.canvas.w>0.0 && layout.canvas.h>0.0 && layout.canvas.right()<layout.panel.x,"Canvas/panel overlap")
     }
     pass(true,"visible control targets and canvas bounds at 3 desktop sizes")
-    click(app,w,20+4); pass(app.tool==4,"hotbar selects map through pointer events")
+    click(app,w,20+4); pass(app.tool==4,"advanced annotation selects a building through visible menu pointer events")
     event(app,w,UiEvent.KeyDown(Key.Digit(UInt8(50)),false)); pass(app.tool==1,"number key selects second tool")
     app.focus=0
     app.handle(w,UiEventRecord(UiEvent.KeyDown(Key.Tab,false),UiEventMetadata(modifiers:EventKeyModifiers(raw:UInt16(1)))))
     pass(CONTROLS[app.focus]==53,"Shift+Tab reaches menu entry and skips hidden numeric fields")
-    click(app,w,1); pass(app.camera.pitch>1.57,"top view button")
+    click(app,w,1); pass(app.camera.pitch>1.57,"top view keyboard shortcut")
     click(app,w,2); pass(!app.view.showCanopy,"canopy visibility button")
     click(app,w,0); pass(abs(app.camera.yaw-0.64)<1.0e-12 && app.camera.panX==0.0,"camera reset button")
     click(app,w,20)

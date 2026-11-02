@@ -28,7 +28,7 @@ class Project {
     var clearingPrice: Float64=2.0
     var breakPrice: Float64=5.0
     var image=""
-    var source="教学营地示例"
+    var source="纯森林实验"
     var ignition: Int64 = -1
     var spreadProbability: Float64=0.65
     var burnSteps: Int64=2
@@ -36,10 +36,8 @@ class Project {
     init(demo!: Bool=true) {
         if (demo) {
             for (z in 0..GRID_Z) { for (x in 0..GRID_X) {
-                land[z*GRID_X+x]=if (z==9 || z==10) { 2 } else { 1 }
+                land[z*GRID_X+x]=1
             } }
-            for (z in 3..7) { for (x in 16..20) { land[z*GRID_X+x]=4; targets[z*GRID_X+x]=1 } }
-            for (z in 15..20) { for (x in 0..3) { forbidden[z*GRID_X+x]=1 } }
         }
     }
     func cellArea(): Float64 { metersWide*metersWide/aspect/Float64(CELL_COUNT) }

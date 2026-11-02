@@ -112,17 +112,11 @@ class Scene {
         for (z in 0..nz) { for (x in 0..nx) {
             let h=if (x>15 && z>12) { 3 } else if (x>12 && z>10) { 2 } else { 1 }
             heights[z*nx+x]=h
-            for (y in 0..h) { set(x,y,z,if (y==h-1) { if (z==9 || z==10) { 8 } else { 1 } } else { 2 }) }
+            for (y in 0..h) { set(x,y,z,if (y==h-1) { 1 } else { 2 }) }
         } }
         for (p in [[3,3],[7,3],[11,3],[3,7],[8,7],[12,6],[4,14],[8,15],[12,14],[17,15],[21,15],[18,18],[21,4],[21,8]]) {
             tree(p[0],p[1])
         }
-        // Small protected-building stand-in; no planning or fire logic in P0.
-        for (z in 3..7) { for (x in 16..20) {
-            for (y in 1..4) { set(x,y,z,if (x==16 || x==19 || z==3 || z==6) { 6 } else { 0 }) }
-            set(x,4,z,7)
-        } }
-        set(17,1,6,0); set(17,2,6,0)
     }
     func index(x: Int64,y: Int64,z: Int64): Int64 { (z*ny+y)*nx+x }
     func inside(x: Int64,y: Int64,z: Int64): Bool { x>=0 && x<nx && y>=0 && y<ny && z>=0 && z<nz }

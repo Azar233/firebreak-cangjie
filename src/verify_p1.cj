@@ -13,6 +13,8 @@ func mapPoint(app: App,l: Layout,x: Int64,z: Int64): Point {
 }
 func verifyP1(app: App,w: SdlWindow): Unit {
     let model=Workbench()
+    let constrained=Project();constrained.forbidden[15*24]=1;constrained.targets[3*24+16]=1
+    model.acceptLoaded(constrained,"")
     pass(readProjectText(model.project.text()).text()==model.project.text(),"P1 versioned project round trip preserves baseline, constraints, plan and prices")
     let baseline=model.project.land.clone()
     model.apply([0,1],5,false)

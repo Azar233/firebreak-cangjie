@@ -30,7 +30,7 @@ func verifyMenu(app: App,w: SdlWindow): Unit {
         "tools, land labels and model diagnostics have English text")
     for (size in [Size(1100.0,780.0),Size(1280.0,860.0),Size(2560.0,1380.0)]) {
         let layout=Layout(size.w,size.h); let m=MenuLayout(layout)
-        for (page in 0..9) { for (id in m.controls(page)) {
+        for (page in 0..11) { for (id in m.controls(page)) {
             let b=m.box(id,page:page)
             require(b.w>=44.0 && b.h>=44.0 && b.x>=0.0 && b.y>=0.0 && b.right()<=size.w && b.bottom()<=size.h,"Menu target outside window")
             require(m.hit(b.centerX(),b.centerY(),page)==id,"Menu controls overlap")
@@ -42,7 +42,7 @@ func verifyMenu(app: App,w: SdlWindow): Unit {
         event(app,w,UiEvent.KeyDown(Key.Tab,false)); require(app.menuFocus==id,"Menu tab order differs from visual order")
     }
     pass(true,"keyboard focus is trapped in the menu and follows visible row order")
-    menuClick(app,w,81); menuClick(app,w,34); app.draft="-1"
+    menuClick(app,w,81); menuClick(app,w,117); menuClick(app,w,34); app.draft="-1"
     event(app,w,UiEvent.KeyDown(Key.Enter,false))
     pass(app.activeField==34 && app.work.project.budget==100000.0 && app.message.contains("out of range"),
         "menu budget input uses existing validation and retains invalid drafts")
