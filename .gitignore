@@ -57,3 +57,9 @@ artifacts/*
 !artifacts/shader-benchmark.csv
 !artifacts/shader-benchmark.log
 !artifacts/shader-source-hashes.json
+!artifacts/smooth-lighting-checks.log
+!artifacts/smooth-lighting-benchmark.csv
+!artifacts/smooth-lighting-benchmark.log
+!artifacts/smooth-lighting-flat-control.log
+!artifacts/meadow-grass-checks.log
+artifacts/readme-home-*.png

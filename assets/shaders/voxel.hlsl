@@ -23,7 +23,8 @@ float4 sampleBlock(int material,int axis,float2 uv) {
     int2 t=clamp(int2(uv*16),0,15); uint rgba=atlas.Load((tile*256+t.y*16+t.x)*4);
     float4 c=float4(rgba&255,(rgba>>8)&255,(rgba>>16)&255,rgba>>24);
     if(material==10) { float gray=floor((c.r+c.g+c.b)/3); return float4(floor(gray*3/4).xxx,255); }
-    if(material==4 || (material==1 && axis==1)) c.rgb=floor(c.rgb*float3(91,157,57)/255);
+    // Grass is already tinted/composited in the shared host atlas.
+    if(material==4) c.rgb=floor(c.rgb*float3(91,157,57)/255);
     return c;
 }
 float3 exitTimes(float3 o,float3 d,int3 cell,int span) {
@@ -45,12 +46,10 @@ int visibleMaterial(int3 cell,int3 dims) {
     if(stage==4 && material==3 && cell.y>height) return 0;
     return material;
 }
-float3 lighting(float3 color,int3 cell,int3 dims,int axis,int3 step,float3 hitPoint) {
-    float3 normal=axis==0?float3(-step.x,0,0):(axis==1?float3(0,-step.y,0):float3(0,0,-step.z));
-    float directional=min(1.0,(max(0,dot(normal,normalize(float3(0.2,1,-0.7))))
-        +max(0,dot(normal,normalize(float3(-0.2,1,0.7)))))*0.6+0.4);
+float3 localLight(int3 cell,int3 dims) {
+    if(any(cell<0) || any(cell>=dims)) return 1.0.xxx;
     float sky=1.0;
-    [loop] for(int y=cell.y+1;y<min(dims.y,cell.y+9);y++) {
+    [loop] for(int y=cell.y;y<min(dims.y,cell.y+8);y++) {
         int m=visibleMaterial(int3(cell.x,y,cell.z),dims);
         if(m==4 && P[1].z>0.5) sky*=0.84;
         else if(m!=0 && m!=4) {sky*=0.45;break;}
@@ -61,7 +60,42 @@ float3 lighting(float3 color,int3 cell,int3 dims,int axis,int3 step,float3 hitPo
         if(all(neighbor>=0) && neighbor.x<dims.x && neighbor.y<dims.z)
             if((columns.Load((neighbor.y*dims.x+neighbor.x)*4)&4096)!=0) fire=max(fire,0.65);
     }
-    float3 lightmap=max(sky.xxx,fire*float3(1,0.65,0.35));
+    return max(sky.xxx,fire*float3(1,0.65,0.35));
+}
+float occluder(int3 cell,int3 dims) {
+    if(any(cell<0) || any(cell>=dims)) return 0;
+    int m=visibleMaterial(cell,dims);
+    // Cutout leaves and water are not solid AO walls. Their skylight attenuation
+    // is handled separately; treating every leaf cube as solid creates dark grids.
+    return m!=0 && m!=4 && m!=9?1.0:0.0;
+}
+float3 cornerLight(float3 center,float3 sideU,float3 sideV,float3 diagonal,float u,float v,float corner) {
+    float ao=(u>0.5 && v>0.5)?0.55:1.0-0.15*(u+v+corner);
+    return (center+sideU+sideV+diagonal)*0.25*ao;
+}
+float3 smoothLight(int3 cell,int3 dims,int axis,int3 normal,float3 hitPoint) {
+    int3 u=axis==0?int3(0,0,1):int3(1,0,0);
+    int3 v=axis==1?int3(0,0,1):int3(0,1,0);
+    float3 lights[9];float cover[9];
+    // Shared 3x3 outside-face stencil: four corners reuse the same nine samples.
+    [loop] for(int i=0;i<9;i++) {
+        int3 sampleCell=cell+normal+u*(i%3-1)+v*(i/3-1);
+        lights[i]=localLight(sampleCell,dims);cover[i]=occluder(sampleCell,dims);
+    }
+    float3 a=cornerLight(lights[4],lights[3],lights[1],lights[0],cover[3],cover[1],cover[0]);
+    float3 b=cornerLight(lights[4],lights[5],lights[1],lights[2],cover[5],cover[1],cover[2]);
+    float3 c=cornerLight(lights[4],lights[3],lights[7],lights[6],cover[3],cover[7],cover[6]);
+    float3 d=cornerLight(lights[4],lights[5],lights[7],lights[8],cover[5],cover[7],cover[8]);
+    float3 relative=saturate(hitPoint-float3(cell));
+    float s=dot(relative,float3(u)),t=dot(relative,float3(v));
+    return lerp(lerp(a,b,s),lerp(c,d,s),t);
+}
+float3 lighting(float3 color,int3 cell,int3 dims,int axis,int3 step,float3 hitPoint) {
+    int3 faceNormal=axis==0?int3(-step.x,0,0):(axis==1?int3(0,-step.y,0):int3(0,0,-step.z));
+    float3 normal=float3(faceNormal);
+    float directional=min(1.0,(max(0,dot(normal,normalize(float3(0.2,1,-0.7))))
+        +max(0,dot(normal,normalize(float3(-0.2,1,0.7)))))*0.6+0.4);
+    float3 lightmap=smoothLight(cell,dims,axis,faceNormal,hitPoint);
     color*=directional*lightmap;
     // Orthographic adaptation: target-relative distance, not the artificial ray origin.
     if(P[0].w<0.5) {

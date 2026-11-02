@@ -36,11 +36,11 @@ class ShaderBenchmark {
             require(engine.uploads==uploads,"Lighting/camera-only measurements reuploaded geometry")
             rows.add(name+",${block},"+(if(enabled){"on"}else{"off"})+",${view.scene.nx},${view.scene.trees},"+(if(top){"top"}else{"3d"})+
                 ",${w.width},${w.height},${view.targetWidth},${view.targetHeight},48,"+numberText(fps)+","+numberText(stats.median)+","+numberText(stats.p95)+","+numberText(gpu.median)+","+numberText(gpu.p95)+",${engine.uploads},"+engine.adapterName)
-            File.writeTo("artifacts/shader-benchmark.csv",(String.join(rows.toArray(),delimiter:"\n")+"\n").toArray())
+            File.writeTo("artifacts/smooth-lighting-benchmark.csv",(String.join(rows.toArray(),delimiter:"\n")+"\n").toArray())
             println("${name} block ${block} FX ${enabled}: ${money(fps)} FPS; GPU ${money(gpu.median)} ms / p95 ${money(gpu.p95)}; "+engine.adapterName)
             if(block<2){
                 camera.yaw=baseYaw;view.dirty=true
-                let path="artifacts/shader-"+name+"-"+(if(enabled){"on"}else{"off"})+".png"
+                let path="artifacts/smooth-lighting-"+name+"-"+(if(enabled){"on"}else{"off"})+".png"
                 if(let Some(a)<-app){if(let Some(run)<-a.experiment.run){run.seek(2);a.refreshExperimentView();a.clockNow=160};render(a,w,capture:path)}
                 else{view.prepare(camera,b,w,topDown:top);stressFrame(w,view,font,top,"Shader A/B",meter,capture:path)}
             }
@@ -48,7 +48,7 @@ class ShaderBenchmark {
         camera.yaw=baseYaw
     }
     func run(w: SdlWindow,assets: Assets): Unit {
-        File.writeTo("artifacts/shader-benchmark.csv",(rows[0]+"\n").toArray())
+        File.writeTo("artifacts/smooth-lighting-benchmark.csv",(rows[0]+"\n").toArray())
         let app=App(assets)
         try{
             for(size in [Size(1280.0,860.0),Size(2560.0,1380.0)]){

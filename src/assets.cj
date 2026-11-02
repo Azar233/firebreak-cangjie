@@ -16,6 +16,11 @@ func clusterColor(label: Int64): Color {
 let BLOCK_PATHS=["grass_block_top","grass_block_side","dirt","oak_log","oak_log_top","oak_leaves","stone","oak_planks","bricks","dirt_path_top"]
 let TOOL_PATHS=["map","compass_16","iron_shovel","water_bucket","oak_sign","iron_axe","iron_shovel","oak_sign","barrier"]
 
+// Java Edition meadow grass, explicitly selected by the user (#83BB6D).
+func meadowGrass(c: Color): Color {
+    Color.rgba(Int64(c.r)*131/255,Int64(c.g)*187/255,Int64(c.b)*109/255,Int64(c.a))
+}
+
 class Tile {
     let pixels=Array<Color>(256,repeat:Color.rgba(0,0,0,0))
     init(path: String) {
@@ -37,6 +42,15 @@ class Assets <: Resource {
         this.r=r
         try {
             for (name in BLOCK_PATHS) { tiles.add(Tile("assets/minecraft/textures/block/"+name+".png")) }
+            // Bake only the grass tint/side overlay once. CPU and GPU consume
+            // identical pixels; leaves retain their independent existing tint.
+            let overlay=Tile("assets/minecraft/textures/block/grass_block_side_overlay.png")
+            for(i in 0..256){
+                tiles[0].pixels[i]=meadowGrass(tiles[0].pixels[i])
+                let base=tiles[1].pixels[i];let grass=meadowGrass(overlay.pixels[i]);let a=Int64(grass.a)
+                tiles[1].pixels[i]=Color.rgba((Int64(base.r)*(255-a)+Int64(grass.r)*a)/255,
+                    (Int64(base.g)*(255-a)+Int64(grass.g)*a)/255,(Int64(base.b)*(255-a)+Int64(grass.b)*a)/255,Int64(base.a))
+            }
             image("textures/gui/widgets.png")
             image("textures/gui/container/generic_54.png")
             for (name in TOOL_PATHS) { image("textures/item/"+name+".png") }
@@ -65,7 +79,7 @@ class Assets <: Resource {
             case _ => 9
         }
         let c=tiles[index].sample(hit.u,hit.v)
-        if (hit.material==4 || (hit.material==1 && hit.axis==1)) {
+        if (hit.material==4) {
             return Color.rgba(Int64(c.r)*91/255,Int64(c.g)*157/255,Int64(c.b)*57/255,Int64(c.a))
         }
         return c

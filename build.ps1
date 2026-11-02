@@ -31,6 +31,7 @@ try {
         files = $files; count = $files.Count; unicodePages = $pages
         source = $source; date = '2026-11-01'
     } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath 'artifacts/resource-copy.json' -Encoding utf8
+    & './tools/prepare-grass-textures.ps1'
     & "$sdk/tools/bin/cjpm.exe" build
     if ($LASTEXITCODE -ne 0) { throw 'Firebreak build failed.' }
     & './tools/set-app-icon.ps1' -SourceImage 'assets/minecraft/textures/block/oak_sapling.png' -Executable 'target/release/bin/main.exe'
@@ -39,10 +40,10 @@ try {
         $previousErrorAction = $ErrorActionPreference
         try {
             $ErrorActionPreference = 'Continue'
-            & './target/release/bin/main.exe' --verify 2>&1 | Tee-Object -FilePath 'artifacts/shader-checks.log'
+            & './target/release/bin/main.exe' --verify 2>&1 | Tee-Object -FilePath 'artifacts/smooth-lighting-checks.log'
             $checkExit = $LASTEXITCODE
         } finally { $ErrorActionPreference = $previousErrorAction }
-        if ($checkExit -ne 0) { throw "Workbench checks failed ($checkExit). See artifacts/shader-checks.log." }
+        if ($checkExit -ne 0) { throw "Workbench checks failed ($checkExit). See artifacts/smooth-lighting-checks.log." }
     }
     if ($VerifyMagic) { & './tools/verify-magic.ps1' }
     if ($Run) { & './target/release/bin/main.exe' }

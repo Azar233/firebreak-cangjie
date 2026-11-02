@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.4.6 — Smooth lighting and meadow grass (2026-11-02)
+
+- Replace per-voxel lighting with interpolated face-corner light and local voxel AO, preserving nearest-neighbor texture detail, leaf cutouts and independent analysis overlays.
+- Use Java 1.21.1 grass/dirt textures with the user-selected meadow tint #83BB6D; composite side grass once into the shared CPU/GPU atlas. Fetch the pinned official resource source separately; original assets remain excluded from Git.
+- Validate 292 native checks and an expected old-shader failure for the new contact-gradient regression. Retain separate ABBA measurements, including the unresolved large-window fire-replay timing fluctuation; see docs/SMOOTH_LIGHTING.md.
+- Synchronize the previously local fixes at the user's request. P5 remains deferred; visual review is pending.
+- Simplify the Chinese/English README homepages with the application oak-sapling icon, stack badges, section navigation and three annotated application screenshots.
+
 ## v0.4.5 — Optional Minecraft-inspired GPU lighting (2026-11-02)
 
 - Adapt the supplied vanilla two-light and fog formulas to the existing D3D11 voxel pipeline, with bounded skylight/nearby-fire proxies for the absent Minecraft runtime lightmap. Preserve leaf cutouts and analysis overlays; exclude UI and 2D distance fog.

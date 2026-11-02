@@ -9,6 +9,7 @@ main(args: Array<String>): Int64 {
             try(icon=Surface.loadPng("assets/generated/app-icon-64.png")){window.setIcon(icon)}
             try (assets=Assets(window.renderer)) {
                 if(args.size>0 && args[0]=="--verify-gpu"){let app=App(assets);try{verifyGpu(app,window)}finally{app.close()};return 0}
+                if(args.size>0 && args[0]=="--verify-shaders"){let app=App(assets);try{verifyShaders(app,window)}finally{app.close()};return 0}
                 if (args.size>0 && args[0]=="--benchmark-forest") { ForestBenchmark().run(window,assets); return 0 }
                 if (args.size>0 && args[0]=="--benchmark-gpu") { ForestBenchmark(gpu:true).run(window,assets); return 0 }
                 if (args.size>0 && args[0]=="--benchmark-shaders") { ShaderBenchmark().run(window,assets); return 0 }

@@ -4,6 +4,7 @@ import sdl.*
 import std.fs.{File,remove}
 
 func verifyShaders(app: App,w: SdlWindow): Unit {
+    verifySmoothLighting(app,w)
     let scene=Scene();let original=scene.blocks.clone();let revision=scene.revision
     try(view=VoxelView(scene,app.assets)){
         view.useGpu=true;let camera=Camera();let box=Rect(0.0,0.0,256.0,192.0);camera.fitScene(scene,box)
@@ -56,4 +57,33 @@ func verifyShaders(app: App,w: SdlWindow): Unit {
     pass(pair.baseline.gpu.getOrThrow().engine.readback()==baseline && pair.planned.gpu.getOrThrow().engine.readback()==planned,"Comparison lighting off restores both original map images")
     app.clearComparison();app.comparePanel=false;app.mapMode=false;app.work.acceptLoaded(Project(),"");app.syncScene()
     app.preferences.shadersEnabled=false;app.preferences.gpuEnabled=false;app.view.useGpu=false;app.menuOpen=false
+}
+
+func verifySmoothLighting(app: App,w: SdlWindow): Unit {
+    let scene=Scene(nx:8,nz:8,demo:false)
+    for(z in 0..8){for(x in 0..8){scene.heights[z*8+x]=1;scene.set(x,0,z,5)}}
+    scene.set(4,1,3,5)
+    try(view=VoxelView(scene,app.assets)){
+        view.useGpu=true;let camera=Camera();let box=Rect(0.0,0.0,256.0,256.0)
+        view.prepare(camera,box,w,topDown:true)
+        require(view.gpuActive,"Smooth-light regression requires real GPU")
+        let engine=view.gpu.getOrThrow().engine
+        // Neutral opaque atlas separates lighting gradients from texture detail.
+        engine.upload(2,Array<UInt8>(10*256*4,repeat:255))
+        view.shadersEnabled=false;view.dirty=true;view.prepare(camera,box,w,topDown:true);let off=engine.readback()
+        view.shadersEnabled=true;view.prepare(camera,box,w,topDown:true);let on=engine.readback()
+        let row: Int64=112;let near: Int64=(row*256+124)*4;let far: Int64=(row*256+100)*4
+        pass(off[near]==off[far] && Int64(on[far])-Int64(on[near])>10,
+            "Actual GPU white ground has a smooth within-face contact-light gradient that flat per-voxel lighting cannot produce")
+        var previous=Int64(on[far]);var levels: Int64=1
+        for(x in 101..125){
+            let value=Int64(on[(row*256+x)*4]);require(value<=previous && previous-value<=4,"Smooth contact lighting has a discontinuity inside one face")
+            if(value!=previous){levels++};previous=value
+        }
+        pass(levels>=8,"Contact-light interpolation produces at least eight monotone levels without filtering the texture")
+        let left=Int64(on[(row*256+95)*4]);let right=Int64(on[(row*256+96)*4])
+        pass(left-right<=2 && right-left<=2,"Adjacent coplanar faces share corner lighting without a block-edge seam")
+        for(i in 0..256*256){require(on[i*4+3]==255 && on[i*4]==on[i*4+1] && on[i*4+1]==on[i*4+2],"Smooth lighting changes neutral color or alpha")}
+        pass(true,"Neutral material and output alpha remain intact under interpolated lighting")
+    }
 }
