@@ -38,7 +38,7 @@ func drawComparison(app: App,l: Layout): Unit {
 }
 func drawComparisonPanel(app: App,l: Layout): Unit {
     let x=l.panel.x+18.0; let y=l.panel.y
-    uiText(app,l,app.t("配对评估 / 无风规则 v1","Paired Evaluation / No-wind v1"),x,y+18.0)
+    uiText(app,l,if (let Some(result) <- app.evalResult) { if (result.candidatePreview) { app.t("候选对照 / 尚未应用","Candidate Preview / Unapplied") } else { app.t("配对评估 / 无风规则 v1","Paired Evaluation / No-wind v1") } } else { app.t("配对评估 / 无风规则 v1","Paired Evaluation / No-wind v1") },x,y+18.0)
     if (let Some(result) <- app.evalResult) {
         uiText(app,l,app.t("全部 ${result.rows.size} 组 / 加权均值","All ${result.rows.size} scenarios / Weighted mean"),x,y+44.0)
         uiText(app,l,app.t("烧损 ${money(result.mean(false,0))} → ${money(result.mean(true,0))}","Burned ${money(result.mean(false,0))} -> ${money(result.mean(true,0))}"),x,y+70.0)

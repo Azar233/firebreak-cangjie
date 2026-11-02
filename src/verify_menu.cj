@@ -38,7 +38,7 @@ func verifyMenu(app: App,w: SdlWindow): Unit {
     }
     pass(true,"menu, settings, exit and book targets fit three desktop sizes with non-overlapping 44px targets")
     app.menuFocus=80
-    for (id in [81,82,83,84,85,98,86,87,80]) {
+    for (id in [81,82,83,84,85,98,86,99,87,80]) {
         event(app,w,UiEvent.KeyDown(Key.Tab,false)); require(app.menuFocus==id,"Menu tab order differs from visual order")
     }
     pass(true,"keyboard focus is trapped in the menu and follows visible row order")

@@ -20,7 +20,7 @@ class MenuLayout {
     func bookBodyBox(): Rect { bookAt(44.0,76.0,350.0,394.0) }
     func controls(page: Int64): Array<Int64> {
         match(page) {
-            case 0=>[80,81,82,83,84,85,98,86,87]
+            case 0=>[80,81,82,83,84,85,98,86,99,87]
             case 1=>[33,34,35,36,88]
             case 2=>[90,91,92,88]
             case 3=>[49,50,51,88]
@@ -34,6 +34,7 @@ class MenuLayout {
             if (id==88) { return bookAt(0.0,558.0,438.0,44.0) }
             return bookAt(if (id==96) { 48.0 } else { 342.0 },482.0,48.0,44.0)
         }
+        if (id==86 || id==99) { return at(if (id==99) { 228.0 } else { 0.0 },296.0,220.0,44.0) }
         if (id==85 || id==98) { return at(if (id==98) { 228.0 } else { 0.0 },244.0,220.0,44.0) }
         if (id>=33 && id<=36) { return at(0.0,94.0+Float32(id-33)*76.0,448.0,44.0) }
         if (id>=49 && id<=51) { return at(0.0,94.0+Float32(id-49)*76.0,448.0,44.0) }
@@ -66,6 +67,7 @@ func menuLabel(app: App,id: Int64): String {
         case 83=>app.t("实验参数…","Experiment Settings...")
         case 84=>app.t("智能体设置…","Agent Settings...")
         case 85=>app.t("语言 / Language: 中文","Language / 语言: English")
+        case 99=>app.t("方案建议…","Plan Suggestions...")
         case 98=>app.t("项目手册…","Project Handbook...")
         case 86=>app.t("保存项目","Save Project")
         case 87=>app.t("退出软件","Quit to Desktop")

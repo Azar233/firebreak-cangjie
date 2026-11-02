@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.4.0 — P4 constrained candidate planning (2026-11-02)
+
+- Generate up to 14 feasible road-adjacent, target-perimeter and articulation-cell additions while preserving existing treatment and enforcing calibration, target/exclusion and total-budget constraints.
+- Rank on 8 shared training scenarios using explicit benefit/cost metrics, then allow 8 disjoint-key holdout scenarios to reject the training winner without selecting a replacement. Preserve failed candidates and avoid global-optimum claims.
+- Add menu entry, cancellable background search, map-only preview, labeled unapplied P3 comparison, explicit manual apply/undo and revision invalidation. Export all candidate masks, sample metrics, scenarios and bilingual explanations.
+- Include a tested connector-camp example and one planning screenshot. 229 native checks passed (27 new P4 checks plus 202 affected regressions); see docs/P4_PLANNING.md. P5 CangjieMagic integration remains upcoming.
+
 ## v0.3.2 — Adaptive modals and clearer book text (2026-11-02)
 
 - Scale menu/book geometry, text, button borders and input targets together in quarter steps from 1x to 3x as window space grows.

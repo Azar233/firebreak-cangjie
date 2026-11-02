@@ -2,6 +2,11 @@ package firebreak
 
 // Only known model diagnostics are translated. User paths and site annotations remain intact.
 let MODEL_MESSAGES=[
+    ["候选不能覆盖已有处理方案","Candidate cannot replace existing treatment"],
+    ["候选没有新增处理格","Candidate adds no treatment cells"],
+    ["请先标定场地宽度再生成建议","Calibrate site width before searching for suggestions"],
+    ["缺少完整候选评估","Complete candidate assessment is missing"],
+    ["候选搜索已取消","Candidate search cancelled"],
     ["非法连通网格","Invalid connectivity grid"],
     ["保护目标尺寸不匹配","Target mask dimensions do not match"],
     ["起火格超出网格","Ignition is outside the grid"],

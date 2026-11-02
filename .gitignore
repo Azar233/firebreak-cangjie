@@ -39,3 +39,5 @@ artifacts/*
 /settings.local.json
 /settings.local.json.writing
 !artifacts/menu-checks.log
+
+!artifacts/p4-checks.log

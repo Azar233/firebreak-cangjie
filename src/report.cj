@@ -16,7 +16,7 @@ func evaluationCsv(result: EvaluationResult): String {
 }
 func evaluationParameters(result: EvaluationResult): String {
     let p=readProjectText(result.projectText); let j=JsonObject()
-    j.put("format",JsonString("firebreak-evaluation")); j.put("version",JsonInt(1)); j.put("revision",JsonInt(result.revision))
+    j.put("candidatePreview",JsonBool(result.candidatePreview)); j.put("format",JsonString("firebreak-evaluation")); j.put("version",JsonInt(1)); j.put("revision",JsonInt(result.revision))
     j.put("wind",JsonString("none")); j.put("spreadRuleVersion",JsonInt(1))
     j.put("spreadProbability",JsonString(numberText(p.spreadProbability))); j.put("burnSteps",JsonInt(p.burnSteps))
     let scenarios=JsonArray()
@@ -30,7 +30,7 @@ func evaluationParameters(result: EvaluationResult): String {
 func evaluationReport(result: EvaluationResult,english!: Bool=false): String {
     if (english) { return englishEvaluationReport(result) }
     let p=readProjectText(result.projectText)
-    return "# 断火线：多情景方案比较\n\n"+
+    return "# 断火线：多情景方案比较\n\n"+(if (result.candidatePreview) { "候选预览：尚未应用到当前工作台，导出项目为候选快照。\n\n" } else { "" })+
         "场地快照：site.firebreak；revision ${result.revision}；样本 ${result.rows.size} 组。\n\n"+
         "|加权均值（格）|原始场地|处理方案|\n|---|---:|---:|\n"+
         "|模拟烧损|${money(result.mean(false,0))}|${money(result.mean(true,0))}|\n"+
@@ -82,7 +82,7 @@ func exportEvaluation(result: EvaluationResult,assets: Assets,parent: String,eng
 }
 func englishEvaluationReport(result: EvaluationResult): String {
     let p=readProjectText(result.projectText)
-    return "# Firebreak: Paired Scenario Evaluation\n\n"+
+    return "# Firebreak: Paired Scenario Evaluation\n\n"+(if (result.candidatePreview) { "Candidate preview: not applied to the workbench; exported site is the candidate snapshot.\n\n" } else { "" })+
         "Frozen site: site.firebreak. Revision ${result.revision}; ${result.rows.size} paired scenarios.\n\n"+
         "|Weighted mean (cells)|Baseline|Treatment|\n|---|---:|---:|\n"+
         "|Burned|${money(result.mean(false,0))}|${money(result.mean(true,0))}|\n"+

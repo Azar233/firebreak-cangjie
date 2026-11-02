@@ -38,10 +38,10 @@ try {
         $previousErrorAction = $ErrorActionPreference
         try {
             $ErrorActionPreference = 'Continue'
-            & './target/release/bin/main.exe' --verify 2>&1 | Tee-Object -FilePath 'artifacts/menu-checks.log'
+            & './target/release/bin/main.exe' --verify 2>&1 | Tee-Object -FilePath 'artifacts/p4-checks.log'
             $checkExit = $LASTEXITCODE
         } finally { $ErrorActionPreference = $previousErrorAction }
-        if ($checkExit -ne 0) { throw "Workbench checks failed ($checkExit). See artifacts/menu-checks.log." }
+        if ($checkExit -ne 0) { throw "Workbench checks failed ($checkExit). See artifacts/p4-checks.log." }
     }
     if ($VerifyMagic) { & './tools/verify-magic.ps1' }
     if ($Run) { & './target/release/bin/main.exe' }

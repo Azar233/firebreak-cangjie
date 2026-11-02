@@ -90,6 +90,11 @@ func drawOverlays(app: App,l: Layout): Unit {
         if (p.forbidden[i]!=0) { cellOutline(app,l,i,Color.rgb(237,103,116)) }
     }
     if (app.view.selectedX>=0 && app.view.selectedZ>=0) { cellOutline(app,l,app.view.selectedZ*GRID_X+app.view.selectedX,Color.rgb(255,235,137)) }
+    if (app.suggestPanel && app.candidateVisible) {
+        if (let Some(result) <- app.searchResult) {
+            if (!result.entries.isEmpty()) { for (i in result.entries[app.candidateIndex].candidate.added) { cellOutline(app,l,i,Color.rgb(255,215,66)) } }
+        }
+    }
     for (i in app.selection()) { cellOutline(app,l,i,Color.rgb(255,235,137)) }
     if (app.experiment.showConnectivity) {
         for (i in app.experiment.analysis.path) { cellOutline(app,l,i,Color.rgb(255,218,89)) }
@@ -162,12 +167,12 @@ func render(app: App,window: SdlWindow,capture!: String=""): Unit {
     r.beginScene(l.width,l.height,Color.rgb(34,38,32))
     frame(r,Rect(12.0,12.0,l.width-24.0,76.0))
     uiText(app,l,app.t("断火线","Firebreak"),30.0,26.0,scale:if (app.preferences.english) { 1.6 } else { 2.0 })
-    uiText(app,l,app.t("P3 / 方案对比","P3 / Plan Comparison")+(if (app.work.dirty()) { app.t(" * 未保存"," * Unsaved") } else if (app.work.path.isEmpty()) { app.t(" / 未另存"," / Not Saved") } else { app.t(" / 已保存"," / Saved") }),if (app.preferences.english) { 250.0 } else { 164.0 },40.0,color:Color.rgb(222,220,192))
+    uiText(app,l,app.t("P4 / 方案建议","P4 / Plan Suggestions")+(if (app.work.dirty()) { app.t(" * 未保存"," * Unsaved") } else if (app.work.path.isEmpty()) { app.t(" / 未另存"," / Not Saved") } else { app.t(" / 已保存"," / Saved") }),if (app.preferences.english) { 250.0 } else { 164.0 },40.0,color:Color.rgb(222,220,192))
     mcButton(app,l,53,app.t("菜单 [Esc]","Menu [Esc]"))
     mcButton(app,l,0,app.t("相机复位","Reset Camera")); mcButton(app,l,1,app.t("俯视编辑","Overhead"))
     let titles=[app.t("新建","New"),app.t("打开","Open"),app.t("另存为","Save As"),app.t("导入底图","Import Image"),app.t("撤销","Undo"),app.t("重做","Redo"),if (app.mapMode) { app.t("三维场景","3D Scene") } else { app.t("二维地图","2D Map") }]
     for (i in 0..7) { mcButton(app,l,10+i,titles[i]) }
-    if (!app.comparePanel) { mcButton(app,l,18,if (reference) { app.t("纹理俯视","Texture Map") } else { app.t("参照底图","Reference") }) }
+    if (!app.comparePanel && !app.suggestPanel) { mcButton(app,l,18,if (reference) { app.t("纹理俯视","Texture Map") } else { app.t("参照底图","Reference") }) }
     mcButton(app,l,19,if (app.simPanel) { app.t("场地编辑","Site Editor") } else { app.t("火势实验","Fire Trial") })
     mcButton(app,l,52,if (app.comparePanel) { app.t("返回编辑","Back to Editor") } else { app.t("方案对比","Compare Plans") })
     if (app.comparePanel) { drawComparison(app,l) }
@@ -184,7 +189,8 @@ func render(app: App,window: SdlWindow,capture!: String=""): Unit {
     }
     frame(r,l.panel,dark:true)
     let x=l.panel.x+18.0; let y=l.panel.y
-    if (app.comparePanel) { drawComparisonPanel(app,l) }
+    if (app.suggestPanel) { drawSuggestions(app,l) }
+    else if (app.comparePanel) { drawComparisonPanel(app,l) }
     else if (app.simPanel) { drawSimulationPanel(app,l) }
     else if (app.settings) {
         uiText(app,l,app.t("尺度与预算 / Enter 确认","Scale & Budget / Enter: Apply"),x,y+18.0)
@@ -205,15 +211,15 @@ func render(app: App,window: SdlWindow,capture!: String=""): Unit {
         mcButton(app,l,3,app.t("向左旋转","Rotate Left")); mcButton(app,l,4,app.t("向右旋转","Rotate Right"))
         mcButton(app,l,5,app.t("放大 +","Zoom In +")); mcButton(app,l,6,app.t("缩小 -","Zoom Out -"))
     }
-    if (!app.simPanel && !app.comparePanel) {
+    if (!app.simPanel && !app.comparePanel && !app.suggestPanel) {
         mcButton(app,l,30,if (app.erase) { app.t("擦除模式：开","Erase: On") } else { app.t("擦除模式：关","Erase: Off") })
         mcButton(app,l,31,app.t("确认应用","Apply")); mcButton(app,l,32,app.t("取消选区","Cancel"))
         mcButton(app,l,17,if (app.settings) { app.t("返回场地信息","Back to Site Info") } else { app.t("尺度与预算设置","Project Settings") })
     }
-    let status=if (app.comparePanel) { app.t("同步相机 / 同步仿真步 | 回放：情景 1 | 汇总：全部情景 | H 树冠","Shared camera / time | Replay: scenario 1 | Summary: all | H: Canopy") } else if (app.startCell>=0) { app.t("预览 ${app.selection().size} 格 | Enter 应用 / Esc 取消 | 青色保护 / 红色禁区","Preview ${app.selection().size} cells | Enter: Apply / Esc: Cancel | Cyan: Protected / Red: Excluded") }
+    let status=if (app.suggestPanel) { app.t("金色边框：新增候选，尚未应用 | 每个候选共用情景，不保证全局最优","Gold outlines: unapplied candidate | Shared scenarios; no global-optimum guarantee") } else if (app.comparePanel) { app.t("同步相机 / 同步仿真步 | 回放：情景 1 | 汇总：全部情景 | H 树冠","Shared camera / time | Replay: scenario 1 | Summary: all | H: Canopy") } else if (app.startCell>=0) { app.t("预览 ${app.selection().size} 格 | Enter 应用 / Esc 取消 | 青色保护 / 红色禁区","Preview ${app.selection().size} cells | Enter: Apply / Esc: Cancel | Cyan: Protected / Red: Excluded") }
         else { app.t("左键框选 | 右键旋转 / 中键平移 | 1-9 工具 | Ctrl+S 保存 | Ctrl+Z 撤销","Drag: Select | Right: Rotate / Middle: Pan | 1-9: Tools | Ctrl+S: Save | Esc: Menu") }
     r.pushClip(Rect(20.0,l.canvas.bottom()+6.0,l.canvas.w,24.0)); uiText(app,l,status,20.0,l.canvas.bottom()+10.0,color:Color.rgb(190,199,170)); r.popClip()
-    if (!app.comparePanel) {
+    if (!app.comparePanel && !app.suggestPanel) {
         app.assets.blit("textures/gui/widgets.png",l.toolbar,source:Some(Rect(0.0,0.0,182.0,22.0)))
         app.assets.blit("textures/gui/widgets.png",Rect(l.toolbar.x+Float32(app.tool)*60.0-3.0,l.toolbar.y,72.0,66.0),source:Some(Rect(0.0,22.0,24.0,22.0)))
         for (i in 0..9) {

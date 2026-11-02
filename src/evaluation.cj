@@ -50,12 +50,14 @@ class PairedOutcome {
     init(scenario: Scenario,baseline: Outcome,planned: Outcome) { this.scenario=scenario; this.baseline=baseline; this.planned=planned }
 }
 class EvaluationResult {
+    let candidatePreview: Bool
     let projectText: String
     let revision: Int64
     let rows: Array<PairedOutcome>
     let baselineReplay: FireRun
     let plannedReplay: FireRun
-    init(projectText: String,revision: Int64,rows: Array<PairedOutcome>,baselineReplay: FireRun,plannedReplay: FireRun) {
+    init(projectText: String,revision: Int64,rows: Array<PairedOutcome>,baselineReplay: FireRun,plannedReplay: FireRun,candidatePreview!: Bool=false) {
+        this.candidatePreview=candidatePreview
         this.projectText=projectText; this.revision=revision; this.rows=rows
         this.baselineReplay=baselineReplay; this.plannedReplay=plannedReplay
     }
@@ -87,6 +89,8 @@ class EvaluationProgress {
     }
 }
 class EvaluationJob {
+    let keepReplay: Bool
+    let candidatePreview: Bool
     let projectText: String
     let revision: Int64
     let scenarios: Array<Scenario>
@@ -96,7 +100,8 @@ class EvaluationJob {
     var cancelled=false
     var error=""
     var result: ?EvaluationResult=None
-    init(p: Project,revision: Int64,scenarios: Array<Scenario>) {
+    init(p: Project,revision: Int64,scenarios: Array<Scenario>,keepReplay!: Bool=true,candidatePreview!: Bool=false) {
+        this.keepReplay=keepReplay; this.candidatePreview=candidatePreview
         p.validate(); require(scenarios.size>=1 && scenarios.size<=64,"情景集合不能为空或超过 64")
         let ids=ArrayList<Int64>()
         for (s in scenarios) { require(p.fuel(s.ignition)>0.0 && !ids.contains(s.id),"情景起火点不可燃或 id 重复"); ids.add(s.id) }
@@ -116,8 +121,8 @@ class EvaluationJob {
             for (i in 0..scenarios.size) {
                 if (isCancelled()) { break }
                 let s=scenarios[i]
-                let baseline=FireRun(baseFuel,GRID_X,GRID_Z,s.ignition,p.spreadProbability,p.burnSteps,s.seed,targets:targets,keepHistory:i==0)
-                let planned=FireRun(planFuel,GRID_X,GRID_Z,s.ignition,p.spreadProbability,p.burnSteps,s.seed,targets:targets,allowBlockedIgnition:true,keepHistory:i==0)
+                let baseline=FireRun(baseFuel,GRID_X,GRID_Z,s.ignition,p.spreadProbability,p.burnSteps,s.seed,targets:targets,keepHistory:i==0 && keepReplay)
+                let planned=FireRun(planFuel,GRID_X,GRID_Z,s.ignition,p.spreadProbability,p.burnSteps,s.seed,targets:targets,allowBlockedIgnition:true,keepHistory:i==0 && keepReplay)
                 while (baseline.current().burning()>0 || planned.current().burning()>0) {
                     if (isCancelled()) { break }
                     baseline.advance(); planned.advance()
@@ -128,7 +133,7 @@ class EvaluationJob {
                 synchronized(lock) { completed=rows.size }
             }
             synchronized(lock) {
-                if (!cancelled) { result=Some(EvaluationResult(projectText,revision,rows.toArray(),baselineReplay.getOrThrow(),plannedReplay.getOrThrow())) }
+                if (!cancelled) { result=Some(EvaluationResult(projectText,revision,rows.toArray(),baselineReplay.getOrThrow(),plannedReplay.getOrThrow(),candidatePreview:candidatePreview)) }
                 done=true
             }
         } catch(e: Exception) { synchronized(lock) { error=e.message; done=true } }

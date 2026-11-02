@@ -8,7 +8,7 @@ import std.math.floor
 import std.fs.{File,exists}
 import stdx.encoding.base64.toBase64String
 
-let CONTROLS=[0,1,2,3,4,5,6,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,30,31,32,33,34,35,36,40,41,42,43,44,45,46,47,48,49,50,51,52,53,60,61,62,63,64,65,66,67]
+let CONTROLS=[0,1,2,3,4,5,6,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,30,31,32,33,34,35,36,40,41,42,43,44,45,46,47,48,49,50,51,52,53,60,61,62,63,64,65,66,67,70,71,72,73,74,75,76,77,78]
 let TOOL_NAMES=["选择","林地","道路","水域","建筑","清理植被","隔离带","保护目标","禁止处理"]
 
 class Layout {
@@ -24,6 +24,11 @@ class Layout {
         toolbar=Rect(20.0+(canvas.w-546.0)/2.0,height-96.0,546.0,66.0)
     }
     func control(id: Int64): Rect {
+        if (id>=70 && id<=78) {
+            if (id<=75) { return Rect(panel.x+18.0+Float32((id-70)%2)*122.0,panel.y+180.0+Float32((id-70)/2)*52.0,116.0,44.0) }
+            let row=match(id) { case 76=>0; case 78=>1; case _=>2 }
+            return Rect(panel.x+18.0,panel.y+336.0+Float32(row)*52.0,238.0,44.0)
+        }
         if (id==53) { return Rect(width-366.0,28.0,110.0,44.0) }
         if (id==52) { return Rect(956.0,94.0,124.0,44.0) }
         if (id>=60) {
@@ -54,8 +59,10 @@ class Layout {
             case _ => Rect(panel.x+18.0,panel.y+446.0,238.0,44.0)
         }
     }
-    func available(id: Int64,settings: Bool,simulation!: Bool=false,parameters!: Bool=false,comparison!: Bool=false): Bool {
+    func available(id: Int64,settings: Bool,simulation!: Bool=false,parameters!: Bool=false,comparison!: Bool=false,suggestions!: Bool=false): Bool {
         if (id==52 || id==53) { return true }
+        if (id>=70) { return suggestions }
+        if (suggestions) { return id<=1 || (id>=10 && id<=16) || id==19 || id==52 }
         if (id>=60) { return comparison }
         if (comparison) { return id<=1 || (id>=10 && id<=16) || id==19 }
         if (id>=40) { return simulation && (if (id==48) { true } else if (id>=49) { parameters } else { !parameters }) }
@@ -64,8 +71,8 @@ class Layout {
         if (id>=2 && id<=6) { return !settings }
         return true
     }
-    func hit(x: Float32,y: Float32,settings!: Bool=false,simulation!: Bool=false,parameters!: Bool=false,comparison!: Bool=false): Int64 {
-        for (id in CONTROLS) { if (available(id,settings,simulation:simulation,parameters:parameters,comparison:comparison) && control(id).contains(x,y)) { return id } }; return -1
+    func hit(x: Float32,y: Float32,settings!: Bool=false,simulation!: Bool=false,parameters!: Bool=false,comparison!: Bool=false,suggestions!: Bool=false): Int64 {
+        for (id in CONTROLS) { if (available(id,settings,simulation:simulation,parameters:parameters,comparison:comparison,suggestions:suggestions) && control(id).contains(x,y)) { return id } }; return -1
     }
 }
 
@@ -87,6 +94,11 @@ class App {
     var quitReturnFocus: Int64=80
     var quitAfterSave=false
     let experiment=Experiment()
+    var suggestPanel=false
+    var searchJob: ?PlanSearchJob=None
+    var searchResult: ?PlanSearchResult=None
+    var candidateIndex: Int64=0
+    var candidateVisible=false
     var comparePanel=false
     var sampleCount: Int64=16
     var evalJob: ?EvaluationJob=None
@@ -130,7 +142,7 @@ class App {
         view.dirty=true
     }
     func updateExperiment(now: UInt64): Unit {
-        clockNow=now; syncComparison(); pollEvaluation(now)
+        clockNow=now; syncSuggestions(); pollSearch(); syncComparison(); pollEvaluation(now)
         if (experiment.sync(work.project,work.revision)) { refreshExperimentView() }
         if (let Some(r) <- experiment.run) { if (r.tick(now)) { refreshExperimentView() } }
     }
@@ -216,7 +228,7 @@ class App {
     func syncScene(): Unit {
         experiment.sync(work.project,work.revision); refreshExperimentView()
         populateScene(scene,work.project,experiment.planned); view.dirty=true
-        syncComparison()
+        syncComparison(); syncSuggestions()
     }
     func makeReference(p: Project): ?Texture {
         var next: ?Texture=None
@@ -305,6 +317,7 @@ class App {
             commitField(); activeField=id; draft="${fieldValue(id)}"; message=t("输入数值，Enter 确认，Esc 取消；Backspace 删除。","Enter a number; Enter confirms, Esc cancels, Backspace deletes."); return
         }
         commitField()
+        if (id>=70) { suggestionAction(id); return }
         if (id>=60) { comparisonAction(id); return }
         if (id>=40 && id<=48) { simulationAction(id); return }
         if (id>=20 && id<=28) { cancel(); pickingIgnition=false; tool=id-20; message=t("工具：","Tool: ")+toolName(tool)+t("；拖动预览，再确认应用。","; drag to preview, then apply."); return }
@@ -328,11 +341,11 @@ class App {
             case 18 =>
                 if (reference.isNone()) { message=t("请先导入底图；二维地图已使用三维场景的纹理俯视。","Import a reference image first. The map already uses actual voxel textures."); return }
                 cancel(); referenceMode = if (mapMode) { !referenceMode } else { true }; mapMode=true
-            case 19 => cancel(); pickingIgnition=false; comparePanel=false; simPanel = !simPanel; simParameters=false
+            case 19 => cancel(); pickingIgnition=false; suggestPanel=false; comparePanel=false; simPanel = !simPanel; simParameters=false
             case 53 => openMenu()
             case 52 =>
                 require(startCell<0,t("请先应用或取消编辑预览","Apply or cancel the edit preview first"))
-                cancel(); pickingIgnition=false; comparePanel = !comparePanel; simPanel=false; referenceMode=false
+                cancel(); pickingIgnition=false; suggestPanel=false; comparePanel = !comparePanel; simPanel=false; referenceMode=false
                 if (let Some(r) <- experiment.run) { r.running=false }
                 message=t("同情景对比 / 无风规则 v1；样本比例不代表现实火灾概率。","Paired scenarios / no-wind rule v1. Sample rates are not real-world probabilities.")
             case 30 => cancel(); erase = !erase; message=t("擦除模式：地类恢复空地，标记或处理带移除。","Erase: clear land, markers or treatment strips.")
@@ -361,8 +374,9 @@ class App {
         require(dialog.isNone(),t("请先完成文件对话框","Finish the file dialog first"))
         commitField(); require(startCell<0,t("请先应用或取消选区","Apply or cancel the selection first"))
         dialogKind=kind
-        if (kind==65) {
-            syncComparison(); require(evalResult.isSome(),t("请先完成当前场地的评估","Complete evaluation of the current site first"))
+        if (kind==65 || kind==78) {
+            if (kind==78) { syncSuggestions(); require(searchResult.isSome(),t("请先完成候选搜索","Complete candidate search first")) }
+            else { syncComparison(); require(evalResult.isSome(),t("请先完成当前场地的评估","Complete evaluation of the current site first")) }
             dialog=Some(FileDialogs.openFolder(options:FileDialogOptions(),window:Some(window))); return
         }
         let filter=if (kind==13) { FileDialogFilter(t("底图 PNG / JPEG","Reference PNG / JPEG"),"png;jpg;jpeg") } else { FileDialogFilter(t("断火线项目","Firebreak Project"),"firebreak") }
@@ -389,7 +403,10 @@ class App {
                 case FileDialogResult.FileDialogSelected(paths,_) =>
                     dialog=None; if (paths.isEmpty()) { quitAfterSave=false; return }
                     try {
-                        if (dialogKind==65) {
+                        if (dialogKind==78) {
+                            syncSuggestions(); let result=searchResult.getOrThrow()
+                            message=t("候选报告已导出：","Candidate report exported: ")+exportSearch(result,paths[0],preferences.english)
+                        } else if (dialogKind==65) {
                             syncComparison(); let result=evalResult.getOrThrow()
                             message=t("报告已导出：","Report exported: ")+exportEvaluation(result,assets,paths[0],english:preferences.english)
                         } else if (dialogKind==12) {
@@ -411,7 +428,7 @@ class App {
     func action(window: SdlWindow,id: Int64): Unit {
         if (id==10) {
             if (discard(window)) { cancel(); work.commit(Project()); work.path=""; work.unsaved=true; refreshReference(); syncScene(); message=t("已建立示例；请另存项目。","Demo created. Save it as a new project.") }
-        } else if (id==65) { requestFile(window,65) } else if (id>=11 && id<=13) { requestFile(window,id) } else { activate(id) }
+        } else if (id==65 || id==78) { requestFile(window,id) } else if (id>=11 && id<=13) { requestFile(window,id) } else { activate(id) }
     }
     func handle(window: SdlWindow,record: UiEventRecord): Bool {
         clockNow=window.ticks()
@@ -429,7 +446,7 @@ class App {
         if (menuOpen) { return handleMenu(window,record,l) }
         match (record.event) {
             case UiEvent.MouseMove(x,y) =>
-                hover=l.hit(x,y,settings:settings,simulation:simPanel,parameters:simParameters,comparison:comparePanel)
+                hover=l.hit(x,y,settings:settings,simulation:simPanel,parameters:simParameters,comparison:comparePanel,suggestions:suggestPanel)
                 if (painting) { let i=cellAt(x,y,l); if (i>=0) { endCell=i } }
                 if (dragging) { camera.rotate(Float64(x-lastX),Float64(y-lastY)); view.dirty=true }
                 if (panning) { camera.panX+=Float64(x-lastX); camera.panY+=Float64(y-lastY); view.dirty=true }
@@ -437,9 +454,9 @@ class App {
             case UiEvent.MouseDown(button,x,y) =>
                 lastX=x; lastY=y
                 match (button) {
-                    case MouseButton.Left => pressed=l.hit(x,y,settings:settings,simulation:simPanel,parameters:simParameters,comparison:comparePanel)
+                    case MouseButton.Left => pressed=l.hit(x,y,settings:settings,simulation:simPanel,parameters:simParameters,comparison:comparePanel,suggestions:suggestPanel)
                         if (pressed>=0) { for (i in 0..CONTROLS.size) { if (CONTROLS[i]==pressed) { focus=i } } }
-                        else if (!comparePanel && l.canvas.contains(x,y)) {
+                        else if (!comparePanel && !suggestPanel && l.canvas.contains(x,y)) {
                             commitField()
                             if (pickingIgnition) { setIgnition(cellAt(x,y,l)); return true }
                             select(x,y,l)
@@ -454,7 +471,7 @@ class App {
                 match (button) {
                     case MouseButton.Left =>
                         if (painting) { painting=false; message=t("选区 ${selection().size} 格；确认应用 / Enter，取消 / Esc。","${selection().size} cells selected; Enter applies, Esc cancels.") }
-                        else if (pressed>=0 && pressed==l.hit(x,y,settings:settings,simulation:simPanel,parameters:simParameters,comparison:comparePanel)) { action(window,pressed) }; pressed = -1
+                        else if (pressed>=0 && pressed==l.hit(x,y,settings:settings,simulation:simPanel,parameters:simParameters,comparison:comparePanel,suggestions:suggestPanel)) { action(window,pressed) }; pressed = -1
                     case MouseButton.Right => dragging=false
                     case MouseButton.Middle => panning=false
                     case _ => ()
@@ -490,14 +507,14 @@ class App {
                 match (key) {
                     case Key.Tab => if (!repeat) {
                         let step=if (record.metadata.modifiers.shift) { CONTROLS.size-1 } else { 1 }
-                        for (_ in 0..CONTROLS.size) { focus=(focus+step)%CONTROLS.size; if (l.available(CONTROLS[focus],settings,simulation:simPanel,parameters:simParameters,comparison:comparePanel)) { break } }
+                        for (_ in 0..CONTROLS.size) { focus=(focus+step)%CONTROLS.size; if (l.available(CONTROLS[focus],settings,simulation:simPanel,parameters:simParameters,comparison:comparePanel,suggestions:suggestPanel)) { break } }
                     }
-                    case Key.Enter => if (!repeat) { if (startCell>=0) { commitStroke() } else if (l.available(CONTROLS[focus],settings,simulation:simPanel,parameters:simParameters,comparison:comparePanel)) { action(window,CONTROLS[focus]) } }
-                    case Key.Space => if (!repeat && l.available(CONTROLS[focus],settings,simulation:simPanel,parameters:simParameters,comparison:comparePanel)) { action(window,CONTROLS[focus]) }
+                    case Key.Enter => if (!repeat) { if (startCell>=0) { commitStroke() } else if (l.available(CONTROLS[focus],settings,simulation:simPanel,parameters:simParameters,comparison:comparePanel,suggestions:suggestPanel)) { action(window,CONTROLS[focus]) } }
+                    case Key.Space => if (!repeat && l.available(CONTROLS[focus],settings,simulation:simPanel,parameters:simParameters,comparison:comparePanel,suggestions:suggestPanel)) { action(window,CONTROLS[focus]) }
                     case Key.Home => activate(0)
                     case Key.Letter(84) => activate(1)
                     case Key.Letter(72) => activate(2)
-                    case Key.Digit(n) => if (!comparePanel && n>=49 && n<=57) { activate(20+Int64(n-49)) }
+                    case Key.Digit(n) => if (!comparePanel && !suggestPanel && n>=49 && n<=57) { activate(20+Int64(n-49)) }
                     case Key.Left => camera.rotate(-8.0,0.0); view.dirty=true
                     case Key.Right => camera.rotate(8.0,0.0); view.dirty=true
                     case Key.Up => camera.rotate(0.0,8.0); view.dirty=true
@@ -516,6 +533,69 @@ class App {
         return true
     }
 
+    func openSuggestions(): Unit {
+        require(startCell<0,t("请先应用或取消编辑预览","Apply or cancel the edit preview first"))
+        commitField(); suggestPanel=true; comparePanel=false; simPanel=false; settings=false; referenceMode=false; pickingIgnition=false
+        if (let Some(run) <- experiment.run) { run.running=false }
+        if (let Some(pair) <- pairView) { pair.playing=false }
+        experiment.planned=true; experiment.run=None; experiment.showConnectivity=false; syncScene()
+        message=t("有限候选 / 训练 8 组 + 留出复核 8 组；不保证全局最优。","Finite candidates / 8 training + 8 holdout scenarios; no global-optimum guarantee.")
+    }
+    func syncSuggestions(): Unit {
+        if (let Some(job) <- searchJob) {
+            if (job.revision!=work.revision) { job.cancel(); searchJob=None; message=t("输入已修改，旧候选搜索失效。","Inputs changed; old candidate search invalidated.") }
+        }
+        if (let Some(result) <- searchResult) { if (result.revision!=work.revision) { searchResult=None; candidateVisible=false; candidateIndex=0 } }
+    }
+    func pollSearch(): Unit {
+        if (let Some(job) <- searchJob) {
+            let state=job.progress()
+            if (state.done) {
+                searchJob=None
+                if (!state.cancelled && job.revision==work.revision) {
+                    if (let Some(result) <- state.result) {
+                        searchResult=Some(result); candidateIndex=max(0,result.selected); candidateVisible=false
+                        message=if (result.entries.isEmpty()) { t("预算、禁区和当前几何候选内没有可行新增处理带。","No feasible additional strip within budget, exclusions and this candidate family.") }
+                            else if (result.recommended<0) { t("没有通过训练与留出复核的自动推荐；可检查全部候选。","No automatic recommendation passed training and holdout checks. Inspect all candidates.") }
+                            else { t("候选完成；先预览，再由你手动应用。","Candidates complete. Preview, then apply manually.") }
+                    } else { message=t("候选搜索失败：","Candidate search failed: ")+localizedError(state.error,preferences.english) }
+                }
+            }
+        }
+    }
+    func selectedEntry(): PlanEntry {
+        syncSuggestions(); let result=searchResult.getOrThrow()
+        require(candidateIndex>=0 && candidateIndex<result.entries.size,t("没有可查看的候选","No candidate available")); return result.entries[candidateIndex]
+    }
+    func suggestionAction(id: Int64): Unit {
+        require(startCell<0,t("请先应用或取消编辑预览","Apply or cancel the edit preview first"))
+        syncSuggestions()
+        match(id) {
+            case 70=>
+                let job=PlanSearchJob(work.project,work.revision)
+                if (let Some(old) <- searchJob) { old.cancel() }
+                searchResult=None; candidateVisible=false; searchJob=Some(job); job.start()
+                message=t("后台生成和评估候选；现有方案不会被修改。","Generating and evaluating candidates in background; current plan stays unchanged.")
+            case 71=>if (let Some(job) <- searchJob) { job.cancel(); searchJob=None; message=t("已取消候选搜索，不发布部分结果。","Candidate search cancelled; partial results are not published.") }
+            case 72 | 73=>
+                let result=searchResult.getOrThrow(); require(!result.entries.isEmpty(),t("没有可查看的候选","No candidate available"))
+                candidateIndex=(candidateIndex+result.entries.size+(if (id==72) { -1 } else { 1 }))%result.entries.size
+            case 74=>selectedEntry(); candidateVisible = !candidateVisible
+            case 75=>
+                let entry=selectedEntry(); let result=searchResult.getOrThrow()
+                require(candidateVisible,t("请先预览当前候选，再应用","Preview the candidate before applying"))
+                let next=entry.candidate.project(readProjectText(result.source)); work.commit(next); syncScene()
+                message=t("已应用候选；可撤销，也可继续手工编辑。","Candidate applied. Undo or edit it manually.")
+            case 76=>
+                let entry=selectedEntry(); let result=searchResult.getOrThrow(); let next=entry.candidate.project(readProjectText(result.source))
+                let job=EvaluationJob(next,work.revision,reviewScenarios(next,8),candidatePreview:true)
+                if (let Some(old) <- evalJob) { old.cancel() }
+                clearComparison(); evalJob=Some(job); job.start(); suggestPanel=false; comparePanel=true; referenceMode=false
+                message=t("候选留出情景对照（未应用）；基线仍为原始场地。","Holdout comparison of unapplied candidate; baseline is the original site.")
+            case 77=>suggestPanel=false; candidateVisible=false
+            case _=>()
+        }
+    }
     func t(zh: String,en: String): String { preferences.text(zh,en) }
     func toolName(index: Int64): String {
         let names=["Select","Forest","Road","Water","Building","Clear Vegetation","Firebreak","Protect Target","No Treatment"]
@@ -572,6 +652,7 @@ class App {
             case 95=>menuOpen=quitReturnMenu; menuPage=quitReturnPage; menuFocus=quitReturnFocus
             case 96=>bookPage--; menuFocus=if (bookPage==0) { 97 } else { 96 }
             case 97=>bookPage++; menuFocus=if (bookPage==BOOK_PAGES-1) { 96 } else { 97 }
+            case 99=>openSuggestions(); menuOpen=false
             case 98=>menuPage=6; menuFocus=if (bookPage<BOOK_PAGES-1) { 97 } else { 96 }
             case _=>if ((id>=33 && id<=36) || (id>=49 && id<=51)) { activate(id) }
         }
@@ -626,5 +707,5 @@ class App {
         }
         return !exitReady
     }
-    func close(): Unit { if (let Some(job) <- evalJob) { job.cancel() }; clearComparison(); view.close(); if (let Some(t) <- reference) { t.close() }; reference=None }
+    func close(): Unit { if (let Some(job) <- searchJob) { job.cancel() }; if (let Some(job) <- evalJob) { job.cancel() }; clearComparison(); view.close(); if (let Some(t) <- reference) { t.close() }; reference=None }
 }
