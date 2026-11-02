@@ -1,0 +1,15 @@
+{
+  "format": "firebreak-case-results",
+  "version": 1,
+  "syntheticSites": true,
+  "chainSamples": 16,
+  "chainPlannedBurned": 1.5,
+  "chainPlannedRemaining": 2.5,
+  "chainTargetContactSamples": 4,
+  "campBudget": 100,
+  "campCost": 50,
+  "campTrainingRemaining": 128,
+  "campHoldoutRemaining": 127,
+  "campTrainingContacts": 0.25,
+  "campHoldoutContacts": 0.5
+}

@@ -100,6 +100,9 @@ class App {
     let agentSettings: DeepSeekSettings
     var agentConnection: ?AgentConnectionJob=None
     var agentChat:?AgentChatJob=None
+    let audio=UiAudio()
+    var audioDrag:Int64= -1
+    var audioDraft:Int64=0
     let agentModelEditor=TerminalEditor()
     let agentKeyEditor=TerminalEditor()
     var agentField: Int64= -1
@@ -141,13 +144,14 @@ class App {
     var message=""
     var dialog: ?FileDialogRequest=None
     var dialogKind: Int64=0
-    init(assets: Assets,preferencesPath!: String="") {
+    init(assets: Assets,preferencesPath!: String="",audioEnabled!:Bool=true) {
         preferences=Preferences(preferencesPath)
         agentSettings=DeepSeekSettings(if(preferencesPath.isEmpty()){""}else{"agent.local.json"})
         this.assets=assets; font=PixelFont(assets); view=VoxelView(scene,assets); syncScene()
         message=t("按 Esc 打开工作台菜单。","Press Esc to open the workbench menu.")
         if (!preferences.loadError.isEmpty()) { message=t("本地设置读取失败，已使用默认语言：","Could not load preferences; using default language: ")+preferences.loadError }
         if(agentSettings.loadError){message=t("智能体配置读取失败，请在菜单中重新填写。","Agent settings could not be loaded. Re-enter them in the menu.")}
+        if(!preferencesPath.isEmpty()){startAgentConnection(this);if(audioEnabled){audio.open(preferences.soundVolume,preferences.musicVolume)}}
     }
     func refreshExperimentView(): Unit {
         if (let Some(r) <- experiment.run) { view.setFireState(r.current().age,r.duration) }
@@ -335,6 +339,7 @@ class App {
         work.commit(p); activeField = -1; updateExperiment(clockNow); message=t("参数已更新；旧试验失效，预算约束已重新校验。","Parameters updated; old results invalidated and budget rechecked.")
     }
     func activate(id: Int64): Unit {
+        playUiClick(this)
         if ((id>=33 && id<=36) || (id>=49 && id<=51)) {
             commitField(); activeField=id; draft="${fieldValue(id)}"; message=t("输入数值，Enter 确认，Esc 取消；Backspace 删除。","Enter a number; Enter confirms, Esc cancels, Backspace deletes."); return
         }
@@ -448,6 +453,7 @@ class App {
         }
     }
     func action(window: SdlWindow,id: Int64): Unit {
+        if(id==54 || (id>=10 && id<=13) || id==65 || id==78){playUiClick(this)}
         if(id==54){openTerminal(this,false);return}
         if (id==10) {
             if (discard(window)) { cancel();camera.resetMap(); work.commit(Project()); work.path=""; work.unsaved=true; refreshReference(); syncScene(); message=t("已建立示例；请另存项目。","Demo created. Save it as a new project.") }
@@ -669,8 +675,13 @@ class App {
     }
     func menuAction(window: SdlWindow,id: Int64): Unit {
         if (!menuEnabled(id)) { return }
+        if(!((id>=33 && id<=36) || (id>=49 && id<=51))){playUiClick(this)}
         match(id) {
             case 80=>closeMenu()
+            case 103=>commitField();menuPage=8;menuFocus=114
+            case 114 | 115=>()
+            case 108=>commitField();menuPage=7;menuFocus=109
+            case 109 | 110 | 111 | 112=>if(discard(window)){openExample(this,id-109)}
             case 81 | 82 | 83 | 84=>commitField(); menuPage=id-80; menuFocus=MenuLayout(Layout(Float32(window.width),Float32(window.height))).controls(menuPage)[0];if(id==84){openAgentSettings(this)}
             case 104 | 105=>agentField=id;agentOriginal=agentEditor(this).text;window.setTextInputArea(MenuLayout(Layout(Float32(window.width),Float32(window.height))).box(id,page:4))
             case 106=>
@@ -680,8 +691,7 @@ class App {
                 try{
                     require(!agentKeyEditor.text.isEmpty(),"Missing API key")
                     agentSettings.save(agentModelEditor.text,agentKeyEditor.text);agentField = -1
-                    let job=AgentConnectionJob(agentSettings.generation,agentSettings.model,agentSettings.apiKey)
-                    agentConnection=Some(job);agentSettings.connectionState=1;job.start()
+                    startAgentConnection(this)
                     message=t("正在验证 DeepSeek API 与模型；此检测不生成对话。","Checking DeepSeek API/model; this probe does not generate a conversation.")
                 }catch(_:Exception){message=t("请检查 API Key、模型名称与本地文件权限。","Check the API key, model name and local file access.")}
             case 85=>
@@ -711,6 +721,7 @@ class App {
     func handleMenu(window: SdlWindow,record: UiEventRecord,l: Layout): Bool {
         let m=MenuLayout(l)
         if(handleAgentSettings(this,window,record)){return true}
+        if(handleAudioSettings(this,record,l)){return true}
         match(record.event) {
             case UiEvent.MouseMove(x,y)=>hover=m.hit(x,y,menuPage)
             case UiEvent.MouseDown(MouseButton.Left,x,y)=>
@@ -758,5 +769,5 @@ class App {
         }
         return !exitReady
     }
-    func close(): Unit { if(let Some(job)<-agentChat){job.cancel();job.wait()}; if (let Some(job) <- searchJob) { job.cancel() }; if (let Some(job) <- evalJob) { job.cancel() }; clearComparison(); view.close(); if (let Some(t) <- reference) { t.close() }; reference=None }
+    func close(): Unit { audio.close(); if(let Some(job)<-agentChat){job.cancel();job.wait()}; if (let Some(job) <- searchJob) { job.cancel() }; if (let Some(job) <- evalJob) { job.cancel() }; clearComparison(); view.close(); if (let Some(t) <- reference) { t.close() }; reference=None }
 }

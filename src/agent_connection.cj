@@ -25,17 +25,24 @@ class AgentConnectionJob {
     func progress(): AgentConnectionResult {synchronized(lock){return AgentConnectionResult(done,ok,elapsed,error)}}
     func start(): Unit {spawn{execute()}}
     func execute(): Unit {
-        let clock=PerformanceClock();let start=clock.ms();var success=false;var problem=""
+        let clock=PerformanceClock();let start=clock.ms();var success=false;var problem="";var phase="HTTPS"
         try{
             let response=deepSeekModelMetadata(key)
                 if(response.status==200){
+                    phase="Model metadata"
                     let data=JsonValue.fromStr(response.body).asObject()["data"].asArray()
                     for(i in 0..data.size()){if(data[i].asObject()["id"].asString().getValue()==model){success=true}}
                     if(!success){problem="模型不在当前可用列表 / Model is not available"}
                 }else{problem="HTTP ${response.status}"}
-        }catch(ex:Exception){if(key.isEmpty()){eprintln("Public TLS probe detail: "+ex.message)};problem="网络或 TLS 验证失败 / Network or TLS verification failed"}
+        }catch(ex:Exception){if(key.isEmpty()){eprintln("Public TLS probe detail: "+ex.message)};problem="连接检测失败 / Connection check failed ("+phase+")";if(ex.message.startsWith("WinHTTP ")){problem+=" "+ex.message}}
         synchronized(lock){ok=success;error=problem;elapsed=Int64(clock.ms()-start);done=true}
     }
+}
+func startAgentConnection(app: App): Bool {
+    if(app.agentSettings.loadError || app.agentSettings.apiKey.isEmpty() || app.agentConnection.isSome()){return false}
+    let job=AgentConnectionJob(app.agentSettings.generation,app.agentSettings.model,app.agentSettings.apiKey)
+    app.agentConnection=Some(job);app.agentSettings.connectionState=1;job.start()
+    return true
 }
 func pollAgentConnection(app: App): Unit {
     if(let Some(job)<-app.agentConnection){

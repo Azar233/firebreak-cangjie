@@ -20,16 +20,22 @@ class MenuLayout {
     func bookBodyBox(): Rect { bookAt(44.0,76.0,350.0,394.0) }
     func controls(page: Int64): Array<Int64> {
         match(page) {
-            case 0=>[80,81,82,83,84,85,98,86,99,87]
+            case 0=>[80,81,82,83,84,85,98,86,99,103,108,87]
             case 1=>[33,34,35,36,88]
             case 2=>[90,91,92,100,101,102,88]
             case 3=>[49,50,51,88]
             case 4=>[104,105,106,107,88]
             case 6=>[96,97,88]
+            case 7=>[109,110,111,112,88]
+            case 8=>[114,115,88]
             case _=>[93,94,95]
         }
     }
     func box(id: Int64,page!: Int64=0): Rect {
+        if(page==7 && id>=109 && id<=112){return at(0.0,72.0+Float32(id-109)*60.0,448.0,44.0)}
+        if(page==0 && (id==103 || id==108)){return at(if(id==103){0.0}else{228.0},348.0,220.0,44.0)}
+        if(page==0 && id==87){return at(0.0,400.0,448.0,44.0)}
+        if(page==8 && (id==114 || id==115)){return at(0.0,104.0+Float32(id-114)*104.0,448.0,44.0)}
         if(page==4){
             if(id==104 || id==105){return at(0.0,104.0+Float32(id-104)*88.0,448.0,44.0)}
             if(id==106 || id==107){return at(Float32(id-106)*228.0,260.0,220.0,44.0)}
@@ -66,6 +72,8 @@ func menuTitle(app: App): String {
         case 3=>app.t("实验参数","Experiment Settings")
         case 4=>app.t("智能体设置","Agent Settings")
         case 5=>app.t("退出前保存？","Save before quitting?")
+        case 7=>app.t("示例场景（合成场地）","Examples (Synthetic Sites)")
+        case 8=>app.t("声音设置","Sound Settings")
         case _=>app.t("工作台菜单","Workbench Menu")
     }
 }
@@ -88,6 +96,11 @@ func menuLabel(app: App,id: Int64): String {
         case 104 | 105=>agentFieldLabel(app,id)
         case 106=>app.t("保存 DeepSeek 配置","Save DeepSeek Settings")
         case 107=>app.t("保存并测试连接","Save & Test Connection")
+        case 108=>app.t("示例场景…","Example Scenarios...")
+        case 103=>app.t("声音设置…","Sound Settings...")
+        case 114=>app.t("按键音效：","UI Sounds: ")+"${audioLevel(app,114)}%"
+        case 115=>app.t("背景音乐：","Music: ")+"${audioLevel(app,115)}%"
+        case 109 | 110 | 111 | 112=>caseLabel(app,id-109)
         case 90=>app.t("树冠：","Canopy: ")+app.t(if (app.view.showCanopy) { "显示" } else { "隐藏" },if (app.view.showCanopy) { "Shown" } else { "Hidden" })
         case 91=>app.t("视图：","View: ")+app.t(if (app.mapMode) { "二维地图" } else { "三维场景" },if (app.mapMode) { "Top-down Map" } else { "3D Scene" })
         case 92=>app.t("相机复位","Reset Camera")
@@ -122,11 +135,17 @@ func drawMenu(app: App,l: Layout,pixelRatio!: Float32=1.0): Unit {
         f.center(app.t("当前项目或编辑预览尚未保存。","Your project or edit preview is unsaved."),m.at(0.0,82.0,448.0,24.0),scale:m.scale,snap:true,pixelRatio:pixelRatio)
         if (app.startCell>=0 || app.activeField>=0) { f.center(app.t("请先返回工作台处理预览或输入。","Return to finish or cancel the pending edit."),m.at(0.0,116.0,448.0,24.0),scale:m.scale,snap:true,pixelRatio:pixelRatio) }
     }
+    if(app.menuPage==8){
+        f.draw(app.t("拖动调节，0为静音；设置自动保存。","Drag to adjust; 0 mutes. Saved locally."),m.left,m.top+72.0*m.scale,scale:0.85*m.scale,snap:true,pixelRatio:pixelRatio)
+        f.draw(app.t("← → 调整5% / Home 静音 / End 最大","Left/Right: 5% / Home: Mute / End: Max"),m.left,m.top+288.0*m.scale,scale:0.85*m.scale,snap:true,pixelRatio:pixelRatio)
+        if(!app.audio.ready){f.draw(app.t("音频未就绪，请检查音频文件或输出设备。","Check local audio files and output device."),m.left,m.top+326.0*m.scale,scale:0.8*m.scale,snap:true,pixelRatio:pixelRatio)}
+    }
     for (id in m.controls(app.menuPage)) {
-        mcButtonAt(app,m.box(id,page:app.menuPage),id,menuLabel(app,id),app.menuFocus==id || app.activeField==id,enabled:app.menuEnabled(id),textScale:m.scale,pixelRatio:pixelRatio,snapText:true)
+        if(app.menuPage==8 && (id==114 || id==115)){drawAudioSlider(app,m,id,pixelRatio)}
+        else{mcButtonAt(app,m.box(id,page:app.menuPage),id,menuLabel(app,id),app.menuFocus==id || app.activeField==id,enabled:app.menuEnabled(id),textScale:m.scale,pixelRatio:pixelRatio,snapText:true)}
     }
     let hint=app.t("Esc 返回 / Tab 切换 / Enter 确认","Esc: Back / Tab: Focus / Enter: Select")
-    f.center(hint,m.at(0.0,444.0,448.0,24.0),scale:m.scale,snap:true,pixelRatio:pixelRatio,color:Color.rgb(190,190,190))
+    f.center(hint,m.at(0.0,if(app.menuPage==0){456.0}else{444.0},448.0,24.0),scale:m.scale,snap:true,pixelRatio:pixelRatio,color:Color.rgb(190,190,190))
     r.pushClip(Rect(24.0,l.height-54.0,l.width-48.0,26.0))
     f.draw(app.message,24.0,l.height-48.0,color:Color.rgb(245,221,143)); r.popClip()
 }

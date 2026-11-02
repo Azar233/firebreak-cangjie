@@ -1,0 +1,111 @@
+{
+  "format": "firebreak-candidates",
+  "version": 1,
+  "revision": 0,
+  "wind": "none",
+  "spreadRuleVersion": 1,
+  "training": [
+    {
+      "id": 0,
+      "ignitionCell": 221,
+      "seed": 42,
+      "weight": "1.2500000000000000e-01"
+    },
+    {
+      "id": 1,
+      "ignitionCell": 74,
+      "seed": 42,
+      "weight": "1.2500000000000000e-01"
+    },
+    {
+      "id": 2,
+      "ignitionCell": 185,
+      "seed": 42,
+      "weight": "1.2500000000000000e-01"
+    },
+    {
+      "id": 3,
+      "ignitionCell": 294,
+      "seed": 42,
+      "weight": "1.2500000000000000e-01"
+    },
+    {
+      "id": 4,
+      "ignitionCell": 221,
+      "seed": 43,
+      "weight": "1.2500000000000000e-01"
+    },
+    {
+      "id": 5,
+      "ignitionCell": 74,
+      "seed": 43,
+      "weight": "1.2500000000000000e-01"
+    },
+    {
+      "id": 6,
+      "ignitionCell": 185,
+      "seed": 43,
+      "weight": "1.2500000000000000e-01"
+    },
+    {
+      "id": 7,
+      "ignitionCell": 294,
+      "seed": 43,
+      "weight": "1.2500000000000000e-01"
+    }
+  ],
+  "holdout": [
+    {
+      "id": 0,
+      "ignitionCell": 114,
+      "seed": 104771,
+      "weight": "1.2500000000000000e-01"
+    },
+    {
+      "id": 1,
+      "ignitionCell": 199,
+      "seed": 104771,
+      "weight": "1.2500000000000000e-01"
+    },
+    {
+      "id": 2,
+      "ignitionCell": 280,
+      "seed": 104771,
+      "weight": "1.2500000000000000e-01"
+    },
+    {
+      "id": 3,
+      "ignitionCell": 365,
+      "seed": 104771,
+      "weight": "1.2500000000000000e-01"
+    },
+    {
+      "id": 4,
+      "ignitionCell": 114,
+      "seed": 104772,
+      "weight": "1.2500000000000000e-01"
+    },
+    {
+      "id": 5,
+      "ignitionCell": 199,
+      "seed": 104772,
+      "weight": "1.2500000000000000e-01"
+    },
+    {
+      "id": 6,
+      "ignitionCell": 280,
+      "seed": 104772,
+      "weight": "1.2500000000000000e-01"
+    },
+    {
+      "id": 7,
+      "ignitionCell": 365,
+      "seed": 104772,
+      "weight": "1.2500000000000000e-01"
+    }
+  ],
+  "contactWeight": 481,
+  "costFloorCny": 1,
+  "trainingSelectedId": 3,
+  "recommendedId": 3
+}

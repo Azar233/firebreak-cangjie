@@ -1,3 +1,4 @@
+param([string[]]$AppArguments = @())
 $ErrorActionPreference = 'Stop'
 Push-Location $PSScriptRoot
 try {
@@ -7,6 +8,6 @@ try {
     if (!$sdk -or !(Test-Path "$sdk/envsetup.ps1")) { throw 'Cangjie SDK required.' }
     . "$sdk/envsetup.ps1"
     $env:Path = (Resolve-Path '../.tools/stdx-1.0.5.1/windows_x86_64_cjnative/dynamic/stdx').Path + ';' + $env:Path
-    & './target/release/bin/main.exe'
+    & './target/release/bin/main.exe' @AppArguments
     if ($LASTEXITCODE -ne 0) { throw 'Firebreak app exited with an error.' }
 } finally { Pop-Location }

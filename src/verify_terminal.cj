@@ -71,6 +71,7 @@ func verifyTerminal(app: App,w: SdlWindow): Unit {
 }
 
 func verifyAgentSettings(app: App,w: SdlWindow): Unit {
+    pass(app.agentConnection.isNone() && !startAgentConnection(app),"An empty local credential does not start an automatic network probe")
     verifyAgentSignal(app,w)
     let path="artifacts/agent-config-test.json"
     try{
@@ -102,6 +103,9 @@ func verifyAgentSettings(app: App,w: SdlWindow): Unit {
     pass(publishAgentConnection(app,generation,AgentConnectionResult(true,true,125,"")) && app.agentSettings.connectionState==2 && app.agentSettings.latencyMillis==125,"A completed current probe publishes actual verified state and transport duration")
     app.agentSettings.connectionState=0;app.agentSettings.latencyMillis = -1
     app.agentConnection=Some(AgentConnectionJob(generation,app.agentSettings.model,""))
+    app.agentSettings.apiKey="test-placeholder-not-a-key"
+    pass(!startAgentConnection(app),"Connection startup does not duplicate an existing background probe")
+    app.agentSettings.apiKey=""
     pass(!app.menuEnabled(107),"An active connection probe disables duplicate requests instead of accumulating background jobs")
     app.agentConnection=None
     app.message=app.t("API 连接尚未验证。","API connection has not been verified.")

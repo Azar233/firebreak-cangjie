@@ -1,0 +1,108 @@
+{
+  "candidatePreview": false,
+  "format": "firebreak-evaluation",
+  "version": 1,
+  "revision": 0,
+  "wind": "none",
+  "spreadRuleVersion": 1,
+  "spreadProbability": "1.0000000000000000e+00",
+  "burnSteps": 1,
+  "scenarios": [
+    {
+      "id": 0,
+      "ignitionCell": 175,
+      "seed": 42,
+      "weight": "6.2500000000000000e-02"
+    },
+    {
+      "id": 1,
+      "ignitionCell": 176,
+      "seed": 42,
+      "weight": "6.2500000000000000e-02"
+    },
+    {
+      "id": 2,
+      "ignitionCell": 177,
+      "seed": 42,
+      "weight": "6.2500000000000000e-02"
+    },
+    {
+      "id": 3,
+      "ignitionCell": 179,
+      "seed": 42,
+      "weight": "6.2500000000000000e-02"
+    },
+    {
+      "id": 4,
+      "ignitionCell": 175,
+      "seed": 43,
+      "weight": "6.2500000000000000e-02"
+    },
+    {
+      "id": 5,
+      "ignitionCell": 176,
+      "seed": 43,
+      "weight": "6.2500000000000000e-02"
+    },
+    {
+      "id": 6,
+      "ignitionCell": 177,
+      "seed": 43,
+      "weight": "6.2500000000000000e-02"
+    },
+    {
+      "id": 7,
+      "ignitionCell": 179,
+      "seed": 43,
+      "weight": "6.2500000000000000e-02"
+    },
+    {
+      "id": 8,
+      "ignitionCell": 175,
+      "seed": 44,
+      "weight": "6.2500000000000000e-02"
+    },
+    {
+      "id": 9,
+      "ignitionCell": 176,
+      "seed": 44,
+      "weight": "6.2500000000000000e-02"
+    },
+    {
+      "id": 10,
+      "ignitionCell": 177,
+      "seed": 44,
+      "weight": "6.2500000000000000e-02"
+    },
+    {
+      "id": 11,
+      "ignitionCell": 179,
+      "seed": 44,
+      "weight": "6.2500000000000000e-02"
+    },
+    {
+      "id": 12,
+      "ignitionCell": 175,
+      "seed": 45,
+      "weight": "6.2500000000000000e-02"
+    },
+    {
+      "id": 13,
+      "ignitionCell": 176,
+      "seed": 45,
+      "weight": "6.2500000000000000e-02"
+    },
+    {
+      "id": 14,
+      "ignitionCell": 177,
+      "seed": 45,
+      "weight": "6.2500000000000000e-02"
+    },
+    {
+      "id": 15,
+      "ignitionCell": 179,
+      "seed": 45,
+      "weight": "6.2500000000000000e-02"
+    }
+  ]
+}

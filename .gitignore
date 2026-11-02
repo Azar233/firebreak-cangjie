@@ -72,4 +72,15 @@ artifacts/*
 !artifacts/p5-agent-transport.log
 !artifacts/p5-agent-checks.log
 !artifacts/p5-agent-live-checks.log
+!artifacts/p6-case-checks.log
+!artifacts/p6-audio-checks.log
+!artifacts/p6-checks.log
+!artifacts/p6-case-results.json
+!artifacts/p6-chain-metrics.csv
+!artifacts/p6-chain-parameters.json
+!artifacts/p6-camp-metrics.csv
+!artifacts/p6-camp-parameters.json
+!artifacts/p6-camp-candidates.csv
+!artifacts/p6-camp-samples.csv
+!artifacts/p6-camp-search-parameters.json
 artifacts/readme-home-*.png

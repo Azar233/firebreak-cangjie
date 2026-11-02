@@ -6,10 +6,12 @@
 | SDL3 | 3.4.12; https://github.com/libsdl-org/SDL | Native release downloaded separately, not committed |
 | SDL_image | 3.4.6; https://github.com/libsdl-org/SDL_image | Native release downloaded separately, not committed |
 | SDL_ttf | 3.2.2; https://github.com/libsdl-org/SDL_ttf | Native release downloaded separately, not committed |
+| SDL_mixer | 3.2.4; https://github.com/libsdl-org/SDL_mixer | Official x64 native release, SHA256 `9af526f8defc72ca3b979a6dc4d9e549e5be4dd8db3190cfa8941923a78f73cb`; pinned download with built-in OGG decoding, upstream LICENSE copied beside the executable; binaries not committed |
 | Cangjie stdx | 1.0.5.1 | Downloaded to the workspace .tools cache, not committed |
 | CangjieMagic | MIT, https://github.com/cangjiepl/CangjieMagic , commit bc4624fac86ad8498b61d7e5f3b1168659bc72b5 | Runtime agent/tool orchestration. prepare-magic.ps1 fetches source separately, adapts the stdx path and adds two public factories for protected streaming constructors. The original HTTP transport is bypassed in favor of verified native HTTPS; upstream LICENSE is copied beside the executable |
 | CodeGraph Cangjie | 1.5.0-cangjie-1.0.5.3 | Optional development tool, not committed or shipped with the application |
 | Minecraft textures/font | User-provided resource files listed in assets/manifest.json | Original resources excluded from Git; provide MINECRAFT_ASSETS for a fresh build |
+| UI click / background music | User-provided `click_stereo.ogg` and `Minecraft.ogg` | Stored only under ignored `assets/minecraft/sounds/`; not uploaded or redistributed in this repository. Supply with build.ps1 -ClickSound / -BackgroundMusic; final distribution rights remain to be reviewed |
 | Minecraft grass/dirt textures | Java 1.21.1 official client, SHA1 `30c73b1c5da787909b2f73340419fdf13b9def88` | `tools/prepare-grass-textures.ps1` extracts four textures; client cache and original textures remain excluded from Git |
 | README oak-sapling icon | A PNG frame from the application's generated icon, based on the user-provided Minecraft oak sapling | Included as a single README illustration at the user's explicit request; the full resource pack remains excluded |
 | Windows WinHTTP | Windows system HTTPS API | Cangjie calls the system DLL for authenticated DeepSeek connectivity checks and streaming chat, using OS certificate validation and disabling redirects; no additional runtime is redistributed |

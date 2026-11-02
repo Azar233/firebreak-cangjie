@@ -25,6 +25,14 @@ class ScriptedAgentModel <: ChatModel {
     }
 }
 func verifyAgentChat(app:App,w:SdlWindow,live!:Bool=false):Unit {
+    if(live){
+        require(app.agentConnection.isSome() && app.agentSettings.connectionState==1,"Saved credentials did not start background verification")
+        let connection=app.agentConnection.getOrThrow();let startupClock=PerformanceClock();let startupStart=startupClock.ms()
+        while(!connection.progress().done && startupClock.ms()-startupStart<30000.0){w.delay(10)}
+        pollAgentConnection(app)
+        require(app.agentConnection.isNone() && app.agentSettings.connectionState==2,"Startup connection check: "+connection.progress().error)
+        pass(app.agentConnection.isNone() && app.agentSettings.connectionState==2,"Startup automatically verifies the saved API key/model without a menu action")
+    }
     let decoder=AgentSseDecoder();var decoded=""
     let wire=": heartbeat\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"林😀\"}}]}\r\n\ndata: {\"choices\":[]}\n\ndata: [DONE]\n\n"
     for(byte in wire.toArray()){decoder.pending.add(byte);while(let Some(text)<-decoder.take()){decoded+=text}}

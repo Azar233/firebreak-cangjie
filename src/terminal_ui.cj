@@ -92,6 +92,8 @@ func drawTerminal(app: App,l: Layout,w: SdlWindow): Unit {
 }
 func terminalAction(app: App,id: Int64): Unit {
     let t=app.terminal
+    if((id==5 && app.agentChat.isNone()) || (id==4 && app.agentChat.isSome())){return}
+    playUiClick(app)
     match(id){
         case 0=>t.open=false;t.editor.composition="";t.selecting=false
         case 1=>t.quick = !t.quick;t.inputFirst=0

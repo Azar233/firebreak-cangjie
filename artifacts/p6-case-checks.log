@@ -1,0 +1,15 @@
+PASS Packaged five-cell cases differ only by one legal CNY 50 treatment
+PASS Left-side ignition burns five baseline cells but two after the cut, leaving the target untouched
+PASS Sixteen chain scenarios retain right-side target-contact failures rather than claiming universal protection
+PASS Treated ignition cases remain explicitly recorded among all sixteen paired outcomes
+PASS Budget camp examples preserve the same site, budget, targets and exclusions
+PASS Delivered CNY 50 bridge plan reproduces the training-selected and holdout-verified candidate
+PASS Camp retains the gap between training and holdout: some holdout fires still reach the target
+PASS Generating and checking candidates does not apply them to the source case
+PASS Example exports contain actual paired maps, metrics and complete candidate samples
+PASS Exported chain snapshot and exact scenario parameters reproduce every paired metric
+PASS Example menu and revised root menu keep aligned hit targets at three desktop sizes
+PASS Esc menu opens a keyboard-accessible synthetic example picker
+PASS All menu cases load as fresh projects requiring Save As without modifying bundled source files
+PASS Saving a loaded example writes a separate project and preserves the original demonstration plan
+PASS Camp comparison renders both final-state maps through the existing renderer

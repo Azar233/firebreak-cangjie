@@ -12,7 +12,7 @@ func verifyAdaptiveMenu(app: App,w: SdlWindow): Unit {
         let m=MenuLayout(Layout(size.w,size.h))
         require(m.scale>=1.0 && m.scale<=3.0 && m.book.x>=0.0 && m.book.y>=0.0 && m.book.right()<=size.w &&
             m.bookAt(0.0,612.0,438.0,24.0).bottom()<=size.h,"Adaptive paper or footer outside window")
-        for (page in 0..7) { for (id in m.controls(page)) {
+        for (page in 0..9) { for (id in m.controls(page)) {
             let b=m.box(id,page:page)
             require(b.x>=0.0 && b.y>=0.0 && b.right()<=size.w && b.bottom()<=size.h && b.w>=44.0 && b.h>=44.0,"Adaptive button outside window")
             require(m.hit(b.centerX(),b.centerY(),page)==id,"Scaled menu hit area differs from rendering")

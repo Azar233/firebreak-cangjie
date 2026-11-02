@@ -1,0 +1,18 @@
+PASS Legacy settings retain safe default sound and music volumes
+PASS Independent volumes persist across language and display preference changes
+PASS Out-of-range audio settings cannot overwrite existing preferences
+PASS Malformed saved volumes fall back without excessive gain
+PASS Esc menu opens the dedicated sound settings page
+PASS Dragging previews clamped volume without persisting on every motion event
+PASS Releasing a slider commits its volume while preserving the other channel
+PASS Home mutes a focused sound slider
+PASS Keyboard arrows adjust volume by five percent
+PASS Focus loss cancels the transient slider draft
+PASS Escape cancels slider dragging before closing the sound menu
+PASS SDL_mixer decodes both original OGG files without a conversion runtime
+PASS Actual mixer tracks have independent sound and background music gains
+PASS Background music progresses on the native audio device independently of rendering
+PASS Zero music volume pauses playback rather than leaving decoding active
+PASS Real menu activations enqueue the provided UI sound once per button
+PASS Muted UI buttons remain functional without starting click playback
+PASS Audio tracks, streams, device and mixer close idempotently before SDL teardown

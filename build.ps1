@@ -1,4 +1,4 @@
-param([switch]$Verify, [switch]$VerifyMagic, [switch]$Run, [string]$MinecraftAssets = $env:MINECRAFT_ASSETS)
+param([switch]$Verify, [switch]$VerifyMagic, [switch]$Run, [string]$MinecraftAssets = $env:MINECRAFT_ASSETS, [string]$ClickSound = $env:FIREBREAK_CLICK_SOUND, [string]$BackgroundMusic = $env:FIREBREAK_BACKGROUND_MUSIC)
 $ErrorActionPreference = 'Stop'
 Push-Location $PSScriptRoot
 try {
@@ -33,6 +33,10 @@ try {
         source = $source; date = '2026-11-01'
     } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath 'artifacts/resource-copy.json' -Encoding utf8
     & './tools/prepare-grass-textures.ps1'
+    # User-provided audio stays in the same ignored local resource tree.
+    New-Item -ItemType Directory -Path 'assets/minecraft/sounds' -Force | Out-Null
+    if ($ClickSound) { Copy-Item -LiteralPath $ClickSound -Destination 'assets/minecraft/sounds/click_stereo.ogg' -Force }
+    if ($BackgroundMusic) { Copy-Item -LiteralPath $BackgroundMusic -Destination 'assets/minecraft/sounds/Minecraft.ogg' -Force }
     & "$sdk/tools/bin/cjpm.exe" build
     if ($LASTEXITCODE -ne 0) { throw 'Firebreak build failed.' }
     # With the Magic dependency cjpm names the entry binary after the package.
@@ -42,14 +46,15 @@ try {
     Get-ChildItem -LiteralPath 'vendor/SDL/.sdl3' -Filter '*.dll' | Copy-Item -Destination 'target/release/bin' -Force
     Get-ChildItem -LiteralPath 'target/release/magic' -Filter '*.dll' -Recurse | Copy-Item -Destination 'target/release/bin' -Force
     Copy-Item -LiteralPath '../.reference/CangjieMagic/LICENSE' -Destination 'target/release/bin/CangjieMagic-LICENSE.txt' -Force
+    Copy-Item -LiteralPath 'vendor/SDL/.sdl3/SDL3_mixer-LICENSE.txt' -Destination 'target/release/bin/SDL3_mixer-LICENSE.txt' -Force
     if ($Verify) {
         $previousErrorAction = $ErrorActionPreference
         try {
             $ErrorActionPreference = 'Continue'
-            & './target/release/bin/main.exe' --verify 2>&1 | Tee-Object -FilePath 'artifacts/p5-terminal-checks.log'
+            & './target/release/bin/main.exe' --verify 2>&1 | Tee-Object -FilePath 'artifacts/p6-checks.log'
             $checkExit = $LASTEXITCODE
         } finally { $ErrorActionPreference = $previousErrorAction }
-        if ($checkExit -ne 0) { throw "Workbench checks failed ($checkExit). See artifacts/p5-terminal-checks.log." }
+        if ($checkExit -ne 0) { throw "Workbench checks failed ($checkExit). See artifacts/p6-checks.log." }
     }
     if ($VerifyMagic) { & './tools/verify-magic.ps1' }
     if ($Run) { & './target/release/bin/main.exe' }
