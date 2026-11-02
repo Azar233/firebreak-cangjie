@@ -1,0 +1,22 @@
+[
+  {
+    "file": "include/light.glsl",
+    "sha256": "DE5CC7083938A7EB72B571DF4B90CE947B1AC2D2EB37498406207F3548032D3D"
+  },
+  {
+    "file": "include/fog.glsl",
+    "sha256": "B385992BC6411118554B4C76D3197E7F2D5B4AEC61E7CCE14169F7007E72B63D"
+  },
+  {
+    "file": "core/rendertype_solid.vsh",
+    "sha256": "5BC62DF98EBCC77955404D0DA64ED007EB1BC3A99E80CDF5AF281EA33DB74A97"
+  },
+  {
+    "file": "core/rendertype_cutout_mipped.fsh",
+    "sha256": "DA3F3AC6D79621790DBC719CA831BCE5E59F22866A30BA9AB5FD50CC95378EE6"
+  },
+  {
+    "file": "core/rendertype_entity_solid.vsh",
+    "sha256": "1AC0BF2AB5CC86614579511EECCD7411F8E1DDABA1CD16818D5181A0E2FCB31E"
+  }
+]

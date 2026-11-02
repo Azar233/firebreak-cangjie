@@ -163,8 +163,9 @@ func render(app: App,window: SdlWindow,capture!: String=""): Unit {
     let l=Layout(Float32(window.width),Float32(window.height))
     let reference=app.mapMode && app.referenceMode && app.reference.isSome()
     app.view.useGpu=app.preferences.gpuEnabled
+    app.view.shadersEnabled=app.preferences.shadersEnabled && app.preferences.gpuEnabled
     if (app.comparePanel) {
-        if (let Some(v) <- app.pairView) { v.baseline.useGpu=app.preferences.gpuEnabled;v.planned.useGpu=app.preferences.gpuEnabled;v.prepare(app.camera,l.canvas,window,app.mapMode,app.view.showCanopy,!capture.isEmpty(),app.dragging || app.panning) }
+        if (let Some(v) <- app.pairView) { v.baseline.useGpu=app.preferences.gpuEnabled;v.planned.useGpu=app.preferences.gpuEnabled;v.baseline.shadersEnabled=app.view.shadersEnabled;v.planned.shadersEnabled=app.view.shadersEnabled;v.prepare(app.camera,l.canvas,window,app.mapMode,app.view.showCanopy,!capture.isEmpty(),app.dragging || app.panning) }
     } else if (!reference) { app.view.prepare(app.camera,if (app.mapMode) { app.mapBox(l) } else { l.canvas },window,
         interacting:app.dragging || app.panning,forceFull:!capture.isEmpty(),topDown:app.mapMode) }
     r.beginScene(l.width,l.height,Color.rgb(34,38,32))
@@ -237,7 +238,7 @@ func render(app: App,window: SdlWindow,capture!: String=""): Unit {
     }
     r.pushClip(Rect(20.0,l.height-25.0,l.width-40.0,22.0)); uiText(app,l,app.view.backendName()+" | "+(if (app.startCell>=0) { app.previewText() } else if(!app.view.gpuError.isEmpty()){app.view.gpuError}else{app.message}),20.0,l.height-23.0,color:Color.rgb(222,220,192)); r.popClip()
     if (app.menuOpen) { drawMenu(app,l,pixelRatio:Float32(window.scale)*Float32(window.currentPixelDensity)) }
-    if (app.preferences.showFps) { drawFps(app.font,app.frameMeter,l.width) }
+    if (app.preferences.showFps) { drawFps(app.font,app.frameMeter,l.canvas) }
     r.endScene()
     if (!capture.isEmpty()) {
         r.captureBmp(capture+".bmp")
@@ -247,7 +248,11 @@ func render(app: App,window: SdlWindow,capture!: String=""): Unit {
 }
 
 
-func drawFps(font: PixelFont,meter: FrameMeter,width: Float32): Unit {
-    font.assets.r.fill(Rect(width-130.0,4.0,122.0,22.0),Color.rgba(0,0,0,210))
-    font.draw(if (meter.fps>0.0) { "FPS: "+meter.fps.format(".0") } else { "FPS: --" },width-122.0,7.0)
+func drawFps(font: PixelFont,meter: FrameMeter,canvas: Rect): Unit {
+    let label=if (meter.fps>0.0) { "FPS: "+meter.fps.format(".0") } else { "FPS: --" }
+    let width=font.measure(label)+12.0
+    let box=Rect(canvas.right()-width-4.0,canvas.y+4.0,width,22.0)
+    let r=font.assets.r
+    r.pushClip(canvas);r.fill(box,Color.rgba(0,0,0,210))
+    font.draw(label,box.x+6.0,box.y+3.0);r.popClip()
 }

@@ -1,4 +1,4 @@
-param([switch]$Benchmark, [switch]$Gpu, [string]$Example = 'examples/large-forest.json')
+param([switch]$Benchmark, [switch]$Gpu, [switch]$Shaders, [string]$Example = 'examples/large-forest.json')
 $ErrorActionPreference = 'Stop'
 $previousHeap = $env:cjHeapSize
 Push-Location $PSScriptRoot
@@ -17,7 +17,7 @@ try {
             ramGiB = [math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB, 2)
             gpu = @(Get-CimInstance Win32_VideoController | Select-Object -ExpandProperty Name)
         } | ConvertTo-Json -Depth 4 | Set-Content 'artifacts/forest-hardware.json' -Encoding utf8
-        & './target/release/bin/main.exe' $(if($Gpu){'--benchmark-gpu'}else{'--benchmark-forest'})
+        & './target/release/bin/main.exe' $(if($Shaders){'--benchmark-shaders'}elseif($Gpu){'--benchmark-gpu'}else{'--benchmark-forest'})
     } else { & './target/release/bin/main.exe' --forest-stress $Example }
     if ($LASTEXITCODE -ne 0) { throw 'Forest diagnostic exited with an error.' }
 } finally { $env:cjHeapSize = $previousHeap; Pop-Location }

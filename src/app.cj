@@ -639,6 +639,7 @@ class App {
     }
     func menuEnabled(id: Int64): Bool {
         if (dialog.isSome()) { return false }
+        if (id==102) { return preferences.gpuEnabled && view.gpuError.isEmpty() }
         if (id==96) { return bookPage>0 }
         if (id==97) { return bookPage<BOOK_PAGES-1 }
         return id!=93 || (startCell<0 && activeField<0)
@@ -668,6 +669,7 @@ class App {
             case 92=>if(mapMode){camera.resetMap()}else{camera.reset()}; view.dirty=true
             case 100=>preferences.setShowFps(!preferences.showFps)
             case 101=>preferences.setGpu(!preferences.gpuEnabled);view.gpuError="";view.dirty=true
+            case 102=>preferences.setShaders(!preferences.shadersEnabled);view.dirty=true
             case 93=>saveFromMenu(window,true)
             case 94=>exitReady=true
             case 95=>menuOpen=quitReturnMenu; menuPage=quitReturnPage; menuFocus=quitReturnFocus

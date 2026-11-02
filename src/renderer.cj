@@ -41,6 +41,8 @@ class VoxelView <: Resource {
     var clusterLabels: Array<Int64>
     var displayRevision: Int64=0
     var useGpu=false
+    var shadersEnabled=false
+    var lastShadersEnabled=false
     var gpuActive=false
     var gpuError=""
     var gpu: ?GpuVoxels=None
@@ -126,6 +128,7 @@ class VoxelView <: Resource {
     }
     func prepare(camera: Camera,b: Rect,window: SdlWindow,interacting!: Bool=false,forceFull!: Bool=false,topDown!: Bool=false): Unit {
         require(!closed,"Cannot prepare a closed voxel view")
+        if(lastShadersEnabled!=shadersEnabled){lastShadersEnabled=shadersEnabled;dirty=true}
         if (this.topDown!=topDown) { this.topDown=topDown; dirty=true }
         if(topDown && (lastMapZoom!=camera.mapZoom || lastMapU!=camera.mapCenterU || lastMapV!=camera.mapCenterV)){
             lastMapZoom=camera.mapZoom;lastMapU=camera.mapCenterU;lastMapV=camera.mapCenterV;dirty=true
@@ -201,7 +204,7 @@ class VoxelView <: Resource {
         if (let Some(t) <- texture) { t.close() }; texture=None
     }
     public func isClosed(): Bool { closed }
-    func backendName(): String {if(gpuActive){"GPU D3D11"}else if(!gpuError.isEmpty()){"CPU (GPU fallback)"}else{"CPU"}}
+    func backendName(): String {if(gpuActive){if(shadersEnabled){"GPU D3D11 + MC FX"}else{"GPU D3D11"}}else if(!gpuError.isEmpty()){"CPU (GPU fallback)"}else{"CPU"}}
 }
 
 // Conservative projected AABB intersected with the canvas. Rays outside this

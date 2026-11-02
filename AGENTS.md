@@ -28,8 +28,10 @@ docs/CODEGRAPH_ASSESSMENT.md for measured limits.
 
 # Milestone Git synchronization
 
-The user authorized committing and pushing a version after each completed phase.
-After relevant checks pass, commit scoped source/docs changes, push main, and push
+The user now requests GitHub synchronization only after substantial progress or a
+major completed phase. Keep small fixes (such as HUD positioning) local; do not
+automatically commit, tag or push each minor update. After relevant checks pass
+for a major milestone, commit scoped source/docs changes, push main, and push
 an annotated milestone tag (P2.1=v0.2.1, P3=v0.3.0, and so on). Report the commit,
 tag and remote synchronization result. Do not force push, include unrelated work,
 or label incomplete/failed work as a completed milestone. If remote access fails,

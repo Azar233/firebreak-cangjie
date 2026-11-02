@@ -1,5 +1,7 @@
 # 断火线 · MC 风格规划工作台
 
+v0.4.5：Esc → 显示选项 → 光影 / Shader（默认关闭）。参考本地 MC 原版公式实现双方向光、简化遮蔽/火光与距离雾；GPU 实测、原版与代理的区别见 [MC 光照实验](docs/MC_SHADERS.md)。`./forest-stress.ps1 -Benchmark -Shaders` 可复测开关性能；森林诊断按 L 切换。
+
 v0.4.4：二维纹理图、参照底图及双栏对比支持鼠标滚轮锚点缩放、中键平移；纸框固定，相机复位恢复整图。详见 [二维地图导航](docs/MAP_NAVIGATION.md)。
 
 v0.4.3：默认使用 GPU 体素渲染，Esc → 显示选项可切换 GPU/CPU 和右上角 FPS。`forest-stress.cmd` 查看约 10.9 万树模型，默认局部三维视角，Home 总览、F 回局部。GPU 每次绘制原生分辨率完整画面，详见 [GPU 实现与测试](docs/GPU_RENDERING.md)。[CPU 优化与实测](docs/RENDERING_OPTIMIZATION.md) 保留，P5 暂缓。
@@ -7,6 +9,8 @@ v0.4.3：默认使用 GPU 体素渲染，Esc → 显示选项可切换 GPU/CPU �
 在 MC 风格场地工作台上编辑防火处理方案，用同一组起火情景和随机输入进行基线/方案配对评估，同步回放并导出可复现报告。P0/P1 已获用户接受；P4 已加入预算约束候选建议，视觉效果待审查。在线 AI 属于后续 P5。
 
 ## 运行
+
+应用图标使用本机原版 `textures/block/oak_sapling.png`。构建脚本以最近邻生成透明多尺寸 ICO、嵌入 exe，并为运行窗口设置树苗图标；生成文件保存在不上传 Git 的 `assets/generated/`。
 
 双击 `run.cmd`。源代码更新后先重新构建：
 

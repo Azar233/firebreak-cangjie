@@ -22,7 +22,7 @@ class MenuLayout {
         match(page) {
             case 0=>[80,81,82,83,84,85,98,86,99,87]
             case 1=>[33,34,35,36,88]
-            case 2=>[90,91,92,100,101,88]
+            case 2=>[90,91,92,100,101,102,88]
             case 3=>[49,50,51,88]
             case 4=>[88]
             case 6=>[96,97,88]
@@ -30,6 +30,10 @@ class MenuLayout {
         }
     }
     func box(id: Int64,page!: Int64=0): Rect {
+        if(page==2){
+            let ids=[90,91,92,100,101,102]
+            for(i in 0..ids.size){if(id==ids[i]){return at(0.0,72.0+Float32(i)*52.0,448.0,44.0)}}
+        }
         if (page==6) {
             if (id==88) { return bookAt(0.0,558.0,438.0,44.0) }
             return bookAt(if (id==96) { 48.0 } else { 342.0 },482.0,48.0,44.0)
@@ -76,6 +80,7 @@ func menuLabel(app: App,id: Int64): String {
         case 88=>app.t("完成","Done")
         case 100=>app.t("右上角显示帧率：","Top-right FPS: ")+app.t(if (app.preferences.showFps) { "开" } else { "关" },if (app.preferences.showFps) { "On" } else { "Off" })
         case 101=>app.t("场景渲染：","Scene renderer: ")+(if(app.preferences.gpuEnabled){"GPU / Auto"}else{"CPU"})
+        case 102=>app.t("光影 / Shader：","Lighting / Shader: ")+(if(app.preferences.shadersEnabled){app.t("开","On")}else{app.t("关","Off")})+" (GPU)"
         case 90=>app.t("树冠：","Canopy: ")+app.t(if (app.view.showCanopy) { "显示" } else { "隐藏" },if (app.view.showCanopy) { "Shown" } else { "Hidden" })
         case 91=>app.t("视图：","View: ")+app.t(if (app.mapMode) { "二维地图" } else { "三维场景" },if (app.mapMode) { "Top-down Map" } else { "3D Scene" })
         case 92=>app.t("相机复位","Reset Camera")
@@ -109,7 +114,7 @@ func drawMenu(app: App,l: Layout,pixelRatio!: Float32=1.0): Unit {
         if (app.startCell>=0 || app.activeField>=0) { f.center(app.t("请先返回工作台处理预览或输入。","Return to finish or cancel the pending edit."),m.at(0.0,116.0,448.0,24.0),scale:m.scale,snap:true,pixelRatio:pixelRatio) }
     }
     for (id in m.controls(app.menuPage)) {
-        mcButtonAt(app,m.box(id),id,menuLabel(app,id),app.menuFocus==id || app.activeField==id,enabled:app.menuEnabled(id),textScale:m.scale,pixelRatio:pixelRatio,snapText:true)
+        mcButtonAt(app,m.box(id,page:app.menuPage),id,menuLabel(app,id),app.menuFocus==id || app.activeField==id,enabled:app.menuEnabled(id),textScale:m.scale,pixelRatio:pixelRatio,snapText:true)
     }
     let hint=app.t("Esc 返回 / Tab 切换 / Enter 确认","Esc: Back / Tab: Focus / Enter: Select")
     f.center(hint,m.at(0.0,444.0,448.0,24.0),scale:m.scale,snap:true,pixelRatio:pixelRatio,color:Color.rgb(190,190,190))

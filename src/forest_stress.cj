@@ -24,16 +24,18 @@ func stressFrame(w: SdlWindow,view: VoxelView,font: PixelFont,top: Bool,title: S
     font.draw("Grid ${view.scene.nx} x ${view.scene.nz}",x,y+36.0)
     font.draw("Trees ${view.scene.trees}",x,y+68.0)
     font.draw(if (top) { "Top-down voxel texture" } else { "3D voxel ray traversal" },x,y+104.0,scale:0.85)
-    font.draw(view.backendName()+": ${view.lastRenderMs} ms submit/CPU",x,y+140.0,scale:0.75)
+    font.draw(view.backendName(),x,y+140.0,scale:0.75)
     font.draw("Viewport ${view.targetWidth} x ${view.targetHeight}",x,y+172.0,scale:0.85)
+    font.draw("Submit/CPU ${view.lastRenderMs} ms",x,y+204.0,scale:0.75)
     font.draw("Tab: 2D / 3D",x,y+224.0)
     font.draw("C: Largest cluster",x,y+256.0)
     font.draw("Home: Overview / F: Local",x,y+288.0,scale:0.85)
     font.draw("Right drag: Rotate",x,y+320.0)
     font.draw("Middle drag: Pan",x,y+352.0)
     font.draw("Wheel: Zoom / Esc: Exit",x,y+384.0,scale:0.85)
+    font.draw("L: MC lighting "+if(view.shadersEnabled){"On"}else{"Off"},x,y+416.0,scale:0.85)
     font.draw("Rendering diagnostic only / No fire evaluation / Not a .firebreak planning project",20.0,l.height-48.0,scale:0.85)
-    drawFps(font,meter,l.width); r.endScene(); if (!capture.isEmpty()) { saveStressCapture(w,capture) }; r.present()
+    drawFps(font,meter,l.canvas); r.endScene(); if (!capture.isEmpty()) { saveStressCapture(w,capture) }; r.present()
 }
 func saveStressCapture(w: SdlWindow,path: String): Unit {
     w.renderer.captureBmp(path+".bmp")
@@ -58,6 +60,7 @@ func runForestLab(w: SdlWindow,assets: Assets,spec: ForestSpec): Unit {
                     case UiEvent.KeyDown(key,repeat)=>if (!repeat) { match(key) {
                         case Key.Escape=>running=false
                         case Key.Tab=>top = !top; view.dirty=true
+                        case Key.Letter(76)=>view.shadersEnabled = !view.shadersEnabled;view.dirty=true
                         case Key.Home=>camera.resetMap();camera.fitScene(example.scene,Layout(Float32(w.width),Float32(w.height)).canvas); view.dirty=true
                         case Key.Letter(70)=>camera.focusScene(example.scene); top=false; view.dirty=true
                         case Key.Letter(67)=>

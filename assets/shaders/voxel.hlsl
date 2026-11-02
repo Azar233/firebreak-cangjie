@@ -34,6 +34,42 @@ float3 exitTimes(float3 o,float3 d,int3 cell,int span) {
                   abs(d.z)<1e-12?1e30:(boundary.z-o.z)/d.z);
 }
 int nextAxis(float3 v) { return v.x<v.y && v.x<v.z?0:(v.y<v.z?1:2); }
+// Formula adaptations from the supplied Minecraft light.glsl and fog.glsl.
+// The compute renderer has no Minecraft runtime lightmap: use a bounded local
+// skylight/adjacent-fire proxy, not a physically accurate shadow calculation.
+int visibleMaterial(int3 cell,int3 dims) {
+    uint data=columns.Load((cell.z*dims.x+cell.x)*4);
+    int height=data&255,stage=(data>>8)&15;
+    int material=voxelAt((cell.z*dims.y+cell.y)*dims.x+cell.x);
+    if(material==4 && (stage==4 || (cell.x*17+cell.y*13+cell.z*7)%4<stage)) return 0;
+    if(stage==4 && material==3 && cell.y>height) return 0;
+    return material;
+}
+float3 lighting(float3 color,int3 cell,int3 dims,int axis,int3 step,float3 hitPoint) {
+    float3 normal=axis==0?float3(-step.x,0,0):(axis==1?float3(0,-step.y,0):float3(0,0,-step.z));
+    float directional=min(1.0,(max(0,dot(normal,normalize(float3(0.2,1,-0.7))))
+        +max(0,dot(normal,normalize(float3(-0.2,1,0.7)))))*0.6+0.4);
+    float sky=1.0;
+    [loop] for(int y=cell.y+1;y<min(dims.y,cell.y+9);y++) {
+        int m=visibleMaterial(int3(cell.x,y,cell.z),dims);
+        if(m==4 && P[1].z>0.5) sky*=0.84;
+        else if(m!=0 && m!=4) {sky*=0.45;break;}
+    }
+    float fire=(columns.Load((cell.z*dims.x+cell.x)*4)&4096)!=0?1.0:0.0;
+    [unroll] for(int k=0;k<4;k++) {
+        int2 neighbor=cell.xz+int2(k==0?1:(k==1?-1:0),k==2?1:(k==3?-1:0));
+        if(all(neighbor>=0) && neighbor.x<dims.x && neighbor.y<dims.z)
+            if((columns.Load((neighbor.y*dims.x+neighbor.x)*4)&4096)!=0) fire=max(fire,0.65);
+    }
+    float3 lightmap=max(sky.xxx,fire*float3(1,0.65,0.35));
+    color*=directional*lightmap;
+    // Orthographic adaptation: target-relative distance, not the artificial ray origin.
+    if(P[0].w<0.5) {
+        float fog=smoothstep(P[9].y,P[9].z,length(hitPoint-P[3].xyz))*P[9].w;
+        color=lerp(color,float3(122,155,169),fog);
+    }
+    return floor(color);
+}
 [numthreads(8,8,1)]
 void main(uint3 id : SV_DispatchThreadID) {
     int2 size=int2(P[1].xy); if(any(id.xy>=uint2(size))) return;
@@ -77,7 +113,8 @@ void main(uint3 id : SV_DispatchThreadID) {
             float2 tex=float2(frac(axis==0?hitPoint.z:hitPoint.x),axis==1?frac(hitPoint.z):1-frac(hitPoint.y));
             float4 c=sampleBlock(material,axis,tex);
             if(material!=4 || c.a>=128) {
-                result=floor(c.rgb*(axis==1?1.0:(axis==0?0.76:0.87)));
+                if(P[9].x>0.5) result=lighting(c.rgb,cell,dims,axis,step,hitPoint);
+                else result=floor(c.rgb*(axis==1?1.0:(axis==0?0.76:0.87)));
                 if((data&65536)!=0 && material!=10) result=mixColor(result,palette((data>>17)&7),0.48);
                 if((data&4096)!=0) result=mixColor(result,float3(247,110,24),0.6);
                 else if((data&8192)!=0 && material!=10) result=mixColor(result,float3(36,32,29),0.85);

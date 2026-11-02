@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.4.5 — Optional Minecraft-inspired GPU lighting (2026-11-02)
+
+- Adapt the supplied vanilla two-light and fog formulas to the existing D3D11 voxel pipeline, with bounded skylight/nearby-fire proxies for the absent Minecraft runtime lightmap. Preserve leaf cutouts and analysis overlays; exclude UI and 2D distance fog.
+- Add persisted bilingual display-menu control and a forest-lab L shortcut; synchronize both comparison views and disable the option on CPU. Turning lighting off restores original GPU pixels without geometry reuploads.
+- Validate 288 native checks and measure 28 ABBA groups across workbench, fire replay and 109,253-tree forest cases. Record actual GPU timestamps separately from frame-limited application FPS; see docs/MC_SHADERS.md.
+- Include the earlier local scene-corner FPS placement and oak-sapling SDL/EXE icon fixes. Keep original/derived Minecraft assets and TODO local. P5 remains deferred.
+
 ## v0.4.4 — Zoomable and pannable 2D maps (2026-11-02)
 
 - Add cursor-anchored wheel zoom (1–16x), middle-drag pan and contextual fit reset with a fixed parchment viewport. Reuse the transform for CPU/GPU rays, reference images, overlays, flames and ground picking.

@@ -33,15 +33,16 @@ try {
     } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath 'artifacts/resource-copy.json' -Encoding utf8
     & "$sdk/tools/bin/cjpm.exe" build
     if ($LASTEXITCODE -ne 0) { throw 'Firebreak build failed.' }
+    & './tools/set-app-icon.ps1' -SourceImage 'assets/minecraft/textures/block/oak_sapling.png' -Executable 'target/release/bin/main.exe'
     Get-ChildItem -LiteralPath 'vendor/SDL/.sdl3' -Filter '*.dll' | Copy-Item -Destination 'target/release/bin' -Force
     if ($Verify) {
         $previousErrorAction = $ErrorActionPreference
         try {
             $ErrorActionPreference = 'Continue'
-            & './target/release/bin/main.exe' --verify 2>&1 | Tee-Object -FilePath 'artifacts/map-navigation-checks.log'
+            & './target/release/bin/main.exe' --verify 2>&1 | Tee-Object -FilePath 'artifacts/shader-checks.log'
             $checkExit = $LASTEXITCODE
         } finally { $ErrorActionPreference = $previousErrorAction }
-        if ($checkExit -ne 0) { throw "Workbench checks failed ($checkExit). See artifacts/map-navigation-checks.log." }
+        if ($checkExit -ne 0) { throw "Workbench checks failed ($checkExit). See artifacts/shader-checks.log." }
     }
     if ($VerifyMagic) { & './tools/verify-magic.ps1' }
     if ($Run) { & './target/release/bin/main.exe' }
