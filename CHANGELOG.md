@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.4 — Zoomable and pannable 2D maps (2026-11-02)
+
+- Add cursor-anchored wheel zoom (1–16x), middle-drag pan and contextual fit reset with a fixed parchment viewport. Reuse the transform for CPU/GPU rays, reference images, overlays, flames and ground picking.
+- Keep normalized 2D navigation separate from the oblique camera and model state. Synchronize paired map navigation and enable it in the large-forest diagnostic; prevent navigation on paper margins or during pending edits.
+- Validate 277 native checks, including 32,768 CPU/GPU map pixels, reference-image edit/undo and real paired GPU views. See docs/MAP_NAVIGATION.md; P5 remains deferred.
+
 ## v0.4.3 — Native GPU voxel rendering (2026-11-02)
 
 - Add a real D3D11 compute backend through public SDL device/texture interop, with Cangjie host code and an independent HLSL two-level voxel kernel. Preserve original MC alpha textures, damage stages and overlays.

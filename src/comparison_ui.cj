@@ -16,17 +16,18 @@ func drawComparison(app: App,l: Layout): Unit {
             let run=if (right) { v.result.plannedReplay } else { v.result.baselineReplay }
             let snapshot=run.snapshots[min(v.step,run.snapshots.size-1)]
             r.pushClip(box)
+            let world=if(app.mapMode){app.camera.mapWorldBox(box)}else{box}
             let targets=run.targets
             for (i in 0..CELL_COUNT) {
                 if (!targets[i] && snapshot.age[i]<=0) { continue }
                 let x=i%GRID_X; let z=i/GRID_X
-                let point=if (app.mapMode) { Point(box.x+(Float32(x)+0.5)*box.w/24.0,box.y+(Float32(z)+0.5)*box.h/20.0) }
+                let point=if (app.mapMode) { Point(world.x+(Float32(x)+0.5)*world.w/24.0,world.y+(Float32(z)+0.5)*world.h/20.0) }
                     else { app.camera.project(view.fireAnchor(i),box) }
                 if (targets[i]) { r.strokeRect(Rect(point.x-4.0,point.y-4.0,8.0,8.0),Pen(width:2.0,color:if (snapshot.exposed[i]) { Color.rgb(255,104,73) } else { Color.rgb(103,219,241) })) }
                 if (snapshot.age[i]>0) {
                     let flame=app.assets.image("textures/block/fire_0.png"); let side=flame.width
                     let n=max(1,Int64(flame.height/side)); let index=Int64(app.clockNow/80)%n
-                    let size=if (app.mapMode) { max(8.0,min(24.0,box.w/24.0)) } else { Float32(app.camera.zoom) }
+                    let size=if (app.mapMode) { max(8.0,min(48.0,world.w/24.0)) } else { Float32(app.camera.zoom) }
                     app.assets.blit("textures/block/fire_0.png",Rect(point.x-size/2.0,point.y-size/2.0,size,size),source:Some(Rect(0.0,Float32(index)*side,side,side)))
                 }
             }

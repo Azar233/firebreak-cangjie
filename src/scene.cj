@@ -36,6 +36,27 @@ class Camera {
     var distance: Float64 = 60.0
     var minimumZoom: Float64 = 8.0
     var maximumZoom: Float64 = 40.0
+    var mapZoom: Float64=1.0
+    var mapCenterU: Float64=0.5
+    var mapCenterV: Float64=0.5
+    func resetMap(): Unit {mapZoom=1.0;mapCenterU=0.5;mapCenterV=0.5}
+    func mapU(u: Float64): Float64 {mapCenterU+(u-0.5)/mapZoom}
+    func mapV(v: Float64): Float64 {mapCenterV+(v-0.5)/mapZoom}
+    func boundMap(): Unit {
+        let edge=0.5/mapZoom
+        mapCenterU=clamp(mapCenterU,edge,1.0-edge);mapCenterV=clamp(mapCenterV,edge,1.0-edge)
+    }
+    func scaleMap(wheel: Float64,u: Float64,v: Float64): Unit {
+        let anchorU=mapU(u);let anchorV=mapV(v)
+        mapZoom=clamp(mapZoom*1.12**clamp(wheel,-4.0,4.0),1.0,16.0)
+        mapCenterU=anchorU-(u-0.5)/mapZoom;mapCenterV=anchorV-(v-0.5)/mapZoom;boundMap()
+    }
+    func panMap(dx: Float64,dy: Float64,width: Float64,height: Float64): Unit {
+        mapCenterU-=dx/(width*mapZoom);mapCenterV-=dy/(height*mapZoom);boundMap()
+    }
+    func mapWorldBox(b: Rect): Rect {
+        Rect(b.x+Float32(0.5-mapCenterU*mapZoom)*b.w,b.y+Float32(0.5-mapCenterV*mapZoom)*b.h,b.w*Float32(mapZoom),b.h*Float32(mapZoom))
+    }
     func reset(): Unit { yaw=0.64; pitch=0.67; zoom=20.0; panX=0.0; panY=0.0 }
     func rotate(dx: Float64,dy: Float64): Unit {
         yaw += dx*0.008; pitch=clamp(pitch+dy*0.006,0.25,1.5707963267948966)

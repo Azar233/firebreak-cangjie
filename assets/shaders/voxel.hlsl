@@ -41,7 +41,7 @@ void main(uint3 id : SV_DispatchThreadID) {
     float3 d=-P[6].xyz;
     float3 o=P[3].xyz+P[6].xyz*P[3].w+P[4].xyz*((uv.x-0.5)*P[2].z-P[4].w)/P[2].y
         +P[5].xyz*(-(uv.y-0.5)*P[2].w+P[5].w)/P[2].y;
-    if(P[0].w>0.5) { o=float3(uv.x*dims.x,dims.y+1,uv.y*dims.z); d=float3(0,-1,0); }
+    if(P[0].w>0.5) { float2 mapUV=P[8].xy+(uv-0.5)/P[8].z; o=float3(mapUV.x*dims.x,dims.y+1,mapUV.y*dims.z); d=float3(0,-1,0); }
     float nearT=0,farT=10000; int axis=1;
     [unroll] for(int a=0;a<3;a++) {
         if(abs(d[a])<1e-12) { if(o[a]<0 || o[a]>=dims[a]) { outputImage[id.xy]=float4(122,155,169,255)/255; return; } }

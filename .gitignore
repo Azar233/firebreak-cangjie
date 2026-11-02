@@ -51,3 +51,4 @@ artifacts/*
 !artifacts/gpu-checks.log
 !artifacts/gpu-benchmark.csv
 !artifacts/gpu-workbench.csv
+!artifacts/map-navigation-checks.log

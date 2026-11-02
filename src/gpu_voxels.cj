@@ -51,6 +51,7 @@ class GpuVoxels <: Resource {
         let up=camera.up();p[20]=Float32(up.x);p[21]=Float32(up.y);p[22]=Float32(up.z);p[23]=Float32(camera.panY)
         let outward=camera.outward();p[24]=Float32(outward.x);p[25]=Float32(outward.y);p[26]=Float32(outward.z)
         p[28]=Float32(scene.chunksX);p[29]=Float32(scene.chunksY)
+        p[32]=Float32(camera.mapCenterU);p[33]=Float32(camera.mapCenterV);p[34]=Float32(camera.mapZoom)
         texture=Some(engine.dispatch(width,height,p))
     }
     public func isClosed(): Bool {engine.isClosed()}

@@ -9,7 +9,7 @@ func rejected(action: () -> Unit): Bool {
     try { action() } catch(_: Exception) { return true }; return false
 }
 func mapPoint(app: App,l: Layout,x: Int64,z: Int64): Point {
-    let b=app.mapBox(l); return Point(b.x+(Float32(x)+0.5)*b.w/24.0,b.y+(Float32(z)+0.5)*b.h/20.0)
+    let b=app.mapWorldBox(l); return Point(b.x+(Float32(x)+0.5)*b.w/24.0,b.y+(Float32(z)+0.5)*b.h/20.0)
 }
 func verifyP1(app: App,w: SdlWindow): Unit {
     let model=Workbench()

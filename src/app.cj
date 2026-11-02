@@ -122,6 +122,8 @@ class App {
     var pressed: Int64 = -1
     var dragging=false
     var panning=false
+    var mapPanWidth: Float64=1.0
+    var mapPanHeight: Float64=1.0
     var painting=false
     var startCell: Int64 = -1
     var endCell: Int64 = -1
@@ -245,7 +247,7 @@ class App {
     func loadProject(path: String): Unit {
         let p=readProjectText(String.fromUtf8(File.readFrom(path)))
         let next=makeReference(p)
-        work.acceptLoaded(p,path); replaceReference(next); cancel(); syncScene(); mapMode=reference.isSome(); referenceMode=false
+        work.acceptLoaded(p,path); replaceReference(next); cancel();camera.resetMap(); syncScene(); mapMode=reference.isSome(); referenceMode=false
     }
     func mapBox(l: Layout): Rect {
         // Keep 32 logical pixels of original-map parchment around the editable content,
@@ -256,11 +258,19 @@ class App {
     func mapPaperBox(l: Layout): Rect {
         let b=mapBox(l); return Rect(b.x-32.0,b.y-32.0,b.w+64.0,b.h+64.0)
     }
+    func mapWorldBox(l: Layout): Rect {camera.mapWorldBox(mapBox(l))}
+    func mapInputBox(l: Layout,x: Float32,y: Float32): ?Rect {
+        if(comparePanel){
+            if(let Some(v)<-pairView){for(right in [false,true]){let b=fittedMap(compareBox(l.canvas,right),v.aspect);if(b.contains(x,y)){return Some(b)}}}
+            return None
+        }
+        let b=mapBox(l);return if(b.contains(x,y)){Some(b)}else{None}
+    }
     func cellAt(x: Float32,y: Float32,l: Layout): Int64 {
         if (!l.canvas.contains(x,y)) { return -1 }
         if (mapMode) {
             let b=mapBox(l); if (!b.contains(x,y)) { return -1 }
-            if (let Some(h) <- trace(scene,overheadRay(scene,Float64((x-b.x)/b.w),Float64((y-b.y)/b.h)),groundOnly:true)) { return h.z*GRID_X+h.x }
+            if (let Some(h) <- trace(scene,overheadRay(scene,camera.mapU(Float64((x-b.x)/b.w)),camera.mapV(Float64((y-b.y)/b.h))),groundOnly:true)) { return h.z*GRID_X+h.x }
             return -1
         }
         if (let Some(h) <- trace(scene,camera.ray(Float64(x),Float64(y),l.canvas),groundOnly:true)) { return h.z*GRID_X+h.x }
@@ -323,13 +333,13 @@ class App {
         if (id>=40 && id<=48) { simulationAction(id); return }
         if (id>=20 && id<=28) { cancel(); pickingIgnition=false; tool=id-20; message=t("工具：","Tool: ")+toolName(tool)+t("；拖动预览，再确认应用。","; drag to preview, then apply."); return }
         match (id) {
-            case 0 => camera.reset(); message=t("相机已复位。","Camera reset.")
+            case 0 => if(mapMode){camera.resetMap()}else{camera.reset()}; message=t("相机已复位。","Camera reset.")
             case 1 => camera.pitch=1.5707963267948966; mapMode=false; message=t("俯视编辑。","Overhead editing view.")
             case 2 => view.showCanopy = !view.showCanopy
             case 3 => camera.rotate(-20.0,0.0)
             case 4 => camera.rotate(20.0,0.0)
-            case 5 => camera.scale(1.0)
-            case 6 => camera.scale(-1.0)
+            case 5 => if(mapMode){camera.scaleMap(1.0,0.5,0.5)}else{camera.scale(1.0)}
+            case 6 => if(mapMode){camera.scaleMap(-1.0,0.5,0.5)}else{camera.scale(-1.0)}
             case 14 | 15 =>
                 let from=if (id==14) { work.undo } else { work.redo }
                 if (!from.isEmpty()) {
@@ -393,7 +403,7 @@ class App {
         let s=decodeReference(p).getOrThrow()
         let texture=try { assets.r.textureFromSurface(s) } finally { s.close() }
         work.commit(p); work.path=""; if (let Some(old) <- reference) { old.close() }; reference=Some(texture)
-        cancel(); syncScene(); mapMode=true; referenceMode=true; settings=true; message=t("底图已导入；请标定宽度并标注。点击纹理俯视查看三维场景的正上方。","Reference imported. Set its width and annotate. Switch to the textured map for an overhead view.")
+        cancel();camera.resetMap(); syncScene(); mapMode=true; referenceMode=true; settings=true; message=t("底图已导入；请标定宽度并标注。点击纹理俯视查看三维场景的正上方。","Reference imported. Set its width and annotate. Switch to the textured map for an overhead view.")
     }
     func pollFile(window: SdlWindow): Unit {
         if (let Some(request) <- dialog) {
@@ -428,7 +438,7 @@ class App {
     }
     func action(window: SdlWindow,id: Int64): Unit {
         if (id==10) {
-            if (discard(window)) { cancel(); work.commit(Project()); work.path=""; work.unsaved=true; refreshReference(); syncScene(); message=t("已建立示例；请另存项目。","Demo created. Save it as a new project.") }
+            if (discard(window)) { cancel();camera.resetMap(); work.commit(Project()); work.path=""; work.unsaved=true; refreshReference(); syncScene(); message=t("已建立示例；请另存项目。","Demo created. Save it as a new project.") }
         } else if (id==65 || id==78) { requestFile(window,id) } else if (id>=11 && id<=13) { requestFile(window,id) } else { activate(id) }
     }
     func handle(window: SdlWindow,record: UiEventRecord): Bool {
@@ -450,7 +460,7 @@ class App {
                 hover=l.hit(x,y,settings:settings,simulation:simPanel,parameters:simParameters,comparison:comparePanel,suggestions:suggestPanel)
                 if (painting) { let i=cellAt(x,y,l); if (i>=0) { endCell=i } }
                 if (dragging) { camera.rotate(Float64(x-lastX),Float64(y-lastY)); view.dirty=true }
-                if (panning) { camera.panX+=Float64(x-lastX); camera.panY+=Float64(y-lastY); view.dirty=true }
+                if (panning) { if(mapMode){camera.panMap(Float64(x-lastX),Float64(y-lastY),mapPanWidth,mapPanHeight)}else{camera.panX+=Float64(x-lastX); camera.panY+=Float64(y-lastY)}; view.dirty=true }
                 lastX=x; lastY=y
             case UiEvent.MouseDown(button,x,y) =>
                 lastX=x; lastY=y
@@ -465,7 +475,12 @@ class App {
                             if (tool!=0 && startCell<0) { startCell=cellAt(x,y,l); endCell=startCell; painting=startCell>=0 }
                         }
                     case MouseButton.Right => dragging = !mapMode && startCell<0 && l.canvas.contains(x,y)
-                    case MouseButton.Middle => panning = !mapMode && startCell<0 && l.canvas.contains(x,y)
+                    case MouseButton.Middle =>
+                        panning=false
+                        if(startCell<0){
+                            if(mapMode){if(let Some(b)<-mapInputBox(l,x,y)){panning=true;mapPanWidth=Float64(b.w);mapPanHeight=Float64(b.h)}}
+                            else{panning=l.canvas.contains(x,y)}
+                        }
                     case _ => ()
                 }
             case UiEvent.MouseUp(button,x,y) =>
@@ -477,7 +492,10 @@ class App {
                     case MouseButton.Middle => panning=false
                     case _ => ()
                 }
-            case UiEvent.MouseWheel(_,dy,x,y) => if (!mapMode && startCell<0 && l.canvas.contains(x,y)) { camera.scale(Float64(dy)); view.dirty=true }
+            case UiEvent.MouseWheel(_,dy,x,y) => if (startCell<0 && !panning && l.canvas.contains(x,y)) {
+                if(mapMode){if(let Some(b)<-mapInputBox(l,x,y)){camera.scaleMap(Float64(dy),Float64((x-b.x)/b.w),Float64((y-b.y)/b.h));view.dirty=true}}
+                else{camera.scale(Float64(dy));view.dirty=true}
+            }
             case UiEvent.WindowFocusLost =>
                 if (let Some(r) <- experiment.run) { r.running=false }
                 if (let Some(v) <- pairView) { v.playing=false }
@@ -647,7 +665,7 @@ class App {
             case 88=>commitField(); menuPage=0; menuFocus=80
             case 90=>view.showCanopy = !view.showCanopy; view.dirty=true
             case 91=>mapMode = !mapMode; referenceMode=false; view.dirty=true
-            case 92=>camera.reset(); view.dirty=true
+            case 92=>if(mapMode){camera.resetMap()}else{camera.reset()}; view.dirty=true
             case 100=>preferences.setShowFps(!preferences.showFps)
             case 101=>preferences.setGpu(!preferences.gpuEnabled);view.gpuError="";view.dirty=true
             case 93=>saveFromMenu(window,true)

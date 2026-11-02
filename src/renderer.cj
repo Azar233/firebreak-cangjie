@@ -44,6 +44,9 @@ class VoxelView <: Resource {
     var gpuActive=false
     var gpuError=""
     var gpu: ?GpuVoxels=None
+    var lastMapZoom: Float64=1.0
+    var lastMapU: Float64=0.5
+    var lastMapV: Float64=0.5
     var rasterPixels=Array<Color>()
     init(scene: Scene,assets: Assets) {
         this.scene=scene; this.assets=assets
@@ -87,7 +90,7 @@ class VoxelView <: Resource {
         let visible=projectedSceneBounds(scene,camera,b)
         let pixel={x: Int64,y: Int64=>
             if (topDown) {
-                return color(overheadRay(scene,(Float64(x)+0.5)/Float64(width),(Float64(y)+0.5)/Float64(height)))
+                return color(overheadRay(scene,camera.mapU((Float64(x)+0.5)/Float64(width)),camera.mapV((Float64(y)+0.5)/Float64(height))))
             }
             let sx=Float64(b.x)+(Float64(x)+0.5)/Float64(width)*Float64(b.w)
             let sy=Float64(b.y)+(Float64(y)+0.5)/Float64(height)*Float64(b.h)
@@ -124,6 +127,9 @@ class VoxelView <: Resource {
     func prepare(camera: Camera,b: Rect,window: SdlWindow,interacting!: Bool=false,forceFull!: Bool=false,topDown!: Bool=false): Unit {
         require(!closed,"Cannot prepare a closed voxel view")
         if (this.topDown!=topDown) { this.topDown=topDown; dirty=true }
+        if(topDown && (lastMapZoom!=camera.mapZoom || lastMapU!=camera.mapCenterU || lastMapV!=camera.mapCenterV)){
+            lastMapZoom=camera.mapZoom;lastMapU=camera.mapCenterU;lastMapV=camera.mapCenterV;dirty=true
+        }
         let resolution=canvasResolution(b,Float64(window.scale)*Float64(window.currentPixelDensity))
         if (resolution.width!=targetWidth || resolution.height!=targetHeight ||
             b.x!=lastBox.x || b.y!=lastBox.y || b.w!=lastBox.w || b.h!=lastBox.h) {

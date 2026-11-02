@@ -41,7 +41,7 @@ func mcButtonAt(app: App,b: Rect,id: Int64,title: String,focused: Bool,enabled!:
 func cellOutline(app: App,l: Layout,i: Int64,color: Color): Unit {
     let x=i%GRID_X; let z=i/GRID_X; let r=app.assets.r
     if (app.mapMode) {
-        let b=app.mapBox(l); r.strokeRect(Rect(b.x+Float32(x)*b.w/24.0,b.y+Float32(z)*b.h/20.0,b.w/24.0,b.h/20.0),Pen(width:2.0,color:color)); return
+        let b=app.mapWorldBox(l); r.strokeRect(Rect(b.x+Float32(x)*b.w/24.0,b.y+Float32(z)*b.h/20.0,b.w/24.0,b.h/20.0),Pen(width:2.0,color:color)); return
     }
     let y=app.scene.ground(x,z)+0.04
     let p=[Vec(Float64(x),y,Float64(z)),Vec(Float64(x+1),y,Float64(z)),Vec(Float64(x+1),y,Float64(z+1)),Vec(Float64(x),y,Float64(z+1))]
@@ -70,8 +70,8 @@ func drawMapPaperAt(app: App,b: Rect): Unit {
     } }
 }
 func drawReference(app: App,l: Layout): Unit {
-    let r=app.assets.r; let p=app.work.project; let b=app.mapBox(l)
-    r.fill(b,Color.rgb(174,166,139))
+    let r=app.assets.r; let p=app.work.project; let b=app.mapWorldBox(l)
+    r.pushClip(app.mapBox(l));r.fill(app.mapBox(l),Color.rgb(174,166,139))
     if (let Some(t) <- app.reference) { r.textureStyled(t,b) }
     for (z in 0..GRID_Z) { for (x in 0..GRID_X) {
         let i=z*GRID_X+x; let box=Rect(b.x+Float32(x)*b.w/24.0,b.y+Float32(z)*b.h/20.0,b.w/24.0,b.h/20.0)
@@ -81,10 +81,11 @@ func drawReference(app: App,l: Layout): Unit {
         if (p.treatment[i]!=0) { r.strokeRect(box,Pen(width:2.0,color:Color.rgb(239,190,61))) }
         r.strokeRect(box,Pen(width:1.0,color:Color.rgba(20,24,20,65)))
     } }
+    r.popClip()
 }
 func drawOverlays(app: App,l: Layout): Unit {
     let r=app.assets.r; let p=app.work.project
-    r.pushClip(l.canvas)
+    r.pushClip(if(app.mapMode){app.mapBox(l)}else{l.canvas})
     for (i in 0..CELL_COUNT) {
         if (p.targets[i]!=0) { cellOutline(app,l,i,Color.rgb(103,219,241)) }
         if (p.forbidden[i]!=0) { cellOutline(app,l,i,Color.rgb(237,103,116)) }
@@ -110,9 +111,9 @@ func drawOverlays(app: App,l: Layout): Unit {
             if (snapshot.age[i]<=0) { continue }
             let x=i%GRID_X; let z=i/GRID_X
             let point=if (app.mapMode) {
-                let b=app.mapBox(l); Point(b.x+(Float32(x)+0.5)*b.w/24.0,b.y+(Float32(z)+0.5)*b.h/20.0)
+                let b=app.mapWorldBox(l); Point(b.x+(Float32(x)+0.5)*b.w/24.0,b.y+(Float32(z)+0.5)*b.h/20.0)
             } else { app.camera.project(app.view.fireAnchor(i),l.canvas) }
-            let size=if (app.mapMode) { max(10.0,min(24.0,app.mapBox(l).w/24.0)) } else { Float32(app.camera.zoom)*1.1 }
+            let size=if (app.mapMode) { max(10.0,min(48.0,app.mapWorldBox(l).w/24.0)) } else { Float32(app.camera.zoom)*1.1 }
             app.assets.blit("textures/block/fire_0.png",Rect(point.x-size/2.0,point.y-(if (app.mapMode) { size/2.0 } else { size }),size,size),
                 source:Some(Rect(0.0,Float32(animation)*side,side,side)))
         }
@@ -219,6 +220,7 @@ func render(app: App,window: SdlWindow,capture!: String=""): Unit {
         mcButton(app,l,17,if (app.settings) { app.t("返回场地信息","Back to Site Info") } else { app.t("尺度与预算设置","Project Settings") })
     }
     let status=if (app.suggestPanel) { app.t("金色边框：新增候选，尚未应用 | 每个候选共用情景，不保证全局最优","Gold outlines: unapplied candidate | Shared scenarios; no global-optimum guarantee") } else if (app.comparePanel) { app.t("同步相机 / 同步仿真步 | 回放：情景 1 | 汇总：全部情景 | H 树冠","Shared camera / time | Replay: scenario 1 | Summary: all | H: Canopy") } else if (app.startCell>=0) { app.t("预览 ${app.selection().size} 格 | Enter 应用 / Esc 取消 | 青色保护 / 红色禁区","Preview ${app.selection().size} cells | Enter: Apply / Esc: Cancel | Cyan: Protected / Red: Excluded") }
+        else if(app.mapMode){app.t("滚轮缩放 | 中键平移 | 左键框选 | 相机复位：整图 | Ctrl+S 保存","Wheel: Zoom | Middle: Pan | Drag: Select | Reset: Fit Map | Ctrl+S: Save")}
         else { app.t("左键框选 | 右键旋转 / 中键平移 | 1-9 工具 | Ctrl+S 保存 | Ctrl+Z 撤销","Drag: Select | Right: Rotate / Middle: Pan | 1-9: Tools | Ctrl+S: Save | Esc: Menu") }
     r.pushClip(Rect(20.0,l.canvas.bottom()+6.0,l.canvas.w,24.0)); uiText(app,l,status,20.0,l.canvas.bottom()+10.0,color:Color.rgb(190,199,170)); r.popClip()
     if (!app.comparePanel && !app.suggestPanel) {

@@ -58,7 +58,7 @@ func runForestLab(w: SdlWindow,assets: Assets,spec: ForestSpec): Unit {
                     case UiEvent.KeyDown(key,repeat)=>if (!repeat) { match(key) {
                         case Key.Escape=>running=false
                         case Key.Tab=>top = !top; view.dirty=true
-                        case Key.Home=>camera.fitScene(example.scene,Layout(Float32(w.width),Float32(w.height)).canvas); view.dirty=true
+                        case Key.Home=>camera.resetMap();camera.fitScene(example.scene,Layout(Float32(w.width),Float32(w.height)).canvas); view.dirty=true
                         case Key.Letter(70)=>camera.focusScene(example.scene); top=false; view.dirty=true
                         case Key.Letter(67)=>
                             if (labels.isEmpty()) { labels=example.largestLabels(clock) }
@@ -70,14 +70,16 @@ func runForestLab(w: SdlWindow,assets: Assets,spec: ForestSpec): Unit {
                     case UiEvent.MouseDown(button,x,y)=>
                         x0=x; y0=y
                         let inside=Layout(Float32(w.width),Float32(w.height)).canvas.contains(x,y)
-                        match(button) { case MouseButton.Right=>dragging=inside && !top; case MouseButton.Middle=>panning=inside && !top; case _=>() }
+                        match(button) { case MouseButton.Right=>dragging=inside && !top; case MouseButton.Middle=>panning=if(top){stressBox(w,example.scene,true).contains(x,y)}else{inside}; case _=>() }
                     case UiEvent.MouseMove(x,y)=>
                         if (dragging) { camera.rotate(Float64(x-x0),Float64(y-y0)); view.dirty=true }
-                        if (panning) { camera.panX+=Float64(x-x0); camera.panY+=Float64(y-y0); view.dirty=true }
+                        if (panning) { if(top){let b=stressBox(w,example.scene,true);camera.panMap(Float64(x-x0),Float64(y-y0),Float64(b.w),Float64(b.h))}else{camera.panX+=Float64(x-x0); camera.panY+=Float64(y-y0)};view.dirty=true }
                         x0=x; y0=y
                     case UiEvent.MouseUp(MouseButton.Right,_,_)=>dragging=false
                     case UiEvent.MouseUp(MouseButton.Middle,_,_)=>panning=false
-                    case UiEvent.MouseWheel(_,dy,x,y)=>if (!top && Layout(Float32(w.width),Float32(w.height)).canvas.contains(x,y)) { camera.scale(Float64(dy)); view.dirty=true }
+                    case UiEvent.MouseWheel(_,dy,x,y)=>
+                        if(top){let b=stressBox(w,example.scene,true);if(b.contains(x,y)){camera.scaleMap(Float64(dy),Float64((x-b.x)/b.w),Float64((y-b.y)/b.h));view.dirty=true}}
+                        else if(Layout(Float32(w.width),Float32(w.height)).canvas.contains(x,y)){camera.scale(Float64(dy));view.dirty=true}
                     case UiEvent.WindowFocusLost=>dragging=false; panning=false
                     case _=>()
                 }
