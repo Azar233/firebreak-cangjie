@@ -50,7 +50,7 @@ func readLab(app:App):String {
     }
     if(let Some(job)<-app.evalJob){let state=job.progress();j.put("comparisonTask",labProgress(state.completed,state.total))}
     if(let Some(result)<-app.evalResult){let d=JsonObject();d.put("scenarios",JsonInt(result.rows.size));d.put("baselineBurned",JsonFloat(result.mean(false,0)));d.put("plannedBurned",JsonFloat(result.mean(true,0)));d.put("baselineRemaining",JsonFloat(result.mean(false,1)));d.put("plannedRemaining",JsonFloat(result.mean(true,1)));j.put("comparison",d)}
-    j.put("scope",JsonString("Current revision only; absent result means not available, never zero. Density: finite-grid empirical bracket and pointwise Wilson CI, not pc CI. Long: first-seed checkpoint replay versus all-seed measured statistics; exclude warmup. No real-fire forecasts. No RAG installed. Apply is manual."))
+    j.put("scope",JsonString("Current revision only; absent result means not available, never zero. Density: finite-grid empirical bracket and pointwise Wilson CI, not pc CI. Long: first-seed checkpoint replay versus all-seed measured statistics; exclude warmup. No real-fire forecasts. Local reference retrieval is separate from these live metrics. Apply is manual."))
     return j.toJsonString()
 }
 func controlLab(app:App,job:AgentChatJob,j:HashMap<String,JsonValue>):String {

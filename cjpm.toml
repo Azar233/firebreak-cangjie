@@ -1,6 +1,6 @@
 [package]
 name = "firebreak"
-version = "0.11.0"
+version = "0.12.0"
 cjc-version = "1.0.5"
 output-type = "executable"
 compile-option = "-O2"

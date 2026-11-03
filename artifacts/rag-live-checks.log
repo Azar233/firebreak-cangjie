@@ -1,0 +1,16 @@
+PASS Curated version-matched knowledge loads exactly 32 operation/math chunks
+PASS Knowledge metadata matches product version and every local source exists
+PASS Incompatible and malformed bundles are rejected instead of serving stale content
+PASS Knowledge query scope, nonempty text and retrieval bounds are enforced
+PASS Ten user questions retrieve their relevant operation, statistical, DS and unsupported-feature passages
+PASS Unrelated questions return no match rather than fabricated context
+PASS English terms are case-insensitive and stable passage ids are searchable
+PASS Explicit mathematical scope excludes operation passages
+PASS Citation checking handles Unicode text and rejects unknown, unserved and incomplete ids
+PASS Published knowledge excludes local maintenance entries and credential values
+PASS Local terminal help retrieves passage text without starting any API request
+PASS Real agent orchestration retrieves mathematical passages and publishes a served citation
+PASS Model answer cites an actual returned reference rather than an invented source
+PASS Program-generated source/version labels accompany the answer without modifying the forest
+PASS Fabricated citation answers are rejected and never enter conversation history
+PASS Knowledge tool cannot accept arbitrary file paths or search private local data
