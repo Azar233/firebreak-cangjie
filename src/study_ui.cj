@@ -45,7 +45,7 @@ func pollStudy(app:App):Unit {
     }
 }
 func studyEnabled(app:App,id:Int64):Bool {
-    let busy=app.studyJob.isSome()
+    let busy=app.studyJob.isSome() || app.pipelineJob.isSome()
     if(id==142){return busy}
     if(id==141 || id==146 || id==151){return !busy}
     if(id==143 || id==144 || id==145 || id==147 || id==148 || id==149){return !busy && app.densityResult.isSome()}
@@ -53,12 +53,12 @@ func studyEnabled(app:App,id:Int64):Bool {
     return true
 }
 func startDensityStudy(app:App,samples:Int64):Unit {
-    require(app.studyJob.isNone(),"A density/structure task is already active")
+    require(app.studyJob.isNone() && app.pipelineJob.isNone(),"A density/structure task is already active")
     let job=ForestStudyJob(app.work.project,app.work.revision,samples)
     app.densityResult=None;app.interventionResult=None;refreshStudyPreview(app);app.studySamples=samples;app.studyJob=Some(job);job.start()
 }
 func startStructureStudy(app:App,samples:Int64,point:Int64,dose:Int64):Unit {
-    require(app.studyJob.isNone(),"A density/structure task is already active")
+    require(app.studyJob.isNone() && app.pipelineJob.isNone(),"A density/structure task is already active")
     let result=app.densityResult.getOrThrow();require(result.revision==app.work.revision && point>=0 && point<result.points.size,"Invalid or stale density result")
     let job=ForestStudyJob(readProjectText(result.source),app.work.revision,samples,mode:1,probability:result.points[point].probability,dose:dose)
     app.studyPoint=point;app.studySamples=samples;app.studyDose=dose;app.interventionResult=None;app.studyPolicy=0;refreshStudyPreview(app);app.studyJob=Some(job);job.start()
@@ -71,7 +71,8 @@ func studyAction(app:App,w:SdlWindow,id:Int64):Unit {
             if(app.studyPanel){app.studyPanel=false}else{enterWorkflow(app,1);app.studyPanel=true;pollStudy(app)}
         case 141=>
             startDensityStudy(app,app.studySamples)
-        case 142=>if(let Some(job)<-app.studyJob){job.cancel();app.studyJob=None;app.message=app.t("已取消实验，不发布部分样本。","Study cancelled; partial samples are not published.")}
+        case 142=>if(let Some(task)<-app.pipelineJob){task.cancel()}
+            if(let Some(job)<-app.studyJob){job.cancel();app.studyJob=None;app.message=app.t("已取消实验，不发布部分样本。","Study cancelled; partial samples are not published.")}
         case 143 | 144=>
             let result=app.densityResult.getOrThrow();app.studyPoint=max(0,min(result.points.size-1,app.studyPoint+if(id==143){-1}else{1}));app.interventionResult=None;app.studyPolicy=0;refreshStudyPreview(app)
         case 145=>let result=app.densityResult.getOrThrow();let count=if(let Some(plans)<-app.interventionResult){min(result.samples,plans.samples)}else{result.samples};app.studySample=(app.studySample+1)%count;refreshStudyPreview(app)
@@ -135,11 +136,11 @@ func drawStudy(app:App,l:Layout):Unit {
     studyText(app,app.t("抽样密度 p (%) | 蓝：贯通频次+逐点95% Wilson | 绿：最大簇/全网格","Sampling p (%) | Blue: spanning + pointwise 95% Wilson | Green: largest / grid"),chart.x,chart.bottom()+30.0,chart.w)
     if(let Some(result)<-app.densityResult){
         for(i in 0..result.points.size){let point=result.points[i];let x=chart.x+Float32(point.probability)*chart.w
-            let y=chart.bottom()-Float32(point.frequency())*chart.h;let g=chart.bottom()-Float32(point.largest/Float64(app.work.project.cells))*chart.h
+            let y=chart.bottom()-Float32(point.frequency())*chart.h;let g=chart.bottom()-Float32(point.largest/Float64(app.studyPreview.getOrThrow().project.cells))*chart.h
             r.strokeLine(x,chart.bottom()-Float32(point.interval[0])*chart.h,x,chart.bottom()-Float32(point.interval[1])*chart.h,Pen(width:1.0,color:blue))
             if(i>0){let previous=result.points[i-1];let px=chart.x+Float32(previous.probability)*chart.w
                 r.strokeLine(px,chart.bottom()-Float32(previous.frequency())*chart.h,x,y,Pen(width:2.0,color:blue))
-                r.strokeLine(px,chart.bottom()-Float32(previous.largest/Float64(app.work.project.cells))*chart.h,x,g,Pen(width:2.0,color:green))
+                r.strokeLine(px,chart.bottom()-Float32(previous.largest/Float64(app.studyPreview.getOrThrow().project.cells))*chart.h,x,g,Pen(width:2.0,color:green))
             }
             r.fill(Rect(x-2.0,y-2.0,4.0,4.0),blue)
             if(i==app.studyPoint){r.strokeLine(x,chart.y,x,chart.bottom(),Pen(width:1.0,color:Color.rgb(238,199,99)))}
@@ -165,8 +166,9 @@ func drawStudy(app:App,l:Layout):Unit {
     }else{studyText(app,app.t("开始扫描后显示真实结果；不会预设临界阈值。","Run a scan to display measured results; no preset critical threshold."),chart.x,chart.y+chart.h/2.0,chart.w)}
 }
 func drawStudyPanel(app:App,l:Layout):Unit {
+    let domain=if(let Some(preview)<-app.studyPreview){preview.project}else{app.work.project}
     let x=l.panel.x+18.0;let y=l.panel.y
-    uiText(app,l,app.t("临界观察 / ${app.work.project.nx}×${app.work.project.nz}","Critical-region study / ${app.work.project.nx}x${app.work.project.nz}"),x,y+18.0)
+    uiText(app,l,app.t("临界观察 / ${domain.nx}×${domain.nz}","Critical-region study / ${domain.nx}x${domain.nz}"),x,y+18.0)
     let progress=if(let Some(job)<-app.studyJob){let state=job.progress();"${state.completed}/${state.total}"}else{app.t("独立占据 / 重采样可生长域","Independent sites / resample domain")}
     uiText(app,l,progress,x,y+48.0)
     for(id in [146,151,141,142,143,144,145,147,152,148,149,140]){

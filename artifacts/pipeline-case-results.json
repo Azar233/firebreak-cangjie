@@ -1,0 +1,96 @@
+{
+  "status": "completed",
+  "runId": 1,
+  "workspaceRevision": 0,
+  "preset": "transition",
+  "workspaceChanged": false,
+  "nx": 64,
+  "nz": 64,
+  "seed": 42,
+  "samplesPerDensity": 8,
+  "density": 0.6,
+  "densityIndex": 12,
+  "clearedCells": 4,
+  "previewPolicy": 2,
+  "empirical50Bracket": [
+    0.55,
+    0.6
+  ],
+  "selection": "tested density with spanning frequency closest to 0.5; first index breaks ties, NOT an estimate of exact pc",
+  "structuralComparison": [
+    {
+      "policy": 0,
+      "meanBurned": 4.375,
+      "meanRemaining": 2452.875,
+      "meanLargest": 1545,
+      "pairedBurnDeltaSE": 0
+    },
+    {
+      "policy": 1,
+      "meanBurned": 4.375,
+      "meanRemaining": 2448.875,
+      "meanLargest": 1520.125,
+      "pairedBurnDeltaSE": 0
+    },
+    {
+      "policy": 2,
+      "meanBurned": 4.375,
+      "meanRemaining": 2448.875,
+      "meanLargest": 1108.875,
+      "pairedBurnDeltaSE": 0
+    },
+    {
+      "policy": 3,
+      "meanBurned": 4.375,
+      "meanRemaining": 2448.875,
+      "meanLargest": 1536.875,
+      "pairedBurnDeltaSE": 0
+    }
+  ],
+  "longRun": {
+    "format": "firebreak-long-run",
+    "version": 1,
+    "rule": "growth-lightning-v1",
+    "nx": 64,
+    "nz": 64,
+    "seed": 42,
+    "seedStride": 104729,
+    "samples": 2,
+    "growthProbability": 0.01,
+    "gridLightningProbability": 0.1,
+    "warmup": 16,
+    "observedDrives": 64,
+    "suppressionCapacity": 64,
+    "order": "Each empty eligible site grows independently; then at most one uniform whole-grid lightning attempt; then the entire hit 4-neighbor component settles before the next drive. Open boundary. Existing fixed treatments never regrow. Single-fire q/duration are unused.",
+    "random": "edgeRandom(seed,1000000+globalDrive,channel,cell); channel 0 growth, 1 lightning coin at cell 0, 2 location at cell 0; independent seed stride 104729; shared external opportunities including misses, no resampling",
+    "policies": [
+      {
+        "policy": 0,
+        "meanCover": 0.36191,
+        "maxFire": 224,
+        "largeFires": 0,
+        "strikes": 14,
+        "burnedCellEvents": 298,
+        "suppressionActions": 0,
+        "effortCellEvents": 0
+      },
+      {
+        "policy": 1,
+        "meanCover": 0.365751,
+        "maxFire": 224,
+        "largeFires": 0,
+        "strikes": 14,
+        "burnedCellEvents": 224,
+        "suppressionActions": 2,
+        "effortCellEvents": 74
+      }
+    ],
+    "statistics": "Warmup excluded. Large fire >= ceil(0.1*full grid cells). Repeated burns count as cell-events. Lightning includes misses. Individual events are temporally correlated; no independent-event confidence interval. Paired large-fire-per-drive SE is across independent seeds only.",
+    "pairedLargeFireRateSE": 0,
+    "replay": "First seed only, <=130 sampled post-settlement checkpoints retaining the latest lightning per window; final exact endpoint retained. Phase animation is illustrative, not intra-fire time. At most 256 flame sprites per policy. All logical burns retained in raw records.",
+    "modelScope": "DS-inspired extension, not strict original DS scheduling; finite experiment is not proof of self-organized criticality or an estimate of a universal critical value.",
+    "reference": "https://doi.org/10.1103/PhysRevLett.69.1629",
+    "scalingCaution": "https://arxiv.org/abs/cond-mat/0201306"
+  },
+  "scope": "Scan and structure use independent-site samples, not a forecast for the workspace. Long run starts from baseline structural sample 0 at the selected density, with NO structural clearing; it separately compares natural versus ideal small-fire suppression. Preview policy is fixed, not a winner selected from these data. All policies and negative results retained. No project edit or file export. Three cards show actual result arrays; chart long trace is first seed, statistics all seeds. Apply remains manual; use density/long export UI to save full raw data."
+}

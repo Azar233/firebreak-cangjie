@@ -38,7 +38,8 @@ class TerminalEditor {
 class TerminalMessage {
     let text: String
     let user: Bool
-    init(text: String,user!:Bool=false){this.text=text;this.user=user}
+    let card:?ExperimentCard
+    init(text: String,user!:Bool=false,card!:?ExperimentCard=None){this.text=text;this.user=user;this.card=card}
 }
 class AgentTerminal {
     var epoch:Int64=0
@@ -61,16 +62,25 @@ class AgentTerminal {
     var pressed: Int64= -1
     var suppressSlash=false
     var selecting=false
+    var expandedCard:?ExperimentCard=None
+    var pendingCard:?ExperimentCard=None
+    let cardHits=ArrayList<(Rect,ExperimentCard)>()
     var cachedRevision: Int64= -1
     var cachedWidth: Float32=0.0
     var cachedScale: Float32=0.0
     var cachedLines=ArrayList<TerminalRow>()
     func append(text: String,user!:Bool=false): Unit {
         require(text.size<=16384,"Terminal message exceeds display bound")
-        messages.add(TerminalMessage(text,user:user))
-        var bytes: Int64=0;for(m in messages){bytes+=m.text.size}
-        while(messages.size>128 || bytes>65536){bytes-=messages[0].text.size;messages.remove(at:0)}
+        addMessage(TerminalMessage(text,user:user))
+    }
+    func appendCard(card:ExperimentCard):Unit {addMessage(TerminalMessage(card.title+" / run ${card.runId} / revision ${card.revision}\n"+card.details,card:Some(card)))}
+    func addMessage(message:TerminalMessage):Unit {
+        messages.add(message);var bytes:Int64=0;var cards:Int64=0;for(m in messages){bytes+=m.text.size;if(m.card.isSome()){cards++}}
+        while(messages.size>128 || bytes>65536 || cards>6){let first=messages[0];bytes-=first.text.size;if(let Some(card)<-first.card){card.close();cards--};messages.remove(at:0)}
         revision++;scroll=0
+    }
+    func clearMessages():Unit {
+        expandedCard=None;pendingCard=None;cardHits.clear();for(m in messages){if(let Some(card)<-m.card){card.close()}};messages.clear();cachedLines.clear();revision++
     }
     func recall(previous: Bool): Unit {
         if(historyAt==history.size){savedDraft=editor.text}
@@ -88,7 +98,8 @@ class TerminalRow {
     let start: Int64
     let end: Int64
     let user: Bool
-    init(text: String,start: Int64,end: Int64,user!:Bool=false){this.text=text;this.start=start;this.end=end;this.user=user}
+    let card:?ExperimentCard;let cardRow:Int64;let cardRows:Int64
+    init(text: String,start: Int64,end: Int64,user!:Bool=false,card!:?ExperimentCard=None,cardRow!:Int64=0,cardRows!:Int64=0){this.text=text;this.start=start;this.end=end;this.user=user;this.card=card;this.cardRow=cardRow;this.cardRows=cardRows}
 }
 func terminalRows(font: PixelFont,text: String,width: Float32,scale: Float32,user!:Bool=false): Array<TerminalRow> {
     let result=ArrayList<TerminalRow>();var line="";var start: Int64=0;var offset: Int64=0;var used: Float32=0.0
@@ -152,9 +163,10 @@ func submitTerminal(app: App): Unit {
             t.append(app.t("本地场地数据（非模型回答）","Local site data (not a model response)")+"\n${p.nx} x ${p.nz} | revision ${app.work.revision}\n"+
                 app.t("林地 / 保护 / 禁区：","Forest / protected / excluded: ")+"${forest} / ${targets} / ${forbidden}\n"+
                 app.t("预算 / 当前费用：","Budget / treatment cost: ")+money(p.budget)+" / "+money(p.cost()))
-        case "/stop"=>if(let Some(job)<-app.agentChat){job.cancel()}
+        case "/stop"=>if(let Some(job)<-app.agentChat){job.cancel()};if(let Some(task)<-app.pipelineJob){task.cancel()}
+        case "/experiment"=>startPipeline(app,defaultPipelineSpec())
         case "/preview"=>previewAgentPlan(app)
-        case "/clear"=>if(let Some(job)<-app.agentChat){job.cancel()};t.epoch++;t.rounds.clear();t.agentPlan=None;t.streamText="";t.messages.clear();t.revision++;t.append(app.t("会话已清空。","Conversation cleared."))
+        case "/clear"=>if(let Some(job)<-app.agentChat){job.cancel()};t.epoch++;t.rounds.clear();t.agentPlan=None;t.streamText="";t.clearMessages();t.revision++;t.append(app.t("会话已清空。","Conversation cleared."))
         case _=>if(text.startsWith("/help ")){t.append(localKnowledgeHelp(text[6..].trimAscii()))}else{startAgentChat(app,text)}
     }
 }

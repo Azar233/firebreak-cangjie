@@ -63,7 +63,7 @@ func verifyTerminal(app: App,w: SdlWindow): Unit {
     pass(t.scroll>0,"Terminal wheel scrolls retained conversation instead of the world camera")
     t.editor.composition="预编辑";event(app,w,UiEvent.WindowFocusLost)
     pass(t.editor.composition.isEmpty() && t.editor.text=="保留草稿","Focus loss clears transient composition while preserving the draft")
-    t.messages.clear();t.revision++;t.editor.set("")
+    t.clearMessages();t.revision++;t.editor.set("")
     t.append("FIREBREAK > Offline\n本地终端已就绪。模型尚未连接。\n/help 查看命令；/site 查看当前场地。")
     app.preferences.setEnglish(true);w.setSize(2560,1380);w.refreshSize();render(app,w,capture:"artifacts/p5-terminal-fullscreen.png")
     app.preferences.setEnglish(false);w.setSize(1280,860);w.refreshSize();t.open=false;t.quick=false;t.editor.set("");app.preferences.gpuEnabled=false;app.view.useGpu=false;app.view.dirty=true

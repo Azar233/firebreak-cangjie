@@ -30,12 +30,15 @@ class MenuLayout {
             case 8=>[114,115,88]
             case 9=>[10,11,12,13,14,15,108,117,118,119,88]
             case 10=>[20,21,22,23,24,25,26,27,28,88]
-            case 11=>[130,131,120,121,122,88]
+            case 11=>[130,131,120,121,122,132,88]
+            case 12=>[133,134,135,136,137,88]
             case _=>[93,94,95]
         }
     }
     func box(id: Int64,page!: Int64=0): Rect {
+        if(page==12 && id>=133 && id<=137){return at(0.0,72.0+Float32(id-133)*52.0,448.0,44.0)}
         if(page==11){
+            if(id==132){return at(0.0,332.0,448.0,44.0)}
             if(id==130 || id==131){return at(0.0,72.0+Float32(id-130)*52.0,448.0,44.0)}
             if(id>=120 && id<=122){return at(0.0,176.0+Float32(id-120)*52.0,448.0,44.0)}
         }
@@ -90,11 +93,18 @@ func menuTitle(app: App): String {
         case 9=>app.t("文件与项目","Files & Project")
         case 10=>app.t("高级标注工具","Advanced Annotation")
         case 11=>app.t("新建平坦森林","New Flat Forest")
+        case 12=>app.t("森林教学案例与完整实验","Forest cases & complete experiment")
         case _=>app.t("工作台菜单","Workbench Menu")
     }
 }
 func menuLabel(app: App,id: Int64): String {
     match(id) {
+        case 132=>app.t("教学森林 / 完整实验…","Teaching forest / Full experiment...")
+        case 133=>app.t("64×64 稀疏森林 / p=0.40","64x64 sparse / p=0.40")
+        case 134=>app.t("64×64 过渡区候选 / p=0.60","64x64 transition candidate / p=0.60")
+        case 135=>app.t("64×64 高密度森林 / p=0.80","64x64 dense / p=0.80")
+        case 136=>app.t("对当前森林运行完整实验","Run full experiment on current forest")
+        case 137=>app.t("取消完整实验","Cancel full experiment")
         case 130=>app.t("下次植被概率：${app.forestDensity}% →","Next site probability: ${app.forestDensity}% ->")
         case 131=>app.t("下次生成seed：${app.forestSeed} →","Next forest seed: ${app.forestSeed} ->")
         case 120=>app.t("24×20 / 小型网格","24x20 / Small")

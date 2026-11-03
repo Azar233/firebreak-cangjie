@@ -28,8 +28,10 @@ func labArgs(j:HashMap<String,JsonValue>,allowed:Array<String>):Unit {
 }
 func labProgress(completed:Int64,total:Int64):JsonObject {let j=JsonObject();j.put("status",JsonString("running"));j.put("completed",JsonInt(completed));j.put("total",JsonInt(total));return j}
 func readLab(app:App):String {
-    pollStudy(app);pollLong(app,app.clockNow);app.syncComparison()
+    pollPipeline(app);pollStudy(app);pollLong(app,app.clockNow);app.syncComparison()
     let p=app.work.project;let graph=Connectivity(fuelMask(p,true),p.nx,p.nz);let j=JsonObject()
+    if(let Some(task)<-app.pipelineJob){let progress=task.progress();let state=labProgress(progress.completed,progress.total);state.put("stage",JsonInt(progress.stage));state.put("runId",JsonInt(task.id));j.put("pipelineTask",state)}
+    if(let Some(result)<-app.pipelineResult){j.put("pipeline",JsonValue.fromStr(result.json()))}
     j.put("revision",JsonInt(app.work.revision));j.put("stage",JsonInt(currentWorkflow(app)));j.put("nx",JsonInt(p.nx));j.put("nz",JsonInt(p.nz));j.put("seed",JsonInt(p.seed));j.put("livePlannedCells",JsonInt(graph.total));j.put("largestPlannedCluster",JsonInt(graph.largest));j.put("spansLeftRight",JsonBool(graph.spansLeftRight(p.nx,p.nz)))
     j.put("view",JsonString(if(app.longPanel){"long"}else if(app.studyPanel){"density"}else if(app.comparePanel){"compare"}else{"forest"}))
     j.put("pendingEdit",JsonBool(app.startCell>=0 || app.activeField>=0 || app.painting));j.put("replayBlockedByOverlay",JsonBool(app.terminal.open || app.menuOpen))
@@ -56,8 +58,15 @@ func readLab(app:App):String {
 func controlLab(app:App,job:AgentChatJob,j:HashMap<String,JsonValue>):String {
     require(j.contains("action") && j["action"] is JsonString,"Expected action string");let action=j["action"].asString().getValue()
     require(!app.menuOpen && app.dialog.isNone() && app.startCell<0 && app.activeField<0 && !app.painting,"Finish pending edit/dialog/menu before changing the experiment")
-    pollStudy(app);pollLong(app,app.clockNow);app.syncComparison()
+    pollPipeline(app);pollStudy(app);pollLong(app,app.clockNow);app.syncComparison()
     match(action){
+        case "run_pipeline"=>
+            labArgs(j,["action","preset","samples","dose","density_index","policy","growth","lightning","warmup","drives","long_samples","capacity"])
+            let preset=if(j.contains("preset")){require(j["preset"] is JsonString,"Expected preset string");j["preset"].asString().getValue()}else{"current"}
+            let spec=PipelineSpec(preset,labInt(j,"samples",8,8,32),labInt(j,"dose",16,1,128),labInt(j,"density_index",-1,-1,20),labInt(j,"policy",2,0,3),LongSpec(labFloat(j,"growth",0.01),labFloat(j,"lightning",0.1),labInt(j,"warmup",128,0,512),labInt(j,"drives",512,1,2048),labInt(j,"long_samples",4,1,4),labInt(j,"capacity",64,0,16384)))
+            startPipeline(app,spec,owner:Some(job))
+        case "pipeline_results"=>
+            labArgs(j,["action"]);pollPipeline(app);let task=job.pipelineTask().getOrThrow();let result=app.pipelineResult.getOrThrow();require(result.id==task.id,"Pipeline result superseded");return result.json()
         case "workflow"=>labArgs(j,["action","stage"]);let stage=labInt(j,"stage",-1,0,3);require(stage>=0,"stage required");enterWorkflow(app,stage)
         case "density_scan"=>
             labArgs(j,["action","samples"]);let samples=labInt(j,"samples",32,8,64);require([8,32,64].contains(samples),"samples must be 8,32,64");require(app.longJob.isNone() && app.evalJob.isNone(),"Another experiment task is active")
@@ -79,7 +88,7 @@ func controlLab(app:App,job:AgentChatJob,j:HashMap<String,JsonValue>):String {
             labArgs(j,["action","samples"]);let samples=labInt(j,"samples",16,4,32);require([4,16,32].contains(samples),"samples must be 4,16,32");require(app.studyJob.isNone() && app.longJob.isNone() && app.evalJob.isNone(),"Another experiment task is active")
             app.sampleCount=samples;enterWorkflow(app,3);app.comparisonAction(60);job.ownEvaluation(app.evalJob.getOrThrow())
         case "cancel_tasks"=>
-            labArgs(j,["action"]);if(let Some(task)<-app.studyJob){task.cancel();app.studyJob=None};if(let Some(task)<-app.longJob){task.cancel();app.longJob=None};app.comparisonAction(61);if(let Some(run)<-app.experiment.run){run.running=false};if(let Some(replay)<-app.longReplay){replay.playing=false};if(let Some(pair)<-app.pairView){pair.playing=false}
+            labArgs(j,["action"]);if(let Some(task)<-app.pipelineJob){task.cancel();app.pipelineJob=None};if(let Some(task)<-app.studyJob){task.cancel();app.studyJob=None};if(let Some(task)<-app.longJob){task.cancel();app.longJob=None};app.comparisonAction(61);if(let Some(run)<-app.experiment.run){run.running=false};if(let Some(replay)<-app.longReplay){replay.playing=false};if(let Some(pair)<-app.pairView){pair.playing=false}
         case "single_start" | "single_step" | "single_pause" | "single_reset"=>
             labArgs(j,["action"])
             if(action=="single_start" || action=="single_step"){require(app.work.project.ignition>=0 && app.work.project.fuel(app.work.project.ignition,planned:app.experiment.planned)>0.0,"Choose a valid ignition manually first")}

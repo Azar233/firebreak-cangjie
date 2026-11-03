@@ -159,6 +159,7 @@ func drawSimulationPanel(app: App,l: Layout): Unit {
     mcButton(app,l,48,if (app.simParameters) { app.t("返回观察","Back") } else { app.t("参数","Settings") })
 }
 func render(app: App,window: SdlWindow,capture!: String=""): Unit {
+    pollPipeline(app)
     pollAgentConnection(app)
     pollAgentChat(app)
     pollStudy(app)

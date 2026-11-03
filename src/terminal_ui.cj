@@ -29,7 +29,9 @@ func terminalPointer(app: App,m: TerminalLayout,x: Float32,y: Float32,selectMore
 }
 func drawTerminal(app: App,l: Layout,w: SdlWindow): Unit {
     let t=app.terminal;if(!t.open || app.menuOpen){return}
+    if(let Some(card)<-t.expandedCard){if(!card.isClosed()){drawExpandedCard(app,l,card);return}else{t.expandedCard=None}}
     let m=TerminalLayout(l,t.quick);let r=app.assets.r;let f=app.font;let s=m.scale
+    t.cardHits.clear()
     let ratio=Float32(w.scale)*Float32(w.currentPixelDensity)
     // Pixel bevels rather than a scaled background image: sharp at every size.
     if(!t.quick){r.fill(Rect(0.0,0.0,l.width,l.height),Color.rgba(0,0,0,72))}
@@ -43,7 +45,9 @@ func drawTerminal(app: App,l: Layout,w: SdlWindow): Unit {
     f.draw("FIREBREAK > "+agentConnectionLabel(app),m.screen.x+40.0*s,m.screen.y+12.0*s,color:Color.rgb(223,222,113),scale:s,shadow:false,snap:true,pixelRatio:ratio)
     if(t.cachedRevision!=t.revision || t.cachedWidth!=m.output.w || t.cachedScale!=s){
         t.cachedLines.clear()
-        for(message in t.messages){for(row in terminalRows(f,(if(message.user){"> "}else{""})+message.text,m.output.w,s,user:message.user)){t.cachedLines.add(row)}}
+        for(message in t.messages){for(row in terminalRows(f,(if(message.user){"> "}else{""})+message.text,m.output.w,s,user:message.user)){t.cachedLines.add(row)}
+            if(let Some(card)<-message.card){if(!card.isClosed()){let n=cardRowCount(card,m.output.w,s,m.lineHeight);for(i in 0..n){t.cachedLines.add(TerminalRow("",0,0,card:Some(card),cardRow:i,cardRows:n))}}}
+        }
         if(!t.streamText.isEmpty()){for(row in terminalRows(f,t.streamText,m.output.w,s)){t.cachedLines.add(row)}}
         t.cachedRevision=t.revision;t.cachedWidth=m.output.w;t.cachedScale=s
     }
@@ -52,7 +56,13 @@ func drawTerminal(app: App,l: Layout,w: SdlWindow): Unit {
     r.pushClip(m.output)
     for(i in first..min(t.cachedLines.size,first+visible)){
         let line=t.cachedLines[i]
-        f.draw(line.text,m.output.x,m.output.y+Float32(i-first)*m.lineHeight,color:if(line.user){Color.rgb(233,233,224)}else{Color.rgb(205,208,162)},scale:s,shadow:false,snap:true,pixelRatio:ratio)
+        if(let Some(card)<-line.card){
+            if(!card.isClosed() && (line.cardRow==0 || i==first)){
+                let width=min(m.output.w,400.0*s);let box=Rect(m.output.x,m.output.y+Float32(i-first-line.cardRow)*m.lineHeight,width,width*card.texture.height/card.texture.width)
+                r.textureStyled(card.texture,box,style:TextureStyle(sampling:TextureScaleMode.Nearest));t.cardHits.add((box,card))
+                if(card.revision!=app.work.revision){r.fill(box,Color.rgba(0,0,0,140));f.draw(app.t("已失效 / 历史图","STALE / historical"),box.x+8.0,max(box.y,m.output.y)+8.0,scale:s,color:Color.rgb(255,205,110),shadow:false)}
+            }
+        }else{f.draw(line.text,m.output.x,m.output.y+Float32(i-first)*m.lineHeight,color:if(line.user){Color.rgb(233,233,224)}else{Color.rgb(205,208,162)},scale:s,shadow:false,snap:true,pixelRatio:ratio)}
     }
     r.popClip()
     if(t.scroll>0){f.draw("^",m.screen.right()-12.0*s,m.output.y,color:Color.rgb(223,222,113),scale:s,shadow:false)}
@@ -83,7 +93,7 @@ func drawTerminal(app: App,l: Layout,w: SdlWindow): Unit {
     terminalButton(app,m.control(2),app.t("复制记录","Copy log"),s)
     terminalButton(app,m.control(3),app.t("设置","Settings"),s)
     terminalButton(app,m.control(4),app.t("发送","Send"),s,enabled:app.agentChat.isNone())
-    terminalButton(app,m.control(5),app.t("停止","Stop"),s,enabled:app.agentChat.isSome())
+    terminalButton(app,m.control(5),app.t("停止","Stop"),s,enabled:app.agentChat.isSome() || app.pipelineJob.isSome())
     // Power indicator: amber means no configured model, not an active task.
     let power=m.control(0)
     r.strokeRect(Rect(power.x+9.0*s,power.y+10.0*s,14.0*s,14.0*s),Pen(width:2.0*s,color:Color.rgb(132,50,35)))
@@ -92,7 +102,7 @@ func drawTerminal(app: App,l: Layout,w: SdlWindow): Unit {
 }
 func terminalAction(app: App,id: Int64): Unit {
     let t=app.terminal
-    if((id==5 && app.agentChat.isNone()) || (id==4 && app.agentChat.isSome())){return}
+    if((id==5 && app.agentChat.isNone() && app.pipelineJob.isNone()) || (id==4 && app.agentChat.isSome())){return}
     playUiClick(app)
     match(id){
         case 0=>t.open=false;t.editor.composition="";t.selecting=false
@@ -100,12 +110,13 @@ func terminalAction(app: App,id: Int64): Unit {
         case 2=>Clipboard.setText(t.transcript())
         case 3=>t.editor.composition="";app.openMenu();openAgentSettings(app)
         case 4=>if(t.editor.composition.isEmpty()){submitTerminal(app)}
-        case 5=>if(let Some(job)<-app.agentChat){job.cancel()}
+        case 5=>if(let Some(job)<-app.agentChat){job.cancel()};if(let Some(task)<-app.pipelineJob){task.cancel()}
         case _=>()
     }
 }
 func handleTerminalInput(app: App,record: UiEventRecord,l: Layout): Bool {
     let t=app.terminal;let e=t.editor;let m=TerminalLayout(l,t.quick);let mods=record.metadata.modifiers
+    if(t.expandedCard.isSome()){match(record.event){case UiEvent.KeyDown(Key.Escape,_) | UiEvent.MouseUp(MouseButton.Left,_,_)=>t.expandedCard=None;case _=>()};return true}
     match(record.event){
         case UiEvent.TextInput(value)=>
             if(t.suppressSlash && value=="/"){t.suppressSlash=false;return true}
@@ -142,10 +153,12 @@ func handleTerminalInput(app: App,record: UiEventRecord,l: Layout): Bool {
                 case _=>()
             }
         case UiEvent.MouseDown(MouseButton.Left,x,y)=>
-            t.pressed=m.hit(x,y)
+            t.pressed=m.hit(x,y);t.pendingCard=None
+            if(m.output.contains(x,y)){for((box,card) in t.cardHits){if(box.contains(x,y)){t.pendingCard=Some(card);break}}}
             if(m.input.contains(x,y)){terminalPointer(app,m,x,y,mods.shift);t.selecting=true}
         case UiEvent.MouseMove(x,y)=>if(t.selecting){terminalPointer(app,m,x,y,true)}
         case UiEvent.MouseUp(MouseButton.Left,x,y)=>
+            if(let Some(card)<-t.pendingCard){for((box,hit) in t.cardHits){if(refEq(card,hit) && m.output.contains(x,y) && box.contains(x,y)){t.expandedCard=Some(card);break}}};t.pendingCard=None
             t.selecting=false;let id=m.hit(x,y);if(id>=0 && id==t.pressed){terminalAction(app,id)};t.pressed = -1
         case UiEvent.MouseWheel(_,dy,_,_)=>t.scroll=max(0,t.scroll+Int64(dy*3.0))
         case UiEvent.WindowFocusLost=>e.composition="";t.pressed = -1;t.selecting=false

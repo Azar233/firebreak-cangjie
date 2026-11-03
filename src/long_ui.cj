@@ -18,7 +18,7 @@ func pollLong(app:App,now:UInt64):Unit {
     if(app.longPanel && !app.menuOpen && !app.terminal.open){if(let Some(replay)<-app.longReplay){replay.tick(now)}}
 }
 func longEnabled(app:App,id:Int64):Bool {
-    let busy=app.longJob.isSome()
+    let busy=app.longJob.isSome() || app.pipelineJob.isSome()
     if(id==168){return busy}
     if(id==16){return app.longReplay.isSome()}
     if(id>=161 && id<=167){return !busy}
@@ -26,10 +26,13 @@ func longEnabled(app:App,id:Int64):Bool {
     return true
 }
 func nextLongValue(value:Float64,values:Array<Float64>):Float64 {for(i in 0..values.size){if(values[i]==value){return values[(i+1)%values.size]}};return values[0]}
-func startLongStudy(app:App,spec:LongSpec):Unit {
-    require(app.longJob.isNone(),"A long-run task is already active")
-    let job=LongJob(app.work.project,app.work.revision,spec)
+func setLongSpec(app:App,spec:LongSpec):Unit {
     app.longGrowth=spec.growth;app.longLightning=spec.lightning;app.longWarmup=spec.warmup;app.longDrives=spec.drives;app.longSamples=spec.samples;app.longCapacity=spec.capacity
+}
+func startLongStudy(app:App,spec:LongSpec):Unit {
+    require(app.longJob.isNone() && app.pipelineJob.isNone(),"A long-run task is already active")
+    let job=LongJob(app.work.project,app.work.revision,spec)
+    setLongSpec(app,spec)
     clearLong(app);app.longJob=Some(job);job.start()
 }
 func longAction(app:App,w:SdlWindow,id:Int64):Unit {
@@ -45,7 +48,8 @@ func longAction(app:App,w:SdlWindow,id:Int64):Unit {
         case 167=>
             let spec=LongSpec(app.longGrowth,app.longLightning,app.longWarmup,app.longDrives,app.longSamples,app.longCapacity)
             startLongStudy(app,spec)
-        case 168=>if(let Some(job)<-app.longJob){job.cancel();app.longJob=None;app.message=app.t("已取消长期实验，不发布部分统计。","Long-run study cancelled; no partial results published.")}
+        case 168=>if(let Some(task)<-app.pipelineJob){task.cancel()}
+            if(let Some(job)<-app.longJob){job.cancel();app.longJob=None;app.message=app.t("已取消长期实验，不发布部分统计。","Long-run study cancelled; no partial results published.")}
         case 170=>let replay=app.longReplay.getOrThrow();if(replay.playing){replay.playing=false}else{replay.play(app.clockNow)}
         case 171 | 173=>let replay=app.longReplay.getOrThrow();replay.seek(replay.cursor+1,app.clockNow)
         case 172=>let replay=app.longReplay.getOrThrow();replay.seek(replay.cursor-1,app.clockNow)

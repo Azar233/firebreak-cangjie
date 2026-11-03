@@ -28,7 +28,7 @@ func waitAgentLab(app:App,w:SdlWindow,job:AgentChatJob):Unit {
 func verifyAgentLab(app:App,w:SdlWindow,live!:Bool=false):Unit {
     let gpu=app.preferences.gpuEnabled
     app.menuOpen=false;app.terminal.open=false;app.cancel();app.work.acceptLoaded(densityForest(Project(nx:32,nz:32),0.6,42),"");app.syncScene();enterWorkflow(app,0)
-    app.terminal.epoch++;app.terminal.rounds.clear();app.terminal.messages.clear();app.terminal.agentPlan=None;app.terminal.seenEvents=0
+    app.terminal.epoch++;app.terminal.rounds.clear();app.terminal.clearMessages();app.terminal.agentPlan=None;app.terminal.seenEvents=0
     let source=app.work.project.text();let revision=app.work.revision;let initial=readLab(app)
     pass(!initial.contains("\"density\"") && !initial.contains("\"long\"") && initial.contains("\"largestPlannedCluster\""),"Lab reads actual forest structure and leaves unavailable experiment results absent")
     let job=labTestJob(app);let invalid=labArguments("apply");let beforeStage=currentWorkflow(app)

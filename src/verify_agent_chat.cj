@@ -42,7 +42,7 @@ func verifyAgentChat(app:App,w:SdlWindow,live!:Bool=false):Unit {
     let p=planningCamp();app.cancel();app.work.commit(p);let original=app.work.project.text();let rev=app.work.revision
     let settings=if(live){DeepSeekSettings("agent.local.json")}else{DeepSeekSettings("")}
     require(!live || (!settings.loadError && !settings.apiKey.isEmpty()),"Live check needs a saved local API key")
-    let t=app.terminal;t.open=true;t.messages.clear();t.rounds.clear();t.revision++;t.epoch++;t.seenEvents=0
+    let t=app.terminal;t.open=true;t.clearMessages();t.rounds.clear();t.revision++;t.epoch++;t.seenEvents=0
     app.agentSettings.model=settings.model;app.agentSettings.apiKey=settings.apiKey
     let prompt=(if(live){"新增处理费用最多100元。"}else{""})+"请先调用 read_site，再调用 evaluate_candidates，简要说明当前预算、推荐候选编号、费用与留出复核结果。不要修改场地。"
     let job=AgentChatJob(p,rev,app.agentSettings,t.epoch,prompt,Conversation())

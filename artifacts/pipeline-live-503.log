@@ -1,0 +1,12 @@
+2026-11-03T17:36:23.5216048+08:00 ERROR Uncaught exception in thread : Exception: DeepSeek HTTP 503E:\CangJie\firebreak\src\agent_stream.cj:51 AgentSse::connect(std.core::String, std.core::String)
+E:\CangJie\firebreak\src\agent_chat.cj:46 DeepSeekModel::asyncCreate(magic.core.model::ChatRequest)
+E:\CangJie\.reference\CangjieMagic\src\agent_executor\react\react_task.cj:197 ReactTask::getAsyncReactStep()
+E:\CangJie\.reference\CangjieMagic\src\agent_executor\react\react_task.cj:162 ReactTask::asyncRunOnce()
+E:\CangJie\.reference\CangjieMagic\src\agent_executor\react\react_executor.cj:47 ReactExecutor::asyncRun::lambda.0()
+
+Firebreak: 模型请求失败，请检查网络、余额、模型名称或 API 设置 / Model request failed; check network, balance, model or API settings
+PASS Three 64x64 teaching files reproduce exact keyed vegetation with increasing cover and no legacy annotations
+PASS Teaching menu targets fit minimum, normal and fullscreen layouts
+PASS Precancelled pipeline publishes no partial stages
+PASS A failing structural stage stops the pipeline without a completed result
+PASS Whole-experiment presets and resource bounds reject invalid requests

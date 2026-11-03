@@ -1,0 +1,16 @@
+2026-11-03T17:37:35.0640334+08:00 ERROR Uncaught exception in thread : Exception: WinHTTP 0E:\CangJie\firebreak\src\agent_chat.cj:23 NativeChatChunks::next()
+E:\CangJie\.reference\CangjieMagic\src\core\model\async_chat_response.cj:95 AsyncChatResponse::next()
+E:\CangJie\.reference\CangjieMagic\src\core\model\async_chat_response.cj:38 AsyncChatResponseIterator::next()
+E:\CangJie\.reference\CangjieMagic\src\parser\tag_stream_parser.cj:42 TagStreamParser::readChunk()
+E:\CangJie\.reference\CangjieMagic\src\parser\tag_stream_parser.cj:75 TagStreamParser::currTag::get()
+E:\CangJie\.reference\CangjieMagic\src\agent_executor\react\async_react_step.cj:49 AsyncReactStep::readThoughts()
+E:\CangJie\.reference\CangjieMagic\src\agent_executor\react\async_react_step.cj:61 AsyncReactStep::peekTag()
+E:\CangJie\.reference\CangjieMagic\src\agent_executor\react\react_task.cj:166 ReactTask::asyncRunOnce()
+E:\CangJie\.reference\CangjieMagic\src\agent_executor\react\react_executor.cj:47 ReactExecutor::asyncRun::lambda.0()
+
+Firebreak: 模型请求失败，请检查网络、余额、模型名称或 API 设置 / Model request failed; check network, balance, model or API settings
+PASS Three 64x64 teaching files reproduce exact keyed vegetation with increasing cover and no legacy annotations
+PASS Teaching menu targets fit minimum, normal and fullscreen layouts
+PASS Precancelled pipeline publishes no partial stages
+PASS A failing structural stage stops the pipeline without a completed result
+PASS Whole-experiment presets and resource bounds reject invalid requests

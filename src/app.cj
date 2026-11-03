@@ -130,6 +130,10 @@ class App {
     var densityResult:?DensityResult=None
     var interventionResult:?InterventionResult=None
     var studyPreview:?StudyPreview=None
+    var pipelineJob:?PipelineJob=None
+    var pipelineResult:?PipelineResult=None
+    var pipelineSerial:Int64=0
+    var pipelineLastStage:Int64=0
     var longPanel=false
     var longGrowth:Float64=0.01
     var longLightning:Float64=0.1
@@ -219,6 +223,7 @@ class App {
         view.dirty=true
     }
     func updateExperiment(now: UInt64): Unit {
+        pollPipeline(this)
         pollLong(this,now)
         pollStudy(this)
         clockNow=now; syncSuggestions(); pollSearch(); syncComparison(); pollEvaluation(now)
@@ -257,6 +262,7 @@ class App {
         require(startCell<0,t("请先应用或取消编辑预览","Apply or cancel the edit preview first"))
         match(id) {
             case 60 =>
+                require(pipelineJob.isNone(),"Pipeline is active; wait or cancel it first")
                 let job=EvaluationJob(work.project,work.revision,makeScenarios(work.project,sampleCount))
                 if (let Some(old) <- evalJob) { old.cancel() }
                 clearComparison(); evalJob=Some(job); job.start(); message=t("后台配对评估中；场地修改会使结果失效。","Evaluating in background. Site edits invalidate the results.")
@@ -752,6 +758,8 @@ class App {
         menuPage=5; menuFocus=95; pressed = -1
     }
     func menuEnabled(id: Int64): Bool {
+        if(id==137){return pipelineJob.isSome()}
+        if(id==136){return pipelineJob.isNone() && agentChat.isNone()}
         if (dialog.isSome()) { return false }
         if(id==107){return agentConnection.isNone()}
         if (id==102) { return preferences.gpuEnabled && view.gpuError.isEmpty() }
@@ -779,6 +787,10 @@ class App {
             case 81=>commitField();menuPage=9;menuFocus=10
             case 117=>commitField();menuPage=1;menuFocus=33
             case 119=>commitField();menuPage=10;menuFocus=20
+            case 132=>menuPage=12;menuFocus=133
+            case 133 | 134 | 135=>if(discard(window)){openTeachingCase(this,id-133)}
+            case 136=>menuOpen=false;openTerminal(this,false);startPipeline(this,defaultPipelineSpec())
+            case 137=>if(let Some(task)<-pipelineJob){task.cancel()};message=t("已请求取消完整实验。","Pipeline cancellation requested.")
             case 130=>forestDensity=(forestDensity+5)%105
             case 131=>forestSeed=(forestSeed+1)%2147483648
             case 120 | 121 | 122=>
@@ -880,5 +892,5 @@ class App {
         }
         return !exitReady
     }
-    func close(): Unit { if(let Some(job)<-longJob){job.cancel()};clearLong(this);if(let Some(job)<-studyJob){job.cancel()};if(let Some(preview)<-studyPreview){preview.close()};audio.close(); if(let Some(job)<-agentChat){job.cancel();job.wait()}; if (let Some(job) <- searchJob) { job.cancel() }; if (let Some(job) <- evalJob) { job.cancel() }; clearComparison(); view.close(); if (let Some(t) <- reference) { t.close() }; reference=None }
+    func close(): Unit { if(let Some(job)<-pipelineJob){job.cancel()};terminal.clearMessages();if(let Some(job)<-longJob){job.cancel()};clearLong(this);if(let Some(job)<-studyJob){job.cancel()};if(let Some(preview)<-studyPreview){preview.close()};audio.close(); if(let Some(job)<-agentChat){job.cancel();job.wait()}; if (let Some(job) <- searchJob) { job.cancel() }; if (let Some(job) <- evalJob) { job.cancel() }; clearComparison(); view.close(); if (let Some(t) <- reference) { t.close() }; reference=None }
 }

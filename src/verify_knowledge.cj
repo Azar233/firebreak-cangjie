@@ -23,10 +23,10 @@ class ScriptedKnowledgeModel <: ChatModel {
 func hasKnowledge(chunks:Array<KnowledgeChunk>,id:String):Bool {for(c in chunks){if(c.id==id){return true}};return false}
 func verifyKnowledge(app:App,w:SdlWindow,live!:Bool=false):Unit {
     let store=loadKnowledge();let text=String.fromUtf8(File.readFrom("assets/knowledge/zh-CN.json"))
-    pass(store.error.isEmpty() && store.chunks.size==32,"Curated version-matched knowledge loads exactly 32 operation/math chunks")
+    pass(store.error.isEmpty() && store.chunks.size==35,"Curated version-matched knowledge loads exactly 35 operation/math chunks")
     for(c in store.chunks){for(source in c.sources){if(source.startsWith("src/")){require(exists(source),"Missing knowledge source: "+source)}}}
     pass(String.fromUtf8(File.readFrom("cjpm.toml")).contains("version = \""+KNOWLEDGE_VERSION+"\""),"Knowledge metadata matches product version and every local source exists")
-    pass(rejected({=>KnowledgeStore(text.replace("\"productVersion\": \"0.12.0\"","\"productVersion\": \"0.11.0\""))}) && rejected({=>KnowledgeStore("{broken")}),"Incompatible and malformed bundles are rejected instead of serving stale content")
+    pass(rejected({=>KnowledgeStore(text.replace("\"productVersion\": \""+KNOWLEDGE_VERSION+"\"","\"productVersion\": \"0.0.0\""))}) && rejected({=>KnowledgeStore("{broken")}),"Incompatible and malformed bundles are rejected instead of serving stale content")
     pass(rejected({=>store.search("")}) && rejected({=>store.search("Wilson",kind:"private")}) && rejected({=>store.search("Wilson",limit:4)}),"Knowledge query scope, nonempty text and retrieval bounds are enforced")
     let questions=[("落雷素材怎么做，为什么没有雷声","OP-220"),("落雷和生长的长期对照怎么操作","OP-210"),("如何缩放和旋转相机","OP-040"),("Wilson置信区间是不是临界值的区间","MA-030"),("DS和SOC有什么区别","MA-050"),("幂律火灾分布能证明什么","MA-070"),("配对比较标准误SE怎么算","MA-040"),("连接优先清理是否最优","MA-060"),("风向飞火和多树种支持吗","MA-080"),("检索帮助怎么核对出处","OP-250")]
     for((question,id) in questions){require(hasKnowledge(store.search(question),id),"Retrieval missed "+id+": "+question)}
@@ -38,7 +38,7 @@ func verifyKnowledge(app:App,w:SdlWindow,live!:Bool=false):Unit {
     let served=store.search("Wilson",kind:"math")
     pass(validKnowledgeCitations("公式[0,1]、[中文]与[🙂]，出处[MA-030]。",served) && !validKnowledgeCitations("[MA-999]",served) && !validKnowledgeCitations("[OP-060]",served) && !validKnowledgeCitations("[MA-030",served),"Citation checking handles Unicode text and rejects unknown, unserved and incomplete ids")
     pass(!text.contains("agent.local.json\":") && !text.contains("OP-200") && !text.contains("API Key ="),"Published knowledge excludes local maintenance entries and credential values")
-    app.menuOpen=false;app.terminal.open=true;app.cancel();app.terminal.messages.clear();app.terminal.rounds.clear();app.terminal.epoch++;app.terminal.agentPlan=None
+    app.menuOpen=false;app.terminal.open=true;app.cancel();app.terminal.clearMessages();app.terminal.rounds.clear();app.terminal.epoch++;app.terminal.agentPlan=None
     let source=app.work.project.text();let rev=app.work.revision
     app.terminal.editor.set("/help 落雷素材");submitTerminal(app)
     pass(app.agentChat.isNone() && app.terminal.messages[app.terminal.messages.size-1].text.contains("[OP-220]"),"Local terminal help retrieves passage text without starting any API request")
@@ -56,5 +56,5 @@ func verifyKnowledge(app:App,w:SdlWindow,live!:Bool=false):Unit {
     pass(app.terminal.rounds.size==rounds && app.terminal.messages[app.terminal.messages.size-1].text.contains(app.t("已拒收","rejected")),"Fabricated citation answers are rejected and never enter conversation history")
     let args=HashMap<String,JsonValue>();args["query"]=JsonString("Wilson");args["path"]=JsonString("agent.local.json")
     pass(rejected({=>bad.retrieve(args)}),"Knowledge tool cannot accept arbitrary file paths or search private local data")
-    app.terminal.open=false;app.terminal.rounds.clear();app.terminal.messages.clear();app.agentChat=None;app.view.useGpu=app.preferences.gpuEnabled
+    app.terminal.open=false;app.terminal.rounds.clear();app.terminal.clearMessages();app.agentChat=None;app.view.useGpu=app.preferences.gpuEnabled
 }
