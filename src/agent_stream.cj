@@ -4,7 +4,7 @@ import std.collection.ArrayList
 import stdx.encoding.json.*
 
 // A single worker owns all handles. Cancellation is checked between native
-// operations; each blocking operation has a five-second OS timeout.
+// operations; native calls keep bounded timeouts (10 seconds for response reads).
 class AgentSse <: Resource {
     let api=AgentWinHttp()
     var session=CPointer<Unit>()
@@ -27,7 +27,7 @@ class AgentSse <: Resource {
             session=unsafe{CFunc<(CPointer<UInt16>,UInt32,CPointer<UInt16>,CPointer<UInt16>,UInt32)->CPointer<Unit>>(api.functions[0])(agent.pointer,4,CPointer<UInt16>(),CPointer<UInt16>(),0)}
         }
         require(session.isNotNull(),"HTTPS session failed")
-        api.check(unsafe{CFunc<(CPointer<Unit>,Int32,Int32,Int32,Int32)->Int32>(api.functions[1])(session,5000,5000,5000,5000)})
+        api.checkCaptured(unsafe{let ok=CFunc<(CPointer<Unit>,Int32,Int32,Int32,Int32)->Int32>(api.functions[1])(session,5000,5000,5000,10000);(ok,if(ok==0){GetLastError()}else{UInt32(0)})})
         try(host=AgentWide("api.deepseek.com")){
             connection=unsafe{CFunc<(CPointer<Unit>,CPointer<UInt16>,UInt16,UInt32)->CPointer<Unit>>(api.functions[2])(session,host.pointer,443,0)}
         }
@@ -37,17 +37,17 @@ class AgentSse <: Resource {
         }}
         require(request.isNotNull(),"HTTPS request failed")
         var policy:UInt32=0
-        api.check(unsafe{CFunc<(CPointer<Unit>,UInt32,CPointer<UInt32>,UInt32)->Int32>(api.functions[4])(request,88,inout policy,4)})
+        api.checkCaptured(unsafe{let ok=CFunc<(CPointer<Unit>,UInt32,CPointer<UInt32>,UInt32)->Int32>(api.functions[4])(request,88,inout policy,4);(ok,if(ok==0){GetLastError()}else{UInt32(0)})})
         let data=body.toArray();require(data.size<=131072,"Request too large")
         let raw=unsafe{acquireArrayRawData(data)}
         try{
             try(headers=AgentWide("Content-Type: application/json\r\nAccept: text/event-stream\r\nAuthorization: Bearer "+key+"\r\n")){
-                api.check(unsafe{CFunc<(CPointer<Unit>,CPointer<UInt16>,UInt32,CPointer<UInt8>,UInt32,UInt32,UIntNative)->Int32>(api.functions[5])(request,headers.pointer,UInt32(0xffffffff),raw.pointer,UInt32(data.size),UInt32(data.size),0)})
+                api.checkCaptured(unsafe{let ok=CFunc<(CPointer<Unit>,CPointer<UInt16>,UInt32,CPointer<UInt8>,UInt32,UInt32,UIntNative)->Int32>(api.functions[5])(request,headers.pointer,UInt32(0xffffffff),raw.pointer,UInt32(data.size),UInt32(data.size),0);(ok,if(ok==0){GetLastError()}else{UInt32(0)})})
             }
         }finally{unsafe{releaseArrayRawData(raw)}}
-        checkActive();api.check(unsafe{CFunc<(CPointer<Unit>,CPointer<Unit>)->Int32>(api.functions[6])(request,CPointer<Unit>())})
+        checkActive();api.checkCaptured(unsafe{let ok=CFunc<(CPointer<Unit>,CPointer<Unit>)->Int32>(api.functions[6])(request,CPointer<Unit>());(ok,if(ok==0){GetLastError()}else{UInt32(0)})})
         var status:UInt32=0;var length:UInt32=4
-        api.check(unsafe{CFunc<(CPointer<Unit>,UInt32,CPointer<UInt16>,CPointer<UInt32>,CPointer<UInt32>,CPointer<UInt32>)->Int32>(api.functions[7])(request,0x20000013,CPointer<UInt16>(),inout status,inout length,CPointer<UInt32>())})
+        api.checkCaptured(unsafe{let ok=CFunc<(CPointer<Unit>,UInt32,CPointer<UInt16>,CPointer<UInt32>,CPointer<UInt32>,CPointer<UInt32>)->Int32>(api.functions[7])(request,0x20000013,CPointer<UInt16>(),inout status,inout length,CPointer<UInt32>());(ok,if(ok==0){GetLastError()}else{UInt32(0)})})
         require(status==200,"DeepSeek HTTP ${status}")
     }
     func nextText(): ?String {
@@ -57,7 +57,11 @@ class AgentSse <: Resource {
                 if(let Some(text)<-decoder.take()){return Some(text)}
                 if(decoder.finished){finished=true;close();return None}
                 let buffer=Array<UInt8>(4096,repeat:0);let raw=unsafe{acquireArrayRawData(buffer)};var count:UInt32=0
-                try{api.check(unsafe{CFunc<(CPointer<Unit>,CPointer<UInt8>,UInt32,CPointer<UInt32>)->Int32>(api.functions[8])(request,raw.pointer,4096,inout count)})}finally{unsafe{releaseArrayRawData(raw)}}
+                try{
+                    // Capture as early as possible; the FFI may already have cleared thread-local last-error.
+                    let (ok,code)=unsafe{let value=CFunc<(CPointer<Unit>,CPointer<UInt8>,UInt32,CPointer<UInt32>)->Int32>(api.functions[8])(request,raw.pointer,4096,inout count);(value,if(value==0){GetLastError()}else{UInt32(0)})}
+                    api.checkCaptured((ok,code))
+                }finally{unsafe{releaseArrayRawData(raw)}}
                 require(count>0,"Incomplete model stream")
                 received+=Int64(count);require(received<=262144 && decoder.pending.size+Int64(count)<=65536,"Model stream exceeds bound")
                 for(i in 0..Int64(count)){decoder.pending.add(buffer[i])}

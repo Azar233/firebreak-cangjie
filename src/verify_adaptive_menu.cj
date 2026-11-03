@@ -6,8 +6,8 @@ import std.fs.remove
 
 func verifyAdaptiveMenu(app: App,w: SdlWindow): Unit {
     let small=MenuLayout(Layout(1100.0,780.0)); let large=MenuLayout(Layout(2560.0,1380.0))
-    pass(small.scale==1.0 && large.scale==2.0 && large.width==small.width*2.0 && large.book.h==small.book.h*2.0,
-        "fullscreen doubles menu, paper, button and text layout scale instead of only recentering")
+    pass(small.scale==1.0 && large.scale==small.scale && large.width==small.width && large.book.h*uiScale(2560.0,1380.0)>small.book.h,
+        "Fullscreen scales the shared UI coordinate space, including menu, paper, buttons and text")
     for (size in [Size(1100.0,780.0),Size(1280.0,860.0),Size(1920.0,1080.0),Size(2560.0,1380.0),Size(3840.0,2160.0)]) {
         let m=MenuLayout(Layout(size.w,size.h))
         require(m.scale>=1.0 && m.scale<=3.0 && m.book.x>=0.0 && m.book.y>=0.0 && m.book.right()<=size.w &&

@@ -4,7 +4,7 @@ import std.collection.{ArrayList,HashSet}
 import std.fs.File
 import stdx.encoding.json.*
 
-let KNOWLEDGE_VERSION="0.13.0"
+let KNOWLEDGE_VERSION="0.14.0"
 func knowledgeLower(text:String):String {
     let out=StringBuilder();for(ch in text.runes()){let c=UInt32(ch);out.append(if(c>=65 && c<=90){String.fromUtf8([UInt8(c+32)])}else{ch.toString()})};return out.toString()
 }

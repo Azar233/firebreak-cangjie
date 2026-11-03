@@ -29,13 +29,14 @@ main(args: Array<String>): Int64 {
                 if(args.size>0 && args[0]=="--verify-shaders"){let app=App(assets);try{verifyShaders(app,window)}finally{app.close()};return 0}
                 if (args.size>0 && args[0]=="--benchmark-forest") { ForestBenchmark().run(window,assets); return 0 }
                 if (args.size>0 && args[0]=="--benchmark-gpu") { ForestBenchmark(gpu:true).run(window,assets); return 0 }
+                if (args.size>0 && args[0]=="--benchmark-load") { LoadBenchmark().run(window,assets); return 0 }
                 if (args.size>0 && args[0]=="--benchmark-shaders") { ShaderBenchmark().run(window,assets); return 0 }
                 if (args.size>0 && args[0]=="--forest-stress") { runForestLab(window,assets,readForestSpec(if (args.size>1) { args[1] } else { "examples/large-forest.json" })); return 0 }
                 let app=App(assets,preferencesPath:if (verify) { "" } else { "settings.local.json" })
                 if(verify){app.preferences.gpuEnabled=false}
                 window.setTitle(app.t("断火线 · 森林实验","Firebreak - Forest Lab"))
                 try {
-                    if (verify) { verifyP1(app,window); verifyTopMap(app,window); verifyP2(app,window); verifyBurnDisplay(app,window); verifyP3(app,window); verifyMenu(app,window); verifyAdaptiveMenu(app,window); verifyP4(app,window); verifyPerformance(app,window); verifyRenderOptimization(app); verifyGpu(app,window); verifyMapNavigation(app,window); verifyShaders(app,window); verifyTerminal(app,window); verifyAgentChat(app,window); verifyExamples(app,window); verifyAudio(app,window); verifyWorkflow(app,window); verifyGrid(app,window); verifyStudy(app,window); verifyLong(app,window); verifyAgentLab(app,window); verifyKnowledge(app,window); verifyPipeline(app,window); verifyP0(app,window); return 0 }
+                    if (verify) { verifyP1(app,window); verifyTopMap(app,window); verifyP2(app,window); verifyBurnDisplay(app,window); verifyP3(app,window); verifyMenu(app,window); verifyAdaptiveMenu(app,window);verifyUiScale(app,window); verifyP4(app,window); verifyPerformance(app,window); verifyRenderOptimization(app); verifyGpu(app,window); verifyMapNavigation(app,window); verifyShaders(app,window); verifyTerminal(app,window); verifyAgentChat(app,window); verifyExamples(app,window); verifyAudio(app,window); verifyWorkflow(app,window); verifyGrid(app,window); verifyStudy(app,window); verifyLong(app,window); verifyAgentLab(app,window); verifyKnowledge(app,window); verifyPipeline(app,window); verifyP0(app,window); return 0 }
                     var running=true
                     while (running) {
                         while (let Some(record) <- window.pollEventRecord()) { if (!app.handle(window,record)) { running=false; break } }

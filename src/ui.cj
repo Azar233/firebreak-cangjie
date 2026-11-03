@@ -176,7 +176,7 @@ func render(app: App,window: SdlWindow,capture!: String=""): Unit {
         if (let Some(v) <- app.pairView) { v.baseline.useGpu=app.preferences.gpuEnabled;v.planned.useGpu=app.preferences.gpuEnabled;v.baseline.shadersEnabled=app.view.shadersEnabled;v.planned.shadersEnabled=app.view.shadersEnabled;v.prepare(app.camera,l.canvas,window,app.mapMode,app.view.showCanopy,!capture.isEmpty(),app.dragging || app.panning) }
     } else if (!reference) { app.view.prepare(app.camera,if (app.mapMode) { app.mapBox(l) } else { l.canvas },window,
         interacting:app.dragging || app.panning,forceFull:!capture.isEmpty(),topDown:app.mapMode) }
-    r.beginScene(l.width,l.height,Color.rgb(34,38,32))
+    r.beginScene(l.width,l.height,Color.rgb(34,38,32));r.setScale(uiPixelRatio(window))
     frame(r,Rect(12.0,12.0,l.width-24.0,76.0))
     uiText(app,l,app.t("断火线","Firebreak"),30.0,26.0,scale:if (app.preferences.english) { 1.6 } else { 2.0 })
     uiText(app,l,app.t("森林实验 / ","Forest Lab / ")+workflowName(app,currentWorkflow(app))+(if (app.work.dirty()) { app.t(" * 未保存"," * Unsaved") } else if (app.work.path.isEmpty()) { app.t(" / 未另存"," / Not Saved") } else { app.t(" / 已保存"," / Saved") }),if (app.preferences.english) { 250.0 } else { 164.0 },40.0,color:Color.rgb(222,220,192))
@@ -232,7 +232,7 @@ func render(app: App,window: SdlWindow,capture!: String=""): Unit {
             app.assets.blit(controlIcon(id),Rect(b.centerX()-16.0,b.y+4.0,32.0,32.0))
             let zh=["选择","植林","清理","隔离"];let en=["Select","Plant","Clear","Break"]
             let label=app.t(zh[slot],en[slot]);let labelScale=min(1.0,(b.w-8.0)/max(1.0,app.font.measure(label)))
-            app.font.center(label,Rect(b.x+4.0,b.y+38.0,b.w-8.0,18.0),scale:labelScale,shadow:false,snap:true,pixelRatio:Float32(window.scale)*Float32(window.currentPixelDensity))
+            app.font.center(label,Rect(b.x+4.0,b.y+38.0,b.w-8.0,18.0),scale:labelScale,shadow:false,snap:true,pixelRatio:uiPixelRatio(window))
             app.assets.r.popClip()
             if(app.tool==tool){app.assets.r.strokeRect(Rect(b.x+1.0,b.y+1.0,b.w-2.0,b.h-2.0),Pen(width:2.0,color:Color.rgb(234,215,129)))}
         }
@@ -243,7 +243,7 @@ func render(app: App,window: SdlWindow,capture!: String=""): Unit {
     }
     let backend=if(app.longPanel && app.longReplay.isSome()){app.longReplay.getOrThrow().views[0].backendName()}else if(app.studyPanel && app.studyPreview.isSome()){app.studyPreview.getOrThrow().view.backendName()}else{app.view.backendName()}
     r.pushClip(Rect(20.0,l.height-25.0,l.width-40.0,22.0)); uiText(app,l,backend+" | "+(if (app.startCell>=0) { app.t("选区 ${app.selection().size} 格；Enter应用 / Esc取消","${app.selection().size} selected cells; Enter applies / Esc cancels") } else if(!app.view.gpuError.isEmpty()){app.view.gpuError}else{app.message}),20.0,l.height-23.0,color:Color.rgb(222,220,192)); r.popClip()
-    if (app.menuOpen) { drawMenu(app,l,pixelRatio:Float32(window.scale)*Float32(window.currentPixelDensity)) }
+    if (app.menuOpen) { drawMenu(app,l,pixelRatio:uiPixelRatio(window)) }
     if (app.preferences.showFps) { drawFps(app.font,app.frameMeter,l.canvas) }
     drawTerminal(app,l,window)
     r.endScene()

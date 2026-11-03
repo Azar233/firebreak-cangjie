@@ -32,7 +32,7 @@ func drawTerminal(app: App,l: Layout,w: SdlWindow): Unit {
     if(let Some(card)<-t.expandedCard){if(!card.isClosed()){drawExpandedCard(app,l,card);return}else{t.expandedCard=None}}
     let m=TerminalLayout(l,t.quick);let r=app.assets.r;let f=app.font;let s=m.scale
     t.cardHits.clear()
-    let ratio=Float32(w.scale)*Float32(w.currentPixelDensity)
+    let ratio=uiPixelRatio(w)
     // Pixel bevels rather than a scaled background image: sharp at every size.
     if(!t.quick){r.fill(Rect(0.0,0.0,l.width,l.height),Color.rgba(0,0,0,72))}
     r.fill(Rect(m.body.x+4.0*s,m.body.y+5.0*s,m.body.w,m.body.h),Color.rgba(0,0,0,150))
@@ -88,7 +88,7 @@ func drawTerminal(app: App,l: Layout,w: SdlWindow): Unit {
             }else if((w.ticks()/500)%2==0){r.fill(Rect(cursor.x,cursor.y+16.0*s,10.0*s,2.0*s),Color.rgb(235,235,223))}
         }
     }
-    r.popClip();w.setTextInputArea(Rect(min(m.input.right()-2.0*s,cursor.x),cursor.y+20.0*s,2.0*s,m.lineHeight))
+    r.popClip();uiInputArea(w,Rect(min(m.input.right()-2.0*s,cursor.x),cursor.y+20.0*s,2.0*s,m.lineHeight))
     terminalButton(app,m.control(0),"",s);terminalButton(app,m.control(1),if(t.quick){"+"}else{"-"},s)
     terminalButton(app,m.control(2),app.t("复制记录","Copy log"),s)
     terminalButton(app,m.control(3),app.t("设置","Settings"),s)

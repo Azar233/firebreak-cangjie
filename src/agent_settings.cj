@@ -77,7 +77,7 @@ func handleAgentSettings(app: App,w: SdlWindow,record: UiEventRecord): Bool {
                 case Key.Right=>e.move(true,mods.shift)
                 case Key.Home=>e.caret=0;if(!mods.shift){e.anchor=e.caret}
                 case Key.End=>e.caret=e.text.size;if(!mods.shift){e.anchor=e.caret}
-                case Key.Tab=>if(!repeat){app.agentField=if(app.agentField==104){105}else{104};app.menuFocus=app.agentField;app.agentOriginal=agentEditor(app).text;w.setTextInputArea(MenuLayout(Layout(Float32(w.width),Float32(w.height))).box(app.agentField,page:4))}
+                case Key.Tab=>if(!repeat){app.agentField=if(app.agentField==104){105}else{104};app.menuFocus=app.agentField;app.agentOriginal=agentEditor(app).text;uiInputArea(w,MenuLayout(Layout(Float32(w.width),Float32(w.height))).box(app.agentField,page:4))}
                 case _=>()
             };return true
         case _=>return false

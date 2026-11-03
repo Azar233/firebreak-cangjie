@@ -26,7 +26,10 @@ class Tile {
     init(path: String) {
         try (surface=Surface.load(path)) {
             require(surface.size().w==16.0 && surface.size().h==16.0,"P0 block must be 16x16: "+path)
-            for (i in 0..256) { pixels[i]=surface.readPixel(Int32(i%16),Int32(i/16)) }
+            // Convert indexed PNG colors and color-key alpha before per-pixel reads.
+            try(rgba=surface.rgba()){
+                for(i in 0..256){pixels[i]=rgba.readPixel(Int32(i%16),Int32(i/16))}
+            }
         }
     }
     func sample(u: Float64,v: Float64): Color {
@@ -108,13 +111,15 @@ class PixelFont {
         this.assets=assets
         widths=File.readFrom("assets/minecraft/font/glyph_sizes.bin")
         require(widths.size==65536,"Invalid MC glyph sizes")
-        try (s=Surface.load("assets/minecraft/textures/font/ascii.png")) {
-            for (code in 0..128) {
-                var last: Int64 = 0
-                for (y in 0..8) { for (x in 0..8) {
-                    if (s.readPixel(Int32(code%16*8+x),Int32(code/16*8+y)).a>UInt8(0)) { last=max(last,x+1) }
-                } }
-                asciiWidth[code]=if (code==32) { 4 } else { max(1,last) }
+        try (source=Surface.load("assets/minecraft/textures/font/ascii.png")) {
+            try(s=source.alphaMask()){
+                for (code in 0..128) {
+                    var last: Int64 = 0
+                    for (y in 0..8) { for (x in 0..8) {
+                        if (s.readPixel(Int32(code%16*8+x),Int32(code/16*8+y)).a>UInt8(0)) { last=max(last,x+1) }
+                    } }
+                    asciiWidth[code]=if (code==32) { 4 } else { max(1,last) }
+                }
             }
         }
     }

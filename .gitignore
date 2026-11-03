@@ -109,3 +109,25 @@ artifacts/toolbar-selected-[013].png
 !artifacts/pipeline-final-checks.log
 !artifacts/pipeline-live-503.log
 artifacts/pipeline-agent-live.png
+
+# Keep README proof once, rather than uploading duplicate diagnostic captures.
+artifacts/release-*.png
+artifacts/load-*.png
+!artifacts/load-report.png
+artifacts/greeting-live.png
+artifacts/ui-pipeline-agent-live.png
+!artifacts/final-checks.log
+!artifacts/final-knowledge-live-checks.log
+!artifacts/final-pipeline-live-checks.log
+!artifacts/load-checks.log
+!artifacts/load-benchmark.csv
+!artifacts/load-frames.csv
+!artifacts/load-memory.csv
+!artifacts/load-parameters.json
+!artifacts/load-summary.json
+
+!artifacts/cjpm-run-checks.log
+!artifacts/cjpm-full-checks.log
+!artifacts/clean-startup-checks.log
+
+!artifacts/auto-assets-checks.log

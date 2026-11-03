@@ -1,0 +1,65 @@
+{
+  "productVersion": "0.13.0 + local reliability/load benchmark changes",
+  "grid": [
+    128,
+    128
+  ],
+  "logicalForestCellsBeforeClearing": 16384,
+  "treePlacement": "one voxel tree per 4x4 logical cells when forest is present; dense case 1024 tree instances",
+  "singleFire": {
+    "occupation": 1,
+    "spreadProbability": 1,
+    "duration": 3,
+    "seed": 42,
+    "ignition": 8256,
+    "clearingColumn": 96,
+    "historySteps": 140
+  },
+  "pipeline": {
+    "preset": "current",
+    "samplesPerDensity": 8,
+    "dose": 16,
+    "densitySelection": "tested frequency closest to 0.5; not pc estimate",
+    "longGrowth": 0.02,
+    "longLightning": 0.25,
+    "warmup": 0,
+    "observedDrives": 256,
+    "longSamples": 1,
+    "capacity": 64
+  },
+  "windows": [
+    [
+      1280,
+      860
+    ],
+    [
+      2560,
+      1380
+    ]
+  ],
+  "shaders": "off,on,on,off per workload (ABBA)",
+  "framesPerBlock": {
+    "warmup": 8,
+    "measured": 72,
+    "GPUProfileSeparate": 10,
+    "GPUProfileDiscard": 2
+  },
+  "pacingMs": 12,
+  "workloads": [
+    "single-fire 3D, animated frames/camera",
+    "paired-fire 3D, animated frames/camera",
+    "growth-lightning paired 3D, camera fitted to actual panel, alternate real fire/regrowth checkpoints every 12 frames; camera changes every frame",
+    "paired-fire + actual image cards + synthetic LOCAL text stream (NO API)"
+  ],
+  "memoryCycles": 4,
+  "limitations": [
+    "Accelerated replay stress; not ordinary playback speed.",
+    "Normal loop frame timings exclude screenshots and synchronous GPU timestamp probes.",
+    "GPU timestamps cover voxel compute only; two-view times summed, not total presentation time.",
+    "Frame work includes replay update/render/present; loop FPS also includes 12ms pacing.",
+    "Process commit/working set are not dedicated GPU VRAM.",
+    "Four native allocation/release cycles do not prove absence of all leaks.",
+    "32 short blocks do not replace a long-duration soak."
+  ],
+  "longFrameCoverage": "Each measured block asserts at least one real fire checkpoint and one checkpoint with growth."
+}

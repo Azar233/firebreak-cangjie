@@ -17,7 +17,8 @@ class Layout {
     let canvas: Rect
     let panel: Rect
     let toolbar: Rect
-    init(width: Float32,height: Float32) {
+    init(windowWidth: Float32,windowHeight: Float32) {
+        let factor=uiScale(windowWidth,windowHeight);let width=windowWidth/factor;let height=windowHeight/factor
         this.width=width; this.height=height
         canvas=Rect(20.0,152.0,width-330.0,height-282.0)
         panel=Rect(width-294.0,152.0,274.0,height-282.0)
@@ -39,7 +40,7 @@ class Layout {
         if(id>=55 && id<=58){let w=(width-64.0)/4.0;return Rect(20.0+Float32(id-55)*(w+8.0),94.0,w,44.0)}
         if(id==59){return Rect(panel.x+18.0,panel.y+446.0,238.0,44.0)}
         if(id==116){return Rect(panel.x+18.0,panel.y+186.0,238.0,44.0)}
-        if(id==0 || id==16 || id==2){let n=if(id==16){0}else if(id==0){1}else{2};return Rect(canvas.right()-342.0+Float32(n)*114.0,toolbar.y+11.0,108.0,44.0)}
+        if(id==0 || id==16 || id==2){let n=if(id==16){0}else if(id==0){1}else{2};return Rect(width-356.0+Float32(n)*114.0,toolbar.y+11.0,108.0,44.0)}
         if(id==14 || id==15){return Rect(panel.x+18.0+Float32(id-14)*122.0,panel.y+238.0,116.0,44.0)}
         if(id==47 || id==48){return Rect(panel.x+18.0+Float32(id-47)*122.0,panel.y+362.0,116.0,44.0)}
         if (id>=70 && id<=78) {
@@ -558,7 +559,8 @@ class App {
         clockNow=window.ticks()
         try { return handleInput(window,record) } catch(e: Exception) { painting=false; message=t("操作未应用：","Action not applied: ")+localizedError(e.message,preferences.english); return true }
     }
-    func handleInput(window: SdlWindow,record: UiEventRecord): Bool {
+    func handleInput(window: SdlWindow,rawRecord: UiEventRecord): Bool {
+        let record=UiEventRecord(uiEventCoordinates(rawRecord.event,uiScale(Float32(window.width),Float32(window.height))),rawRecord.metadata)
         let l=Layout(Float32(window.width),Float32(window.height))
         match (record.event) {
             case UiEvent.Quit | UiEvent.WindowCloseRequested => requestExit(); return !exitReady
@@ -806,7 +808,7 @@ class App {
             case 14 | 15=>activate(id)
             case 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28=>enterWorkflow(this,if(id==25 || id==26){2}else{0});activate(id);menuOpen=false
             case 82 | 83 | 84=>commitField(); menuPage=id-80; menuFocus=MenuLayout(Layout(Float32(window.width),Float32(window.height))).controls(menuPage)[0];if(id==84){openAgentSettings(this)}
-            case 104 | 105=>agentField=id;agentOriginal=agentEditor(this).text;window.setTextInputArea(MenuLayout(Layout(Float32(window.width),Float32(window.height))).box(id,page:4))
+            case 104 | 105=>agentField=id;agentOriginal=agentEditor(this).text;uiInputArea(window,MenuLayout(Layout(Float32(window.width),Float32(window.height))).box(id,page:4))
             case 106=>
                 try{agentSettings.save(agentModelEditor.text,agentKeyEditor.text);agentField = -1;message=t("DeepSeek 配置已保存；尚未进行连接验证。","DeepSeek settings saved; connection has not been verified.")}
                 catch(_:Exception){message=t("保存失败，请检查模型名、API Key 格式或本地文件权限。","Save failed. Check the model name, key format and local file access.")}

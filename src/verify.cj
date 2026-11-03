@@ -5,7 +5,7 @@ import std.math.abs
 import std.fs.exists
 
 func pass(ok: Bool,name: String): Unit { require(ok,"FAIL "+name); println("PASS "+name) }
-func event(app: App,w: SdlWindow,e: UiEvent): Unit { require(app.handle(w,UiEventRecord(e)),"Unexpected quit") }
+func event(app: App,w: SdlWindow,e: UiEvent): Unit { require(app.handle(w,UiEventRecord(uiEventCoordinates(e,1.0/uiScale(Float32(w.width),Float32(w.height))))),"Unexpected quit") }
 func click(app: App,w: SdlWindow,id: Int64): Unit {
     // Exercise the new visible route for controls deliberately moved off the canvas.
     if(id==19){click(app,w,if(app.simPanel){55}else{56});return}
@@ -46,7 +46,7 @@ func verifyResolution(app: App,w: SdlWindow): Unit {
     w.setSize(2560,1380); w.refreshSize()
     let large=Layout(Float32(w.width),Float32(w.height))
     app.view.prepare(app.camera,large.canvas,w,forceFull:true)
-    let wanted=canvasResolution(large.canvas,Float64(w.scale)*Float64(w.currentPixelDensity))
+    let wanted=canvasResolution(large.canvas,Float64(uiPixelRatio(w)))
     let full=app.view.texture.getOrThrow()
     pass(Int64(full.width)==wanted.width && Int64(full.height)==wanted.height && app.view.nativeReady(),
         "large window settles to actual canvas pixels instead of fixed 480px")

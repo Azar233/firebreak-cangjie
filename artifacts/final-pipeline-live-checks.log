@@ -1,0 +1,20 @@
+PASS Three 64x64 teaching files reproduce exact keyed vegetation with increasing cover and no legacy annotations
+PASS Teaching menu targets fit minimum, normal and fullscreen layouts
+PASS Precancelled pipeline publishes no partial stages
+PASS A failing structural stage stops the pipeline without a completed result
+PASS Whole-experiment presets and resource bounds reject invalid requests
+PASS One model tool invocation waits for scan, all four structural policies and the long-run experiment
+PASS Pipeline uses consistent selected samples while keeping workspace and revision unchanged
+PASS Fixed connector preview is retained without selecting a winner or claiming exact criticality
+PASS Completed pipeline results reuse the density/long-run exports with exact raw records
+PASS Three owned image cards carry actual run/revision metadata
+PASS Clicking an inline result image opens the enlarged card
+PASS Escape closes the image before closing the terminal
+PASS Workspace edits invalidate current pipeline results while retaining explicitly historical images
+PASS Clearing history releases card textures and cached image targets
+PASS History eviction closes the oldest texture when more than six cards are appended
+PASS Clearing releases the remaining bounded card history
+PASS In-flight cancellation propagates to the active pipeline stage and publishes no result
+PASS Input revision changes cancel a running pipeline before any result/card publication
+
+cjpm run finished

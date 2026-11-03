@@ -16,7 +16,7 @@ func checkBenchmarkEvents(w: SdlWindow): Unit {
 func stressFrame(w: SdlWindow,view: VoxelView,font: PixelFont,top: Bool,title: String,meter: FrameMeter,capture!:String=""): Unit {
     let l=Layout(Float32(w.width),Float32(w.height)); let b=stressBox(w,view.scene,top); let r=w.renderer
     meter.tick(meter.clock.ms())
-    r.beginScene(l.width,l.height,Color.rgb(34,38,32))
+    r.beginScene(l.width,l.height,Color.rgb(34,38,32));r.setScale(uiPixelRatio(w))
     frame(r,Rect(12.0,12.0,l.width-24.0,76.0)); font.draw("Firebreak / Forest Stress Lab",30.0,30.0)
     frame(r,l.canvas,dark:true); view.draw(b); frame(r,l.panel,dark:true)
     let x=l.panel.x+16.0; let y=l.panel.y+18.0

@@ -133,7 +133,7 @@ class VoxelView <: Resource {
         if(topDown && (lastMapZoom!=camera.mapZoom || lastMapU!=camera.mapCenterU || lastMapV!=camera.mapCenterV)){
             lastMapZoom=camera.mapZoom;lastMapU=camera.mapCenterU;lastMapV=camera.mapCenterV;dirty=true
         }
-        let resolution=canvasResolution(b,Float64(window.scale)*Float64(window.currentPixelDensity))
+        let resolution=canvasResolution(b,Float64(uiPixelRatio(window)))
         if (resolution.width!=targetWidth || resolution.height!=targetHeight ||
             b.x!=lastBox.x || b.y!=lastBox.y || b.w!=lastBox.w || b.h!=lastBox.h) {
             dirty=true; targetWidth=resolution.width; targetHeight=resolution.height; lastBox=b

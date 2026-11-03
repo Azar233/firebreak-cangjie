@@ -7,6 +7,18 @@ import stdx.encoding.json.*
 import magic.core.model.*
 import magic.core.message.Conversation
 
+class GreetingKnowledgeModel <: ChatModel {
+    public prop provider:String {get(){"test"}}
+    public prop name:String {get(){"greeting"}}
+    public prop contextLength:Int64 {get(){32768}}
+    public mut prop maxTokens:?Int64 {get(){None};set(_) {}}
+    public func create(r:ChatRequest):ChatResponse {ChatResponse(name,asyncCreate(r).message)}
+    public func asyncCreate(r:ChatRequest):AsyncChatResponse {
+        for(message in r.messageList){require(!message.content.contains("LOCAL_REFERENCE_DATA") && !message.content.contains("OP-nnn"),"Greeting inherited the RAG citation template")}
+        return firebreakStream(name,[firebreakChunk("<answer>你好！可以一起探索森林实验。</answer>"),firebreakChunk("",done:true)].iterator())
+    }
+}
+
 class ScriptedKnowledgeModel <: ChatModel {
     var turn:Int64=0;let bad:Bool
     init(bad!:Bool=false){this.bad=bad}
@@ -22,6 +34,11 @@ class ScriptedKnowledgeModel <: ChatModel {
 }
 func hasKnowledge(chunks:Array<KnowledgeChunk>,id:String):Bool {for(c in chunks){if(c.id==id){return true}};return false}
 func verifyKnowledge(app:App,w:SdlWindow,live!:Bool=false):Unit {
+    pass(isAgentGreeting("你好！") && isAgentGreeting(" Hello! ") && !isAgentGreeting("你好，帮我扫描密度") && !isAgentGreeting("Wilson区间是什么"),"Only standalone greetings bypass research retrieval, never mixed operation/theory requests")
+    let greeting=AgentChatJob(app.work.project,app.work.revision,app.agentSettings,app.terminal.epoch,"你好",Conversation())
+    app.terminal.clearMessages();app.terminal.rounds.clear();app.terminal.seenEvents=0;app.agentChat=Some(greeting)
+    if(live){greeting.start();waitAgentLab(app,w,greeting);app.terminal.open=true;render(app,w,capture:"artifacts/greeting-live.png")}else{greeting.execute(modelOverride:Some(GreetingKnowledgeModel()));pollAgentChat(app)}
+    pass(greeting.progress().error.isEmpty() && greeting.progress().events.isEmpty() && greeting.knowledgeHits().isEmpty() && app.terminal.rounds.size==1,"A greeting uses the real agent response path without RAG/tool calls and is accepted without citations")
     let store=loadKnowledge();let text=String.fromUtf8(File.readFrom("assets/knowledge/zh-CN.json"))
     pass(store.error.isEmpty() && store.chunks.size==35,"Curated version-matched knowledge loads exactly 35 operation/math chunks")
     for(c in store.chunks){for(source in c.sources){if(source.startsWith("src/")){require(exists(source),"Missing knowledge source: "+source)}}}

@@ -33,7 +33,7 @@ class AgentWinHttp <: Resource {
             for(i in 0..names.size){let text=unsafe{LibC.mallocCString(names[i])};try(name=text.asResource()){functions[i]=unsafe{GetProcAddress(module,name.value)}};require(functions[i].isNotNull(),"WinHTTP function unavailable")}
         }catch(ex:Exception){let _=unsafe{FreeLibrary(module)};throw ex}
     }
-    func check(result: Int32): Unit {if(result==0){let code=unsafe{GetLastError()};throw Exception("WinHTTP ${code}")}}
+    func checkCaptured(result:(Int32,UInt32)):Unit {let (ok,code)=result;require(ok!=0,if(code==0){"WinHTTP error unavailable"}else{"WinHTTP ${code}"})}
     func release(handle: CPointer<Unit>): Unit {if(handle.isNotNull()){let _=unsafe{CFunc<(CPointer<Unit>)->Int32>(functions[9])(handle)}}}
     public func isClosed(): Bool {closed}
     public func close(): Unit {if(!closed){let _=unsafe{FreeLibrary(module)};closed=true}}
@@ -57,7 +57,7 @@ func sendAgentMetadata(api: AgentWinHttp,key: String): AgentHttpResult {
                 session=unsafe{CFunc<(CPointer<UInt16>,UInt32,CPointer<UInt16>,CPointer<UInt16>,UInt32)->CPointer<Unit>>(api.functions[0])(agent.pointer,4,CPointer<UInt16>(),CPointer<UInt16>(),0)}
             }
             require(session.isNotNull(),"WinHTTP session failed")
-            api.check(unsafe{CFunc<(CPointer<Unit>,Int32,Int32,Int32,Int32)->Int32>(api.functions[1])(session,5000,5000,5000,5000)})
+            api.checkCaptured(unsafe{let ok=CFunc<(CPointer<Unit>,Int32,Int32,Int32,Int32)->Int32>(api.functions[1])(session,5000,5000,5000,5000);(ok,if(ok==0){GetLastError()}else{UInt32(0)})})
             try(host=AgentWide("api.deepseek.com")){
                 connection=unsafe{CFunc<(CPointer<Unit>,CPointer<UInt16>,UInt16,UInt32)->CPointer<Unit>>(api.functions[2])(session,host.pointer,443,0)}
             }
@@ -67,13 +67,13 @@ func sendAgentMetadata(api: AgentWinHttp,key: String): AgentHttpResult {
             }}
             require(request.isNotNull(),"WinHTTP request failed")
             var redirectPolicy: UInt32=0 // NEVER: credentials cannot follow redirects.
-            api.check(unsafe{CFunc<(CPointer<Unit>,UInt32,CPointer<UInt32>,UInt32)->Int32>(api.functions[4])(request,88,inout redirectPolicy,4)})
+            api.checkCaptured(unsafe{let ok=CFunc<(CPointer<Unit>,UInt32,CPointer<UInt32>,UInt32)->Int32>(api.functions[4])(request,88,inout redirectPolicy,4);(ok,if(ok==0){GetLastError()}else{UInt32(0)})})
             try(headers=AgentWide(if(key.isEmpty()){"Accept: application/json\r\n"}else{"Accept: application/json\r\nAuthorization: Bearer "+key+"\r\n"})){
-                api.check(unsafe{CFunc<(CPointer<Unit>,CPointer<UInt16>,UInt32,CPointer<Unit>,UInt32,UInt32,UIntNative)->Int32>(api.functions[5])(request,headers.pointer,UInt32(0xffffffff),CPointer<Unit>(),0,0,0)})
+                api.checkCaptured(unsafe{let ok=CFunc<(CPointer<Unit>,CPointer<UInt16>,UInt32,CPointer<Unit>,UInt32,UInt32,UIntNative)->Int32>(api.functions[5])(request,headers.pointer,UInt32(0xffffffff),CPointer<Unit>(),0,0,0);(ok,if(ok==0){GetLastError()}else{UInt32(0)})})
             }
-            api.check(unsafe{CFunc<(CPointer<Unit>,CPointer<Unit>)->Int32>(api.functions[6])(request,CPointer<Unit>())})
+            api.checkCaptured(unsafe{let ok=CFunc<(CPointer<Unit>,CPointer<Unit>)->Int32>(api.functions[6])(request,CPointer<Unit>());(ok,if(ok==0){GetLastError()}else{UInt32(0)})})
             var status: UInt32=0;var length: UInt32=4
-            api.check(unsafe{CFunc<(CPointer<Unit>,UInt32,CPointer<UInt16>,CPointer<UInt32>,CPointer<UInt32>,CPointer<UInt32>)->Int32>(api.functions[7])(request,0x20000013,CPointer<UInt16>(),inout status,inout length,CPointer<UInt32>())})
+            api.checkCaptured(unsafe{let ok=CFunc<(CPointer<Unit>,UInt32,CPointer<UInt16>,CPointer<UInt32>,CPointer<UInt32>,CPointer<UInt32>)->Int32>(api.functions[7])(request,0x20000013,CPointer<UInt16>(),inout status,inout length,CPointer<UInt32>());(ok,if(ok==0){GetLastError()}else{UInt32(0)})})
             if(status!=200){return AgentHttpResult(Int64(status),"")}
             let buffer=Array<UInt8>(4096,repeat:0);let raw=unsafe{acquireArrayRawData(buffer)};let bytes=ArrayList<UInt8>()
             let clock=PerformanceClock();let start=clock.ms()
@@ -81,7 +81,7 @@ func sendAgentMetadata(api: AgentWinHttp,key: String): AgentHttpResult {
                 while(true){
                     require(clock.ms()-start<15000.0,"Metadata transfer deadline exceeded")
                     var count: UInt32=0
-                    api.check(unsafe{CFunc<(CPointer<Unit>,CPointer<UInt8>,UInt32,CPointer<UInt32>)->Int32>(api.functions[8])(request,raw.pointer,4096,inout count)})
+                    api.checkCaptured(unsafe{let ok=CFunc<(CPointer<Unit>,CPointer<UInt8>,UInt32,CPointer<UInt32>)->Int32>(api.functions[8])(request,raw.pointer,4096,inout count);(ok,if(ok==0){GetLastError()}else{UInt32(0)})})
                     if(count==0){break};require(bytes.size+Int64(count)<=131072,"Oversized model metadata")
                     for(i in 0..Int64(count)){bytes.add(buffer[i])}
                 }

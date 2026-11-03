@@ -9,6 +9,53 @@ import magic.config.Config
 import magic.utils.Importer
 import stdx.encoding.json.*
 
+class BrokenAgentChunks <: Iterator<AsyncChatChunk> {
+    let job:AgentChatJob
+    var initial=true
+    init(job:AgentChatJob){this.job=job}
+    public func next():?AsyncChatChunk {
+        if(initial){initial=false;return Some(firebreakChunk("<answer>尚未完成的回答"))}
+        job.transportFailed("Incomplete model stream");throw Exception("Incomplete model stream")
+    }
+}
+class BrokenAgentModel <: ChatModel {
+    let job:AgentChatJob
+    init(job:AgentChatJob){this.job=job}
+    public prop provider:String {get(){"test"}}
+    public prop name:String {get(){"broken-stream"}}
+    public prop contextLength:Int64 {get(){32768}}
+    public mut prop maxTokens:?Int64 {get(){None};set(_) {}}
+    public func create(r:ChatRequest):ChatResponse {ChatResponse(name,asyncCreate(r).message)}
+    public func asyncCreate(_:ChatRequest):AsyncChatResponse {firebreakStream(name,BrokenAgentChunks(job))}
+}
+func verifyAgentFailures(app:App):Unit {
+    try(api=AgentWinHttp()){
+        var count:UInt32=0
+        let (ok,code)=unsafe{let value=CFunc<(CPointer<Unit>,CPointer<UInt8>,UInt32,CPointer<UInt32>)->Int32>(api.functions[8])(CPointer<Unit>(),CPointer<UInt8>(),0,inout count);(value,if(value==0){GetLastError()}else{UInt32(0)})}
+        // The ordinary Cangjie FFI transition can clear Windows last-error (see local probe).
+        // FALSE is still a failure; never reinterpret a lost code as success.
+        pass(ok==0 && rejected({=>api.checkCaptured((ok,code))}) && rejected({=>api.checkCaptured((0,0))}),"Native read failures remain failures even when the FFI loses the OS error code")
+    }
+    let p=Project();let settings=DeepSeekSettings("")
+    let make={=>AgentChatJob(p,app.work.revision,settings,app.terminal.epoch,"test",Conversation())}
+    pass(agentFailureText("DeepSeek HTTP 503").contains("服务过载") && !agentFailureText("DeepSeek HTTP 503").contains("Key") && agentFailureText("DeepSeek HTTP 401").contains("API Key") && agentFailureText("DeepSeek HTTP 402").contains("余额"),"Service overload, authentication and balance have distinct actionable diagnostics")
+    pass(!agentFailureText("secret-key response body").contains("secret-key") && !agentFailureText("WinHTTP 0").contains("WinHTTP 0"),"Unknown transport exceptions expose neither arbitrary text nor a misleading zero error code")
+    let retry=make();let count=[Int64(0)]
+    retryAgentConnect(retry,{=>count[0]++;if(count[0]<3){throw Exception("DeepSeek HTTP 503")}})
+    pass(count[0]==3 && retry.progress().events.size==2,"Transient HTTP rejection retries at most twice before accepting success")
+    let exhausted=make();let failures=[Int64(0)]
+    let rejectedAll=rejected({=>retryAgentConnect(exhausted,{=>failures[0]++;throw Exception("DeepSeek HTTP 503")})})
+    pass(rejectedAll && failures[0]==3,"Repeated overload stops after three total attempts")
+    for(detail in ["DeepSeek HTTP 401","DeepSeek HTTP 402","DeepSeek HTTP 422","WinHTTP 12002","Incomplete model stream"]){let n=[Int64(0)];require(rejected({=>retryAgentConnect(make(),{=>n[0]++;throw Exception(detail)})}) && n[0]==1,"Unsafe retry of permanent error or broken stream")}
+    pass(true,"Permanent errors, network failures and broken streams never automatically replay a model request")
+    let stopped=make();let starts=[Int64(0)]
+    pass(rejected({=>retryAgentConnect(stopped,{=>starts[0]++;stopped.cancel();throw Exception("DeepSeek HTTP 503")})}) && starts[0]==1,"Cancellation interrupts retry backoff without another request")
+    let failed=make();app.terminal.rounds.clear();app.terminal.clearMessages();app.terminal.seenEvents=0;app.agentChat=Some(failed)
+    failed.execute(modelOverride:Some(BrokenAgentModel(failed)));pollAgentChat(app)
+    pass(failed.progress().error.contains("模型流提前结束") && app.terminal.rounds.isEmpty() && failed.progress().events.size==1,"A broken answer stream preserves its cause and cannot publish a successful conversation round")
+    pass(rejected({=>failed.site()}) && failed.progress().events.size==1,"No tools execute after a terminal transport failure")
+}
+
 // Deterministic real framework orchestration; this model never accesses a key.
 class ScriptedAgentModel <: ChatModel {
     var turn:Int64=0
@@ -39,6 +86,7 @@ func verifyAgentChat(app:App,w:SdlWindow,live!:Bool=false):Unit {
     pass(decoded=="林😀" && decoder.finished,"SSE decoding preserves split Chinese/emoji, CRLF, heartbeats, usage-only chunks and DONE")
     let malformed=AgentSseDecoder();malformed.pending=ArrayList<UInt8>("data: {broken}\n".toArray())
     pass(rejected({=>malformed.take()}),"Malformed SSE fails instead of becoming a model answer")
+    verifyAgentFailures(app)
     let p=planningCamp();app.cancel();app.work.commit(p);let original=app.work.project.text();let rev=app.work.revision
     let settings=if(live){DeepSeekSettings("agent.local.json")}else{DeepSeekSettings("")}
     require(!live || (!settings.loadError && !settings.apiKey.isEmpty()),"Live check needs a saved local API key")

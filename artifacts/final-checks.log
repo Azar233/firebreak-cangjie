@@ -1,0 +1,561 @@
+PASS P1 versioned project round trip preserves baseline, constraints, plan and prices
+PASS treatment keeps baseline and changes only planned fuel
+PASS two 25 square meter cells at 2 yuan cost exactly 100
+PASS over-budget stroke fails atomically without consuming undo history
+PASS undo restores original document and clean state
+PASS redo restores whole stroke and unsaved state
+PASS new edit clears redo and removing treatment refunds cost
+PASS forbidden cell rejects entire mixed stroke
+PASS protected target rejects treatment
+PASS adding a protection marker removes conflicting treatment while preserving forest
+PASS land annotation removes obsolete intervention
+PASS uncalibrated forest cannot produce a priced intervention
+PASS width calibration changes cell area quadratically
+PASS unknown project version rejected
+PASS malformed or incomplete projects rejected
+PASS non-finite price rejected
+PASS Unicode path save safely replaces existing project and removes temporary file
+PASS saved project reload restores all state
+PASS failed load retains active project and save path
+PASS existing recovery file blocks save without overwriting original
+PASS failed replacement of directory preserves original, unsaved state and path
+PASS failed save leaves previously saved bytes intact
+PASS JPEG import preserves aspect and starts uncalibrated
+PASS bad image import preserves document and live texture
+PASS aspect-aware calibration gives correct rectangular cell area
+PASS embedded base map reload works after original image is deleted and releases old texture
+PASS application failed open preserves document and renderer reference
+PASS drag previews six cells without changing baseline
+PASS preview reports calibrated rectangle area before commit
+PASS confirm submits drag as exactly one undo transaction
+PASS undo button restores complete stroke
+PASS redo button restores complete stroke
+PASS Escape cancels preview without modifying plan
+PASS numeric calibration field commits through keyboard
+PASS invalid numeric input retains previous budget and editable draft
+PASS both sidebar modes have distinct reachable control targets at minimum, normal and fullscreen sizes
+PASS keyboard focus skips hidden controls in settings mode
+PASS reference replacement releases final image texture
+PASS committed scene edit cancels stale progressive render
+PASS planned strip removes displayed trunk and overhanging canopy without changing baseline
+PASS unavailable font pages and supplementary characters use safe fallback
+PASS clean document quit terminates event loop without discard prompt
+P1 logic/resource/position checks completed; visual quality and native dialog interaction await user review.
+PASS 1440 overhead map picks preserve cell coordinates across aspect ratios independently of 3D camera
+PASS original-map parchment fits viewport and paper margin is not editable terrain
+PASS overhead letterbox margins do not pick terrain
+PASS overhead pixels use actual MC grass, road and topmost roof textures
+PASS overhead scene keeps canopy occlusion while picking the ground beneath
+PASS projection change invalidates cached overhead texture even for the same viewport
+PASS switching to overhead cancels unfinished oblique render
+PASS map switching preserves oblique camera orientation
+PASS empty graph has zero components and no spanning path
+PASS full four-neighbor lattice forms one spanning component
+PASS diagonal sites remain separate under four-neighbor adjacency
+PASS removing a one-cell bridge splits two six-cell forest islands
+PASS shortest fuel path ends at target perimeter without treating building as fuel
+PASS non-fuel gap removes ignition-to-target path
+PASS synchronous chain advances one edge per step and leaves old snapshot unchanged
+PASS finite deterministic chain burns out exactly after five updates
+PASS zero spread probability still consumes ignition for its finite duration
+PASS non-fuel barrier blocks fire even at spread probability one
+PASS fire cannot jump diagonally or across non-fuel cells
+PASS target-neighbor exposure persists without claiming non-fuel target burned
+PASS run freezes fuel inputs instead of observing later source mutations
+PASS same scenario seed reproduces every snapshot
+PASS replay consumes existing snapshots without redrawing random numbers or branching history
+PASS random input is stable and distinguishes seed, step and directed edge
+PASS render ticks before fixed playback interval do not advance model
+PASS different UI tick schedules yield the same fixed-step state
+PASS paused playback does not mutate simulation
+PASS invalid ignition, probability and duration are rejected
+PASS project v2 preserves scenario and model parameters
+PASS project v1 upgrades with explicit default scenario parameters
+PASS unknown spread rule version cannot silently reinterpret saved scenario
+PASS independent 32x32 ideal-site sweep: empty/full endpoints, coupled monotonicity and sparse/dense spanning contrast
+PASS ignition tool selects actual forest ground beneath textured canopy
+PASS single-step updates model and shared renderer without starting clock
+PASS subsequent single-step continues the same run
+PASS previous snapshot rewinds without truncating computed history
+PASS next snapshot replays saved state
+PASS start button resumes trial
+PASS pause button stops trial
+PASS connectivity overlay reads exact scenario fuel graph
+PASS parameter edit invalidates prior trial and persists validated value
+PASS fractional burn duration is rejected without replacing prior value
+PASS committed treatment invalidates trial and refreshes exact fuel topology
+PASS baseline mode restores fuel removed by plan without mutating old frozen snapshots
+PASS baseline and plan masks distinguish treatment from wildfire losses
+PASS reset clears trial only and preserves scenario, baseline and intervention
+PASS both experiment panel modes have non-overlapping controls at minimum, normal and fullscreen sizes
+PASS experiment keyboard focus skips hidden edit and playback controls
+PASS original MC animated fire sheet loads with valid frame rectangles
+P2 model, replay, resource and position checks completed; visual quality awaits user review.
+PASS burnout hides every leaf while burning phases progressively thin canopy
+PASS burnout removes upper trunk and preserves exactly one block of stump
+PASS actual ray traversal reveals ash beneath removed canopy and hits shortened stump
+PASS burnout appearance leaves ground picking on original terrain coordinates
+PASS ash samples a visible neutral texture instead of green grass
+PASS display filtering does not destroy base voxels and intact geometry remains recoverable
+PASS display phases cover short and long burn durations without adding model steps
+PASS current snapshot publishes burnout geometry to shared renderer
+PASS fire sprite anchor follows shortened stump or exposed ground instead of floating at old canopy height
+PASS rewinding snapshot restores unburned neighbors and early burning canopy
+PASS replaying burnout restores the same appearance without recomputing fire history
+PASS native burnout render preserves baseline, snapshots and propagation metrics
+PASS reset restores full forest geometry without rebuilding or losing original scene
+PASS no treatment produces identical paired outcomes and histories without mutating baseline
+PASS deterministic cut preserves right-side ignition failures and prevents left-side target contact
+PASS clearing, burning and remaining conserve baseline forest; unequal sample weights are used
+PASS treated ignition remains in paired sample and is explicitly prevented
+PASS history-free batch run has identical final state with one retained snapshot
+PASS job freezes project inputs before asynchronous evaluation
+PASS pre-cancelled job publishes no partial result
+PASS background batch cancels after completed work and withholds partial results
+PASS empty fuel, invalid count/weight, duplicate ids and non-fuel baseline ignition are rejected
+PASS frozen project retains full Float64 precision for reproducible calculations
+PASS pointer-started asynchronous evaluation publishes complete current-revision comparison
+PASS comparison canvas and hotkeys cannot accidentally edit the project
+PASS input revision invalidates results and closes comparison graphics
+PASS revision change cancels background work and cannot publish stale results
+PASS comparison controls and paired panes fit three desktop sizes; keyboard skips hidden controls
+PASS synchronized replay holds each side at its own final snapshot
+PASS paired replay uses shared logical time independent of render cadence
+PASS both comparison panes render actual voxel textures at native target resolution
+PASS shared camera and projection changes invalidate and redraw both panes
+PASS exports preserve frozen inputs and exact CSV and never replace existing report directories
+PASS exported project and scenarios reproduce every per-sample metric
+PASS exported paired PNG maps decode with identical dimensions
+PASS report states sampling, weighted aggregation and first-scenario image limits
+PASS comparison textures and pending surfaces close after export
+P3 logic, background task, replay, export and position checks completed; visual design awaits user review.
+PASS Escape opens pause menu and pauses the current fire trial
+PASS modal menu blocks camera, world hotkeys, editing and simulation playback
+PASS English switches immediately without changing site data or evaluation revision
+PASS tools, land labels and model diagnostics have English text
+PASS menu, settings, exit and book targets fit three desktop sizes with non-overlapping 44px targets
+PASS keyboard focus is trapped in the menu and follows visible row order
+PASS menu budget input uses existing validation and retains invalid drafts
+PASS project settings commit through keyboard and return to menu
+PASS experiment settings reject fractional burn duration
+PASS Escape first cancels numeric input, then returns to root menu
+PASS display settings apply to actual canopy, projection and camera state
+PASS agent settings offers actual local model/key fields, save and connection test while honestly remaining disconnected
+PASS handbook opens original Minecraft book texture with previous page disabled on first page
+PASS all eight handbook pages wrap within the paper area in both languages
+PASS book arrow keys turn pages and stop at first-page boundary
+PASS last page cannot advance beyond handbook content
+PASS reopening handbook at its last page focuses an enabled navigation target
+PASS language preference persists independently of saved project data
+PASS failed preference save preserves previous language and saved preference
+PASS malformed preferences safely fall back without blocking startup
+PASS English report preserves model limits and language-neutral numeric exports
+PASS dirty project quit opens save/discard/cancel with safe cancel focus
+PASS cancelling exit preserves all unsaved changes
+PASS unapplied preview is preserved and cannot be silently saved on exit
+PASS save-and-quit safely writes the current document before requesting exit
+PASS cancelling window-close returns to the original settings page with the numeric draft intact
+PASS cancelling window-close from workbench restores the pending workbench input
+PASS Escape resumes workbench without automatically restarting simulation
+PASS visible Esc-menu button opens the same menu
+PASS explicit discard-and-quit requests exit without pretending to save
+Menu, bilingual UI, handbook, persistence and exit checks completed; visual quality awaits user review.
+PASS Fullscreen scales the shared UI coordinate space, including menu, paper, buttons and text
+PASS all menu pages and bilingual book pages fit five sizes through 4K with aligned input targets
+PASS glyph snapping supports 100/125/150/200 percent DPI and rejects invalid ratios
+PASS native bitmap text draws legible ink without shadow while the shadowed control remains detectable
+PASS fullscreen book arrows receive pointer events at their actual scaled positions
+PASS resizing an open menu updates both its layout and resume-button hit target
+PASS Default panel/button proportions and edge anchoring survive five window sizes through 4K
+PASS Fullscreen edge control is clickable at the physical rendered position
+PASS Scaled viewport retains native physical render resolution
+PASS candidate generation finds target perimeters and articulation cuts without altering the original plan
+PASS road-adjacent family is generated within the finite 14-candidate bound
+PASS exact budget boundary accepts one-cell clearing and rejects candidates just above budget
+PASS protected and forbidden cells reject the whole candidate
+PASS candidate additions preserve existing treatment including its type
+PASS uncalibrated site and no-fuel scenario input fail with explicit errors
+PASS deterministic chain produces a training-selected candidate that also improves heldout metrics
+PASS all candidates retain 8 training and 8 holdout outcomes with shared paired inputs and disjoint seed sets
+PASS heldout failure rejects the training winner without choosing a different winner on the holdout set
+PASS no improvement is not mislabeled as a recommendation
+PASS zero-cost treatments use explicit one-yuan denominator floor and remain finite
+PASS empty feasible set is reported honestly without a fabricated success
+PASS search freezes site and model inputs before later mutations
+PASS pre-cancelled search publishes no partial candidates
+PASS background cancellation reaches the active paired evaluation and withholds partial search results
+PASS candidate export retains all outcomes and never replaces an existing report directory
+PASS exported frozen input, masks and both scenario sets reproduce every candidate's per-sample outcome
+PASS packaged connector-camp example matches the tested planning scenario
+PASS menu suggestion entry opens the actual planning workflow
+PASS asynchronous candidate search never applies or mutates its proposed winner
+PASS candidate cannot be applied before explicit preview
+PASS map preview highlights additions without changing document, budget or history
+PASS P3 holdout replay and exported report label candidate preview as unapplied
+PASS manual apply commits one undo transaction and invalidates candidate and replay results
+PASS undo restores the full pre-candidate plan without reviving stale recommendations
+PASS manual parameter edits cancel old searches and prevent stale publication
+PASS suggestion layout fits three desktop sizes and traps tool hotkeys without hiding keyboard navigation
+P4 candidate generation, paired ranking, holdout, preview/apply, export and cancellation checks completed.
+PASS FPS uses elapsed frame time, including waits
+PASS FPS reflects a long frame rather than hiding stalls
+PASS FPS setting persists and survives language changes; old settings default off
+PASS Display-menu FPS toggle does not alter planning or evaluation inputs
+PASS Large-scene generator is deterministic with nested occupation and correctly sized voxel storage
+PASS Diagnostic connectivity uses fuel cells separately from rendered tree instances
+PASS Stress camera fits a large world without changing normal camera defaults
+PASS Renderer display buffers follow diagnostic scene dimensions
+PASS Native Windows timing and process-memory counters are available
+PASS Batch pixel writer rejects out-of-range rows
+PASS Batch pixel writer propagates callback failure
+PASS Batch pixels preserve RGBA and row boundaries and unlock after exceptions
+PASS 41472 rays match original traversal for sparse/dense worlds, alpha leaves, burn stages, hidden canopy, picking and overhead
+PASS Parallel CPU rows match serial native pixels for both 3D and overhead; SDL writes remain on owner thread
+PASS Large forest local camera retains working scale rather than shrinking the whole world into viewport
+PASS Viewport AABB rejection matches uncropped ray colors for visible, partially offscreen and fully offscreen scenes
+PASS Chunk-edge and corner ties preserve original hit ordering in both ray directions
+PASS Chunk counts handle replacement/removal/clear and packed voxels reject invalid materials
+GPU pixels: sky 9268, terrain 3020
+PASS Actual D3D11 compute shader renders opaque terrain and sky and completes readback
+PASS GPU top-down pixels match CPU within one channel level for alpha, canopy, burnout, ash, stumps, cluster palette and selection
+PASS GPU camera change reuses voxel, chunk, atlas and state buffers at native resolution
+PASS Fire-only GPU updates replace compact column state without uploading geometry
+PASS Scene revision uploads changed geometry, occupancy and columns consistently
+PASS GPU viewport resize replaces target and supports odd workgroup boundaries
+PASS Native GPU timestamp queries measure completed dispatch and presentation copy
+GPU adapter: NVIDIA GeForce RTX 4060 Laptop GPU; GPU completed 0.09 ms
+PASS Switching to CPU releases GPU resources and renders a complete CPU frame
+PASS Switching back recreates a working GPU backend
+PASS Unavailable GPU keeps an explicit functional CPU fallback
+PASS GPU preference persists across language/FPS changes and legacy settings default to auto
+PASS Display-menu GPU switch uses actual renderer without changing project/evaluation inputs
+PASS Display-menu CPU switch immediately restores the CPU backend
+PASS 2D wheel zoom anchors the same world position and picked cell under the pointer
+PASS 2D zoom enlarges map content while keeping viewport and parchment frame fixed
+PASS 2D middle drag follows the pointer and releases without changing the 3D pan
+PASS Paper margin cannot zoom, pan or select terrain
+PASS Zoomed/panned overlay cell centers round-trip through ground picking for three aspect ratios
+PASS Pending edit selection blocks map zoom until apply or cancel
+PASS Modal menu blocks map navigation
+PASS 2D navigation leaves planning, evaluation revision and oblique camera unchanged
+PASS Sidebar plus button zooms the actual 2D map
+PASS Contextual reset restores the entire 2D map
+PASS Map zoom and panning are bounded from whole-map fit to 16x without blank margins
+PASS 32768 zoomed/panned GPU pixels match CPU; map changes invalidate frame while reusing geometry and native-sized targets
+PASS Importing a new reference resets map navigation without depending on the source file afterward
+PASS Zoomed reference drag selects the intended four cells without editing during preview
+PASS Reference edit commits and undoes one stroke without resetting map zoom
+PASS Paired GPU maps share zoom/pan while retaining independent baseline and treatment images
+PASS Comparison gap and paper margins cannot navigate either map
+PASS Actual GPU white ground has a smooth within-face contact-light gradient that flat per-voxel lighting cannot produce
+PASS Contact-light interpolation produces at least eight monotone levels without filtering the texture
+PASS Adjacent coplanar faces share corner lighting without a block-edge seam
+PASS Neutral material and output alpha remain intact under interpolated lighting
+PASS MC lighting changes actual GPU surface pixels without geometry uploads, alpha or sky changes; top=false
+PASS Disabling lighting restores exact original GPU pixels; top=false
+PASS MC lighting changes actual GPU surface pixels without geometry uploads, alpha or sky changes; top=true
+PASS Disabling lighting restores exact original GPU pixels; top=true
+PASS Lit burning/burnout display uses state buffers and preserves the voxel model
+PASS Lighting preference survives language, FPS and CPU backend changes
+PASS Lighting preference persists off
+PASS Lighting menu hit target enables real GPU rendering without changing project inputs
+PASS CPU fallback disables lighting control and retains the preference
+PASS Comparison menu preference refreshes both independent GPU maps
+PASS Comparison lighting off restores both original map images
+PASS An empty local credential does not start an automatic network probe
+PASS Native HTTPS strings preserve the ASCII request data as UTF-16
+PASS Native HTTPS string storage closes idempotently
+PASS Native Windows HTTPS functions resolve from System32 and release the module safely
+PASS Original Minecraft icons atlas contains green ping, blue pending and red unreachable regions
+PASS Signal state mapping preserves ping thresholds, pending frame bounds and unreachable cross
+PASS DeepSeek official model and API key persist only in the separate local settings file
+PASS Pasted model/key surrounding whitespace is normalized without changing the credential content
+PASS Saving or reloading a key never claims a verified connection or fabricates ping
+PASS Invalid connection settings cannot overwrite the existing file or live key
+PASS Malformed agent settings fall back without exposing their content
+PASS API key is masked in the settings label
+PASS Saving an API key reports unverified configuration without altering the site or contacting a model
+PASS Escape cancels a secret draft without replacing the saved key
+PASS Clearing and saving the API key removes the active local credential
+PASS A stale connection result cannot verify a newer saved credential
+PASS Failed probe publishes an unreachable state without pretending to measure usable ping
+PASS A completed current probe publishes actual verified state and transport duration
+PASS Connection startup does not duplicate an existing background probe
+PASS An active connection probe disables duplicate requests instead of accumulating background jobs
+PASS Terminal backspace removes an entire combining grapheme
+PASS Terminal backspace removes an entire supplementary character without invalid UTF-8
+PASS Terminal selection replacement, grapheme movement and forward deletion preserve Chinese text
+PASS Oversized terminal input fails atomically without deleting the draft
+PASS Full and quick terminal layouts fit minimum, normal, large and 4K windows with aligned hit targets
+PASS Dynamic Chinese glyphs absent from ordinary UI are available from the full local font pack
+PASS Researcher header entry opens a clearly offline computer terminal
+PASS Local site command reports actual project state without a model call
+PASS Unconfigured natural-language input is explicitly retained locally and never presented as an AI answer
+PASS Terminal input history recalls the previous request
+PASS Input history restores the pending empty draft
+PASS Enter confirms IME composition without prematurely submitting a message
+PASS IME commit and Shift+Enter retain Unicode text and multiline input
+PASS Ctrl+A selects the complete multiline draft
+PASS Terminal captures world clicks and shortcuts without changing scene, tools or document revision
+PASS Escape hides terminal while retaining draft and conversation
+PASS Slash opens the same session without inserting an unwanted shortcut character
+PASS Quick and computer views share the same editor and transcript
+PASS Terminal transcript evicts oldest entries at its display bound
+PASS Terminal wheel scrolls retained conversation instead of the world camera
+PASS Focus loss clears transient composition while preserving the draft
+PASS SSE decoding preserves split Chinese/emoji, CRLF, heartbeats, usage-only chunks and DONE
+PASS Malformed SSE fails instead of becoming a model answer
+PASS Native read failures remain failures even when the FFI loses the OS error code
+PASS Service overload, authentication and balance have distinct actionable diagnostics
+PASS Unknown transport exceptions expose neither arbitrary text nor a misleading zero error code
+PASS Transient HTTP rejection retries at most twice before accepting success
+PASS Repeated overload stops after three total attempts
+PASS Permanent errors, network failures and broken streams never automatically replay a model request
+PASS Cancellation interrupts retry backoff without another request
+PASS A broken answer stream preserves its cause and cannot publish a successful conversation round
+PASS No tools execute after a terminal transport failure
+PASS Agent invokes real registered CangjieMagic site and planning tools
+PASS Successful agent answer retains complete evaluated candidates and conversation
+PASS Framework file imports are disabled, including the local API configuration
+PASS Model and planning tools cannot alter the source project
+PASS Agent candidate map preview preserves the scene until manual apply
+PASS Manual apply commits agent candidate as one undoable edit
+PASS Undo restores the original scene after manual agent candidate apply
+PASS Revision changes invalidate old agent previews even after undo
+PASS Cancelled agent cannot begin tools or publish partial candidates
+PASS Changing API settings invalidates the active agent request
+PASS Expired agent requests cannot call tools and report a timeout
+PASS Structured spending limits reject negative and over-budget requests before evaluation
+PASS Planning tool rejects textual spending values instead of silently coercing arguments
+PASS Planning tool rejects unknown parameters at its executable boundary
+PASS A zero additional spending cap yields no paid candidates without changing the project
+PASS Packaged five-cell cases differ only by one legal CNY 50 treatment
+PASS Left-side ignition burns five baseline cells but two after the cut, leaving the target untouched
+PASS Sixteen chain scenarios retain right-side target-contact failures rather than claiming universal protection
+PASS Treated ignition cases remain explicitly recorded among all sixteen paired outcomes
+PASS Budget camp examples preserve the same site, budget, targets and exclusions
+PASS Delivered CNY 50 bridge plan reproduces the training-selected and holdout-verified candidate
+PASS Camp retains the gap between training and holdout: some holdout fires still reach the target
+PASS Generating and checking candidates does not apply them to the source case
+PASS Example exports contain actual paired maps, metrics and complete candidate samples
+PASS Exported chain snapshot and exact scenario parameters reproduce every paired metric
+PASS Example menu and revised root menu keep aligned hit targets at three desktop sizes
+PASS Esc menu opens a keyboard-accessible synthetic example picker
+PASS All menu cases load as fresh projects requiring Save As without modifying bundled source files
+PASS Saving a loaded example writes a separate project and preserves the original demonstration plan
+PASS Camp comparison renders both final-state maps through the existing renderer
+PASS Legacy settings retain safe default sound and music volumes
+PASS Independent volumes persist across language and display preference changes
+PASS Out-of-range audio settings cannot overwrite existing preferences
+PASS Malformed saved volumes fall back without excessive gain
+PASS Esc menu opens the dedicated sound settings page
+PASS Dragging previews clamped volume without persisting on every motion event
+PASS Releasing a slider commits its volume while preserving the other channel
+PASS Home mutes a focused sound slider
+PASS Keyboard arrows adjust volume by five percent
+PASS Focus loss cancels the transient slider draft
+PASS Escape cancels slider dragging before closing the sound menu
+PASS SDL_mixer decodes both original OGG files without a conversion runtime
+PASS Actual mixer tracks have independent sound and background music gains
+PASS Background music progresses on the native audio device independently of rendering
+PASS Zero music volume pauses playback rather than leaving decoding active
+PASS Real menu activations enqueue the provided UI sound once per button
+PASS Muted UI buttons remain functional without starting click playback
+PASS Audio tracks, streams, device and mixer close idempotently before SDL teardown
+PASS Default forest has no camp, road, protected target or exclusion zone in either project data or rendered voxels
+PASS Four pipeline steps and advanced menu targets fit desktop sizes without hidden canvas hotspots
+PASS Build step changes the workspace without editing the project
+PASS A pending edit blocks pipeline navigation without discarding its selection
+PASS Intervention step pauses the trial and preserves its logical snapshot when its inputs are unchanged
+PASS Returning to observation restores the existing single-fire trial
+PASS Compare step reuses paired evaluation without altering the ignition
+PASS File actions and advanced configuration are discoverable in Files & Project
+PASS Advanced tools remain reachable while the main toolbar stays focused
+PASS Third toolbar shortcut selects clearing rather than a hidden land annotation
+PASS Fourth toolbar shortcut selects the firebreak tool
+PASS Primary actions load actual Minecraft textures and retain text explanations
+PASS All 512 three-by-three forests give exactly the same articulation gains as brute-force connectivity
+PASS Invalid grid dimensions are rejected before allocation
+PASS Version 3 rejects vegetation masks that disagree with the grid dimensions
+PASS Large replay history refuses another allocation at its memory bound without altering the snapshot
+PASS Legacy v2 camps retain roads, buildings and constraints when migrated to v3
+PASS Rectangular project dimensions round-trip without global grid state
+PASS New Forest opens the grid-size chooser
+PASS Grid chooser replaces the project, renderer and dynamic column state together
+PASS Large forest project preserves vegetation and calibrated cell area through serialization
+PASS Erasing vegetation preserves the growable land domain
+PASS Undo restores vegetation state on the enlarged grid
+PASS Reference import preserves the selected grid size while requiring fresh scale calibration
+PASS Changing only scenario parameters reuses static voxel geometry
+PASS Large map picks all corners and center using project dimensions
+PASS Large deterministic firebreak preserves exact paired burn/clear/remaining conservation
+PASS Large candidate search completes within the existing finite candidate contract
+PASS Actual D3D11 renders both enlarged paired scenes with matching dynamic state
+PASS Cancelled large evaluation publishes no partial result
+PASS Large burning frames update compact state without reuploading static geometry
+PASS New Forest opens the grid-size chooser
+PASS Grid chooser replaces the project, renderer and dynamic column state together
+PASS Large forest project preserves vegetation and calibrated cell area through serialization
+PASS Erasing vegetation preserves the growable land domain
+PASS Undo restores vegetation state on the enlarged grid
+PASS Reference import preserves the selected grid size while requiring fresh scale calibration
+PASS Changing only scenario parameters reuses static voxel geometry
+PASS Large map picks all corners and center using project dimensions
+PASS Large deterministic firebreak preserves exact paired burn/clear/remaining conservation
+PASS Large candidate search completes within the existing finite candidate contract
+PASS Actual D3D11 renders both enlarged paired scenes with matching dynamic state
+PASS Cancelled large evaluation publishes no partial result
+PASS Large burning frames update compact state without reuploading static geometry
+PASS Occupation, ignition and policy random keys cannot reuse a reachable fire-step key
+PASS Density sampling is deterministic, nested across probability and does not mutate its source
+PASS Wilson 95% intervals match known central and endpoint binomial cases
+PASS Frozen scan retains inputs and records exact empty/full endpoints
+PASS Raw seed-level samples reconstruct every plotted point and the empirical 50% bracket
+PASS An ineligible separating domain does not fabricate a critical bracket even at p=1
+PASS Connector priority removes the actual articulation bridge on a chain
+PASS All policies clear exactly the requested count, preserve constraints and reject insufficient eligible fuel
+PASS Cell-dose studies remain independent of missing physical calibration and monetary limits
+PASS Every policy uses shared ignition/seed, retains blocked ignitions, conserves forest and reproduces its raw outcome
+PASS Paired burn-difference uncertainty retains the shared-sample baseline
+PASS Cleared ignitions stay in paired records as blocked events rather than being resampled
+PASS Density scans also complete on the full supported 128-by-128 grid
+PASS Cancelled density studies publish no partial chart
+PASS Study controls have distinct 44px targets at minimum, ordinary and fullscreen sizes
+PASS Pending edits block opening the study without losing their selection
+PASS Native scan controls publish a frozen result without editing the workspace
+PASS Actual GPU map displays the exact sampled vegetation underlying the plot
+PASS Clicking the plot selects an actual density sample without applying it
+PASS Native equal-clearing controls evaluate all four policies over the same eight seeds
+PASS A smaller policy batch clamps the preview seed and cycles only through available paired samples
+PASS Policy selector previews the real four-cell clearing mask
+PASS Study export preserves raw data, plot, sample map and parameters without overwriting earlier exports
+PASS A failed file load preserves the active study and published results
+PASS Applying the preview restores real prices and commits one undoable edit before exiting the chart
+PASS Undo restores the original workspace after applying a sampled intervention
+PASS A workspace revision rejects both stale published study data and pending results
+PASS Direct project copies preserve serialization and own independent arrays
+PASS Direct copy still rejects invalid source data
+PASS Zero growth and lightning preserve initial forest without fabricated fires
+PASS Full forest burns once per natural seed while ideal suppression preserves it and records all effort and misses
+PASS Warmup fires remain in raw records but are excluded from every measured total
+PASS Certain growth fills eligible empty sites once and never regrows water or fixed treatments
+PASS Long-run driving is reproducible and zero-capacity paired policies remain identical
+PASS Every raw drive shares seed/lightning including misses and conserves alive+grown-burned across policies
+PASS Bounded checkpoints preserve warmup endpoint and exact final observed drive
+PASS Probability and resource bounds reject invalid long-run configurations
+PASS Cancellation never publishes a partial long-run result
+PASS Long-run controls and replay panes fit minimum, ordinary and fullscreen windows
+PASS Pending selections block opening the long-run experiment without discarding edits
+PASS Background long-run controls leave the current project untouched
+PASS Both replay policies render on native D3D11 and the original flash resource loads
+PASS 3D lightning overlay composes with the native voxel pipeline
+PASS Opening Esc menu pauses the checkpoint replay
+PASS Atomic unique exports preserve all raw drives, exact parameters, sampled states and snapshot images
+PASS Applying the selected checkpoint commits exactly one vegetation snapshot
+PASS Undo restores the original forest after checkpoint application
+PASS Revision changes invalidate both published results and pending long-run jobs
+PASS 128x128 checkpoint changes upload and render on both actual GPU policy views
+PASS 128x128 long-run simulation completes four independent seeds with bounded replay storage
+PASS Lab reads actual forest structure and leaves unavailable experiment results absent
+PASS The model control surface has no Apply or project-edit action
+PASS Textual integers are rejected before changing workflow
+PASS Unknown model arguments are rejected at the controller boundary
+PASS Model commands preserve pending manual selections
+PASS Real CangjieMagic orchestration marshals model tools to the native UI owner thread
+PASS Agent-started density scan publishes eight real replicates without a workspace edit
+PASS Equal-cell agent comparisons reuse all four actual policies and paired statistics
+PASS Slash preview exposes the exact structural sample while preserving manual Apply
+PASS Lab reading exposes real long-run totals, exact parameters and warmup semantics
+PASS Agent replay step uses the same sampled-checkpoint cursor as the GUI
+PASS Long playback remains blocked by the terminal and reports the overlay explicitly
+PASS Agent pause preserves both the checkpoint and source forest
+PASS Single-fire agent operations require a manually chosen valid ignition
+PASS Agent single-step advances the existing synchronous fire controller once
+PASS Agent starts single-fire playback through the shared controller
+PASS Agent pauses single-fire playback without editing ignition or forest
+PASS Agent starts and reads actual matched project evaluation without budget-based candidate selection
+PASS Cancel command stops outstanding lab tasks through the shared controllers
+PASS Stopping a request cancels the experiment task owned by that request
+PASS A stale queued command is rejected before dispatching UI actions
+PASS A cancelled queued command cannot change the workflow
+PASS Cancellation wakes and joins a model worker waiting for an unserviced UI request
+PASS An unserviced UI request expires without requiring the UI thread to unblock it
+PASS Only standalone greetings bypass research retrieval, never mixed operation/theory requests
+PASS A greeting uses the real agent response path without RAG/tool calls and is accepted without citations
+PASS Curated version-matched knowledge loads exactly 35 operation/math chunks
+PASS Knowledge metadata matches product version and every local source exists
+PASS Incompatible and malformed bundles are rejected instead of serving stale content
+PASS Knowledge query scope, nonempty text and retrieval bounds are enforced
+PASS Ten user questions retrieve their relevant operation, statistical, DS and unsupported-feature passages
+PASS Unrelated questions return no match rather than fabricated context
+PASS English terms are case-insensitive and stable passage ids are searchable
+PASS Explicit mathematical scope excludes operation passages
+PASS Citation checking handles Unicode text and rejects unknown, unserved and incomplete ids
+PASS Published knowledge excludes local maintenance entries and credential values
+PASS Local terminal help retrieves passage text without starting any API request
+PASS Real agent orchestration retrieves mathematical passages and publishes a served citation
+PASS Model answer cites an actual returned reference rather than an invented source
+PASS Program-generated source/version labels accompany the answer without modifying the forest
+PASS Fabricated citation answers are rejected and never enter conversation history
+PASS Knowledge tool cannot accept arbitrary file paths or search private local data
+PASS Three 64x64 teaching files reproduce exact keyed vegetation with increasing cover and no legacy annotations
+PASS Teaching menu targets fit minimum, normal and fullscreen layouts
+PASS Precancelled pipeline publishes no partial stages
+PASS A failing structural stage stops the pipeline without a completed result
+PASS Whole-experiment presets and resource bounds reject invalid requests
+PASS One model tool invocation waits for scan, all four structural policies and the long-run experiment
+PASS Pipeline uses consistent selected samples while keeping workspace and revision unchanged
+PASS Fixed connector preview is retained without selecting a winner or claiming exact criticality
+PASS Completed pipeline results reuse the density/long-run exports with exact raw records
+PASS Three owned image cards carry actual run/revision metadata
+PASS Clicking an inline result image opens the enlarged card
+PASS Escape closes the image before closing the terminal
+PASS Workspace edits invalidate current pipeline results while retaining explicitly historical images
+PASS Clearing history releases card textures and cached image targets
+PASS History eviction closes the oldest texture when more than six cards are appended
+PASS Clearing releases the remaining bounded card history
+PASS In-flight cancellation propagates to the active pipeline stage and publishes no result
+PASS Input revision changes cancel a running pipeline before any result/card publication
+PASS 72 world/screen/ground round trips across rotation, top view, zoom and pan
+PASS zoom upper bound
+PASS zoom lower bound
+PASS pitch prevents underground camera
+PASS parallel outside ray misses safely
+PASS ray pointing away misses
+PASS near voxel occludes distant voxel
+PASS removing near voxel reveals distant voxel
+PASS original leaves contain both alpha holes and solid pixels
+PASS leaf alpha holes reveal background without sorting artifacts
+PASS ground picking ignores tree canopy
+PASS foliage tint preserves alpha
+PASS visible control targets and canvas bounds at 3 desktop sizes
+PASS advanced annotation selects a building through visible menu pointer events
+PASS number key selects second tool
+PASS Shift+Tab reaches menu entry and skips hidden numeric fields
+PASS top view keyboard shortcut
+PASS canopy visibility button
+PASS camera reset button
+PASS pointer selects ground beneath canopy
+PASS right-drag rotates and releases
+PASS middle-drag pans
+PASS focus loss clears drag state
+PASS native canvas sizing handles 100/125/150/200 percent DPI
+PASS extreme canvas dimensions retain bounded allocation
+PASS invalid pixel scale rejected
+PASS large window settles to actual canvas pixels instead of fixed 480px
+Large canvas target: 2031 x 928
+PASS large-window picking uses logical coordinates independently of render pixels
+PASS same-size camera/selection invalidation replaces old native frame
+PASS interaction publishes preview and defers native refinement
+PASS idle refinement advances in bounded row batches
+PASS camera change cancels stale refinement surface
+PASS normal idle ticks replace preview with complete native frame
+P0 first scene rasterization: 33 ms; cached while camera is unchanged
+PASS native SDL screenshot generated
+PASS bitmap font pages and UI textures load
+PASS unchanged camera reuses rendered scene texture
+PASS closing releases cached frame and incomplete refinement safely
+PASS asset textures release safely before window close
+P0 logic/resource/position checks completed. Visual quality awaits user review.
+
+cjpm run finished

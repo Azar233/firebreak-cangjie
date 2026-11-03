@@ -10,3 +10,6 @@ This source snapshot preserves the workspace's existing window/window_spec chang
 in LOCAL_CHANGES.patch and already applied to src. No nested Git repository or
 runtime DLLs are committed. Runtime preparation is in ../../tools/prepare-runtime.ps1
 relative to the project root's vendor layout (run it from firebreak/tools).
+
+Firebreak also exposes Surface.rgba(), a thin owned SDL_ConvertSurface RGBA32 copy,
+so official indexed Minecraft PNGs preserve palette RGB and color-key alpha.

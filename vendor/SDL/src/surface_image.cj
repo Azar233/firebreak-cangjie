@@ -34,6 +34,16 @@ extend Surface {
         Color(r, g, b, a)
     }
 
+    /** Returns an owned RGBA32 copy, applying palette colors and color-key alpha. */
+    public func rgba(): Surface {
+        ensureImageSurfaceOpen()
+        let converted = unsafe { SDL_ConvertSurface(ptr, SDL_PIXELFORMAT_RGBA32) }
+        if (converted.isNull()) {
+            throw SdlException("SDL_ConvertSurface failed: ${lastSdlError()}")
+        }
+        Surface(converted)
+    }
+
     /**
      * Returns an independent surface at the exact pixel size. Throws `IllegalArgumentException`
      * for non-positive dimensions and `SdlException` on a closed source or SDL allocation failure.

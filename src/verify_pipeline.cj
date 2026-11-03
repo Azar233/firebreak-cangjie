@@ -35,6 +35,7 @@ func verifyPipeline(app:App,w:SdlWindow,live!:Bool=false):Unit {
     pass(!invalid.progress().error.isEmpty() && invalid.progress().result.isNone(),"A failing structural stage stops the pipeline without a completed result")
     pass(rejected({=>PipelineSpec("unknown",8,4,-1,2,spec.longSpec)}) && rejected({=>PipelineSpec("current",64,4,-1,2,spec.longSpec)}),"Whole-experiment presets and resource bounds reject invalid requests")
     let revision=app.work.revision;let question="用64×64过渡区教学森林，8个seed、清理4格、预热16轮、观测64轮、长期2个seed，安排一整套密度扫描、等量结构干预和长期落雷实验，完成后展示图表并总结；不要修改工作台。"
+    app.terminal.append(question,user:true)
     let job=AgentChatJob(app.work.project,revision,app.agentSettings,app.terminal.epoch,question,Conversation());app.agentChat=Some(job);app.terminal.seenEvents=0
     if(live){require(!app.agentSettings.apiKey.isEmpty(),"Live pipeline check needs saved API settings");job.start()}else{job.worker=Some(spawn{job.execute(modelOverride:Some(ScriptedPipelineModel()))})}
     waitAgentLab(app,w,job);let progress=job.progress();require(progress.error.isEmpty(),progress.error)
@@ -53,6 +54,20 @@ func verifyPipeline(app:App,w:SdlWindow,live!:Bool=false):Unit {
     let lines=app.terminal.cachedLines.size;var offset:Int64=0
     while(app.terminal.cardHits.isEmpty() && offset<lines){offset++;app.terminal.scroll=offset;render(app,w)}
     render(app,w,capture:if(live){"artifacts/pipeline-agent-live.png"}else{"artifacts/pipeline-cards.png"})
+    if(live){
+        // README proof comes from this authenticated tool run and its exact result arrays.
+        let showFps=app.preferences.showFps;app.preferences.showFps=false
+        app.terminal.scroll=app.terminal.cachedLines.size;render(app,w,capture:"artifacts/release-terminal.png")
+        app.terminal.open=false;app.studyPolicy=0;refreshStudyPreview(app);render(app,w,capture:"artifacts/release-density.png")
+        app.studyPolicy=result.spec.policy;refreshStudyPreview(app);render(app,w,capture:"artifacts/release-structure.png")
+        app.studyPanel=false;app.simPanel=true;app.longPanel=true;app.longTopDown=false
+        let replay=app.longReplay.getOrThrow();let layout=Layout(Float32(w.width),Float32(w.height));replay.camera.fitScene(replay.scenes[0],longSceneBox(layout,0,replay.base.aspect,false))
+        var chosen:Int64=0;var largest:Int64= -1
+        for(i in 0..result.longRun.frames.size){let size=result.longRun.frames[i].burned[0].size;if(size>largest){chosen=i;largest=size}}
+        replay.seek(chosen,app.clockNow);render(app,w,capture:"artifacts/release-long.png")
+        app.longPanel=false;app.studyPanel=true;app.terminal.open=true;render(app,w)
+        app.terminal.scroll=offset;app.preferences.showFps=showFps;render(app,w)
+    }
     require(!app.terminal.cardHits.isEmpty(),"No inline image hit targets after scrolling history")
     let m=TerminalLayout(Layout(Float32(w.width),Float32(w.height)),false);let hit=app.terminal.cardHits[app.terminal.cardHits.size-1];let x=hit[0].centerX();let y=max(m.output.y+2.0,min(m.output.bottom()-2.0,hit[0].centerY()))
     event(app,w,UiEvent.MouseDown(MouseButton.Left,x,y));event(app,w,UiEvent.MouseUp(MouseButton.Left,x,y));pass(app.terminal.expandedCard.isSome(),"Clicking an inline result image opens the enlarged card")

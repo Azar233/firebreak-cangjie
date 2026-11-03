@@ -1,20 +1,85 @@
 {
-  "source": "../../minecraft",
+  "source": "Automatic official-source cache; optional MINECRAFT_ASSETS override",
   "sampling": "nearest",
   "grass_override": {
     "version": "Java 1.21.1",
     "prepare": "tools/prepare-grass-textures.ps1",
-    "textures": ["grass_block_top", "grass_block_side", "grass_block_side_overlay", "dirt"],
+    "textures": [
+      "grass_block_top",
+      "grass_block_side",
+      "grass_block_side_overlay",
+      "dirt"
+    ],
     "tint": "#83BB6D (Java meadow)"
   },
-  "blocks": ["grass_block_top", "grass_block_side", "dirt", "oak_log", "oak_log_top", "oak_leaves", "stone", "oak_planks", "bricks", "dirt_path_top"],
-  "items": ["iron_axe", "iron_shovel", "flint_and_steel", "water_bucket", "map", "compass_16", "paper", "oak_sign", "barrier", "spyglass", "comparator", "repeater", "book", "knowledge_book", "clock_00"],
-  "files": ["textures/gui/widgets.png", "textures/gui/icons.png", "textures/gui/book.png", "textures/gui/container/generic_54.png", "textures/map/map_background.png", "textures/block/fire_0.png", "textures/particle/flash.png", "textures/block/oak_sapling.png", "textures/font/ascii.png", "font/glyph_sizes.bin"],
+  "blocks": [
+    "grass_block_top",
+    "grass_block_side",
+    "dirt",
+    "oak_log",
+    "oak_log_top",
+    "oak_leaves",
+    "stone",
+    "oak_planks",
+    "bricks",
+    "dirt_path_top"
+  ],
+  "items": [
+    "iron_axe",
+    "iron_shovel",
+    "flint_and_steel",
+    "water_bucket",
+    "map",
+    "compass_16",
+    "paper",
+    "oak_sign",
+    "barrier",
+    "spyglass",
+    "comparator",
+    "repeater",
+    "book",
+    "knowledge_book",
+    "clock_00"
+  ],
+  "files": [
+    "textures/gui/widgets.png",
+    "textures/gui/icons.png",
+    "textures/gui/book.png",
+    "textures/gui/container/generic_54.png",
+    "textures/map/map_background.png",
+    "textures/block/fire_0.png",
+    "textures/particle/flash.png",
+    "textures/block/oak_sapling.png",
+    "textures/font/ascii.png",
+    "font/glyph_sizes.bin"
+  ],
   "unicode_pages": "All available original Unicode pages; loaded on demand for dynamic terminal text",
   "widget_regions": {
-    "hotbar": [0, 0, 182, 22],
-    "selection": [0, 22, 24, 22],
-    "button_normal": [0, 66, 200, 20],
-    "button_hover": [0, 86, 200, 20]
-  }
+    "hotbar": [
+      0,
+      0,
+      182,
+      22
+    ],
+    "selection": [
+      0,
+      22,
+      24,
+      22
+    ],
+    "button_normal": [
+      0,
+      66,
+      200,
+      20
+    ],
+    "button_hover": [
+      0,
+      86,
+      200,
+      20
+    ]
+  },
+  "prepare": "tools/prepare-minecraft-assets.ps1",
+  "resource_license": "Original Minecraft assets are NOT covered by the project MIT license; see THIRD_PARTY.md"
 }

@@ -1,0 +1,275 @@
+{
+  "configuration": "load-parameters.json",
+  "adapter": "NVIDIA GeForce RTX 4060 Laptop GPU",
+  "rows": [
+    {
+      "case": "single-fire",
+      "windowWidth": 1280,
+      "shader": true,
+      "frames": 144,
+      "fps": 66.38422331036598,
+      "workMs": {
+        "median": 2.5306,
+        "p95": 4.0025,
+        "p99": 4.3489,
+        "max": 5.6332
+      },
+      "updateMs": {
+        "median": 0.0479,
+        "p95": 0.0758,
+        "p99": 0.0999,
+        "max": 0.1367
+      },
+      "coldFirstBlockMs": 540.266,
+      "gpuComputeMedianMsPerBlock": [
+        0.787712,
+        1.858048
+      ]
+    },
+    {
+      "case": "paired-fire",
+      "windowWidth": 1280,
+      "shader": true,
+      "frames": 144,
+      "fps": 60.11535886824494,
+      "workMs": {
+        "median": 3.9576,
+        "p95": 5.4426,
+        "p99": 12.1039,
+        "max": 17.6263
+      },
+      "updateMs": {
+        "median": 0.0579,
+        "p95": 0.0851,
+        "p99": 0.1229,
+        "max": 0.2842
+      },
+      "coldFirstBlockMs": 573.4368,
+      "gpuComputeMedianMsPerBlock": [
+        1.159744,
+        2.844512
+      ]
+    },
+    {
+      "case": "growth-lightning",
+      "windowWidth": 1280,
+      "shader": true,
+      "frames": 144,
+      "fps": 63.18223098001423,
+      "workMs": {
+        "median": 2.8914,
+        "p95": 8.5248,
+        "p99": 9.7517,
+        "max": 10.2032
+      },
+      "updateMs": {
+        "median": 0.0009,
+        "p95": 4.5846,
+        "p99": 5.4039,
+        "max": 6.2904
+      },
+      "coldFirstBlockMs": 575.3266,
+      "gpuComputeMedianMsPerBlock": [
+        3.913664,
+        2.810528
+      ]
+    },
+    {
+      "case": "paired-terminal-cards",
+      "windowWidth": 1280,
+      "shader": true,
+      "frames": 144,
+      "fps": 57.86511946069319,
+      "workMs": {
+        "median": 4.6684,
+        "p95": 7.1628,
+        "p99": 9.0239,
+        "max": 10.2555
+      },
+      "updateMs": {
+        "median": 0.0583,
+        "p95": 0.0902,
+        "p99": 0.2491,
+        "max": 0.2671
+      },
+      "coldFirstBlockMs": 14.1054,
+      "gpuComputeMedianMsPerBlock": [
+        4.018112,
+        3.178176
+      ]
+    },
+    {
+      "case": "single-fire",
+      "windowWidth": 2560,
+      "shader": true,
+      "frames": 144,
+      "fps": 67.05152378634341,
+      "workMs": {
+        "median": 2.3757,
+        "p95": 3.827,
+        "p99": 4.738,
+        "max": 6.3882
+      },
+      "updateMs": {
+        "median": 0.0489,
+        "p95": 0.1001,
+        "p99": 0.1125,
+        "max": 0.2114
+      },
+      "coldFirstBlockMs": 270.6016,
+      "gpuComputeMedianMsPerBlock": [
+        1.654912,
+        3.733568
+      ]
+    },
+    {
+      "case": "paired-fire",
+      "windowWidth": 2560,
+      "shader": true,
+      "frames": 144,
+      "fps": 61.25771012433215,
+      "workMs": {
+        "median": 3.8033,
+        "p95": 5.7346,
+        "p99": 6.6174,
+        "max": 6.6798
+      },
+      "updateMs": {
+        "median": 0.0624,
+        "p95": 0.0984,
+        "p99": 0.1142,
+        "max": 0.1211
+      },
+      "coldFirstBlockMs": 531.0621,
+      "gpuComputeMedianMsPerBlock": [
+        3.145696,
+        4.259904
+      ]
+    },
+    {
+      "case": "growth-lightning",
+      "windowWidth": 2560,
+      "shader": true,
+      "frames": 144,
+      "fps": 64.95168361702886,
+      "workMs": {
+        "median": 2.552,
+        "p95": 7.7665,
+        "p99": 9.2977,
+        "max": 9.4127
+      },
+      "updateMs": {
+        "median": 0.0009,
+        "p95": 4.5884,
+        "p99": 5.5854,
+        "max": 5.7731
+      },
+      "coldFirstBlockMs": 531.7494,
+      "gpuComputeMedianMsPerBlock": [
+        4.85424,
+        5.212544
+      ]
+    },
+    {
+      "case": "paired-terminal-cards",
+      "windowWidth": 2560,
+      "shader": true,
+      "frames": 144,
+      "fps": 59.76357033605948,
+      "workMs": {
+        "median": 4.2496,
+        "p95": 5.868,
+        "p99": 7.2588,
+        "max": 10.9595
+      },
+      "updateMs": {
+        "median": 0.0601,
+        "p95": 0.0887,
+        "p99": 0.1622,
+        "max": 0.244
+      },
+      "coldFirstBlockMs": 4.5697,
+      "gpuComputeMedianMsPerBlock": [
+        4.515584,
+        4.987424
+      ]
+    }
+  ],
+  "allMeasuredFrames": 2304,
+  "allMeasuredOver33ms": 0,
+  "allMeasuredOver100ms": 0,
+  "memorySamples": [
+    {
+      "stage": "before-fixtures",
+      "working_mib": "68.234375",
+      "commit_mib": "82.992188",
+      "peak_working_mib": "68.250000"
+    },
+    {
+      "stage": "fixtures-ready",
+      "working_mib": "297.718750",
+      "commit_mib": "307.707031",
+      "peak_working_mib": "325.101562"
+    },
+    {
+      "stage": "closed-1280",
+      "working_mib": "218.570312",
+      "commit_mib": "254.343750",
+      "peak_working_mib": "340.703125"
+    },
+    {
+      "stage": "closed-2560",
+      "working_mib": "233.050781",
+      "commit_mib": "313.253906",
+      "peak_working_mib": "340.703125"
+    },
+    {
+      "stage": "cycle-0-open",
+      "working_mib": "268.699219",
+      "commit_mib": "355.070312",
+      "peak_working_mib": "340.703125"
+    },
+    {
+      "stage": "cycle-0-closed",
+      "working_mib": "268.792969",
+      "commit_mib": "355.070312",
+      "peak_working_mib": "340.703125"
+    },
+    {
+      "stage": "cycle-1-open",
+      "working_mib": "204.187500",
+      "commit_mib": "285.769531",
+      "peak_working_mib": "340.703125"
+    },
+    {
+      "stage": "cycle-1-closed",
+      "working_mib": "204.691406",
+      "commit_mib": "286.273438",
+      "peak_working_mib": "340.703125"
+    },
+    {
+      "stage": "cycle-2-open",
+      "working_mib": "235.781250",
+      "commit_mib": "322.312500",
+      "peak_working_mib": "340.703125"
+    },
+    {
+      "stage": "cycle-2-closed",
+      "working_mib": "236.031250",
+      "commit_mib": "322.312500",
+      "peak_working_mib": "340.703125"
+    },
+    {
+      "stage": "cycle-3-open",
+      "working_mib": "238.808594",
+      "commit_mib": "326.875000",
+      "peak_working_mib": "340.703125"
+    },
+    {
+      "stage": "cycle-3-closed",
+      "working_mib": "239.312500",
+      "commit_mib": "327.378906",
+      "peak_working_mib": "340.703125"
+    }
+  ]
+}
