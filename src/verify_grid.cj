@@ -6,6 +6,7 @@ import std.fs.File
 import stdx.encoding.json.*
 
 func verifyGrid(app:App,w:SdlWindow):Unit {
+    app.forestDensity=100
     let clock=PerformanceClock();let rows=ArrayList<String>(["nx,nz,load_ms,evaluation_ms,candidates_ms,gpu_frame_ms,fire_loop_fps,fire_render_median_ms,fire_render_p95_ms"])
     for(mask in 0..512){
         let fuel=Array<Bool>(9,{i=>(mask&(Int64(1)<<i))!=0});let graph=Connectivity(fuel,3,3)

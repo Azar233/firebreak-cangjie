@@ -161,13 +161,15 @@ func drawSimulationPanel(app: App,l: Layout): Unit {
 func render(app: App,window: SdlWindow,capture!: String=""): Unit {
     pollAgentConnection(app)
     pollAgentChat(app)
+    pollStudy(app)
     app.frameMeter.tick(app.frameMeter.clock.ms())
     let r=window.renderer
     let l=Layout(Float32(window.width),Float32(window.height))
     let reference=app.mapMode && app.referenceMode && app.reference.isSome()
     app.view.useGpu=app.preferences.gpuEnabled
     app.view.shadersEnabled=app.preferences.shadersEnabled && app.preferences.gpuEnabled
-    if (app.comparePanel) {
+    if(app.studyPanel){prepareStudy(app,window,l,!capture.isEmpty())}
+    else if (app.comparePanel) {
         if (let Some(v) <- app.pairView) { v.baseline.useGpu=app.preferences.gpuEnabled;v.planned.useGpu=app.preferences.gpuEnabled;v.baseline.shadersEnabled=app.view.shadersEnabled;v.planned.shadersEnabled=app.view.shadersEnabled;v.prepare(app.camera,l.canvas,window,app.mapMode,app.view.showCanopy,!capture.isEmpty(),app.dragging || app.panning) }
     } else if (!reference) { app.view.prepare(app.camera,if (app.mapMode) { app.mapBox(l) } else { l.canvas },window,
         interacting:app.dragging || app.panning,forceFull:!capture.isEmpty(),topDown:app.mapMode) }
@@ -178,7 +180,8 @@ func render(app: App,window: SdlWindow,capture!: String=""): Unit {
     mcButton(app,l,53,app.t("菜单 [Esc]","Menu [Esc]"))
     mcButton(app,l,54,app.t("研究员","Researcher"))
     drawWorkflowBar(app,l)
-    if (app.comparePanel) { drawComparison(app,l) }
+    if(app.studyPanel){drawStudy(app,l)}
+    else if (app.comparePanel) { drawComparison(app,l) }
     else {
         if (app.mapMode) {
             r.fill(l.canvas,Color.rgb(33,39,34)); drawMapPaper(app,l)
@@ -192,7 +195,8 @@ func render(app: App,window: SdlWindow,capture!: String=""): Unit {
     }
     frame(r,l.panel,dark:true)
     let x=l.panel.x+18.0; let y=l.panel.y
-    if (app.suggestPanel) { drawSuggestions(app,l) }
+    if(app.studyPanel){drawStudyPanel(app,l)}
+    else if (app.suggestPanel) { drawSuggestions(app,l) }
     else if (app.comparePanel) { drawComparisonPanel(app,l) }
     else if (app.simPanel) { drawSimulationPanel(app,l) }
     else if (app.settings) {
@@ -206,12 +210,12 @@ func render(app: App,window: SdlWindow,capture!: String=""): Unit {
     } else {
         drawForestPanel(app,l)
     }
-    if(app.simPanel && !app.simParameters){mcButton(app,l,59,app.t("下一步：设计干预","Next: Intervene"))}
-    if(!app.suggestPanel){
+    if(app.simPanel && !app.simParameters && !app.studyPanel){mcButton(app,l,59,app.t("下一步：设计干预","Next: Intervene"));mcButton(app,l,140,app.t("临界观察 / 密度与干预","Critical region / Density & clearing"))}
+    if(!app.suggestPanel && !app.studyPanel){
         mcButton(app,l,16,if(app.mapMode){app.t("三维","3D")}else{app.t("地图","Map")})
         mcButton(app,l,0,app.t("复位","Reset"));mcButton(app,l,2,app.t("树冠","Canopy"))
     }
-    let status=if(app.simPanel){app.t("当前为单次火灾 | 设置起火 → 开始/单步 | H 树冠 | 滚轮缩放","Single-fire trial | Pick ignition -> Start/Step | H canopy | Wheel zoom")}else if (app.suggestPanel) { app.t("金色边框：新增候选，尚未应用 | 每个候选共用情景，不保证全局最优","Gold outlines: unapplied candidate | Shared scenarios; no global-optimum guarantee") } else if (app.comparePanel) { app.t("同步相机 / 同步仿真步 | 回放：情景 1 | 汇总：全部情景 | H 树冠","Shared camera / time | Replay: scenario 1 | Summary: all | H: Canopy") } else if (app.startCell>=0) { app.t("预览 ${app.selection().size} 格 | Enter 应用 / Esc 取消 | 青色保护 / 红色禁区","Preview ${app.selection().size} cells | Enter: Apply / Esc: Cancel | Cyan: Protected / Red: Excluded") }
+    let status=if(app.studyPanel){app.t("点击曲线选密度 | 逐点频次区间不是临界值区间 | 预览后手动应用","Click plot to select density | Pointwise frequency CI is not pc CI | Apply preview manually")}else if(app.simPanel){app.t("当前为单次火灾 | 设置起火 → 开始/单步 | H 树冠 | 滚轮缩放","Single-fire trial | Pick ignition -> Start/Step | H canopy | Wheel zoom")}else if (app.suggestPanel) { app.t("金色边框：新增候选，尚未应用 | 每个候选共用情景，不保证全局最优","Gold outlines: unapplied candidate | Shared scenarios; no global-optimum guarantee") } else if (app.comparePanel) { app.t("同步相机 / 同步仿真步 | 回放：情景 1 | 汇总：全部情景 | H 树冠","Shared camera / time | Replay: scenario 1 | Summary: all | H: Canopy") } else if (app.startCell>=0) { app.t("预览 ${app.selection().size} 格 | Enter 应用 / Esc 取消 | 青色保护 / 红色禁区","Preview ${app.selection().size} cells | Enter: Apply / Esc: Cancel | Cyan: Protected / Red: Excluded") }
         else if(app.mapMode){app.t("滚轮缩放 | 中键平移 | 左键框选 | 相机复位：整图 | Ctrl+S 保存","Wheel: Zoom | Middle: Pan | Drag: Select | Reset: Fit Map | Ctrl+S: Save")}
         else { app.t("左键框选 | 右键旋转 / 中键平移 | 1-4 选择/植林/清理/隔离 | Ctrl+S 保存 | Ctrl+Z 撤销","Drag: Select | Right: Rotate / Middle: Pan | 1-4: Select/Plant/Clear/Break | Ctrl+S: Save | Esc: Menu") }
     r.pushClip(Rect(20.0,l.canvas.bottom()+6.0,l.canvas.w,24.0)); uiText(app,l,status,20.0,l.canvas.bottom()+10.0,color:Color.rgb(190,199,170)); r.popClip()
@@ -228,7 +232,8 @@ func render(app: App,window: SdlWindow,capture!: String=""): Unit {
         let id=if(app.hover>=0){app.hover}else{CONTROLS[app.focus]};let tip=workflowTip(app,id)
         if(!tip.isEmpty()){r.fill(Rect(20.0,l.canvas.bottom()+6.0,l.canvas.w,26.0),Color.rgb(34,38,32));r.pushClip(Rect(20.0,l.canvas.bottom()+6.0,l.canvas.w,26.0));uiText(app,l,tip,20.0,l.canvas.bottom()+10.0,color:Color.rgb(235,222,156));r.popClip()}
     }
-    r.pushClip(Rect(20.0,l.height-25.0,l.width-40.0,22.0)); uiText(app,l,app.view.backendName()+" | "+(if (app.startCell>=0) { app.t("选区 ${app.selection().size} 格；Enter应用 / Esc取消","${app.selection().size} selected cells; Enter applies / Esc cancels") } else if(!app.view.gpuError.isEmpty()){app.view.gpuError}else{app.message}),20.0,l.height-23.0,color:Color.rgb(222,220,192)); r.popClip()
+    let backend=if(app.studyPanel && app.studyPreview.isSome()){app.studyPreview.getOrThrow().view.backendName()}else{app.view.backendName()}
+    r.pushClip(Rect(20.0,l.height-25.0,l.width-40.0,22.0)); uiText(app,l,backend+" | "+(if (app.startCell>=0) { app.t("选区 ${app.selection().size} 格；Enter应用 / Esc取消","${app.selection().size} selected cells; Enter applies / Esc cancels") } else if(!app.view.gpuError.isEmpty()){app.view.gpuError}else{app.message}),20.0,l.height-23.0,color:Color.rgb(222,220,192)); r.popClip()
     if (app.menuOpen) { drawMenu(app,l,pixelRatio:Float32(window.scale)*Float32(window.currentPixelDensity)) }
     if (app.preferences.showFps) { drawFps(app.font,app.frameMeter,l.canvas) }
     drawTerminal(app,l,window)

@@ -15,6 +15,7 @@ func workflowName(app:App,step:Int64):String {
 func enterWorkflow(app:App,step:Int64):Unit {
     require(step>=0 && step<=3,"Invalid workflow step")
     require(app.startCell<0 && app.activeField<0 && !app.painting,app.t("请先应用或取消当前选区与输入，再切换步骤。","Apply or cancel the pending selection/input before switching steps."))
+    app.studyPanel=false
     if(let Some(run)<-app.experiment.run){run.running=false}
     if(let Some(pair)<-app.pairView){pair.playing=false}
     app.workflowStage=step;app.comparePanel=step==3;app.simPanel=step==1
@@ -48,6 +49,11 @@ func controlIcon(id:Int64):String {
         case 48 | 81 | 117=>"item/book"
         case 53 | 98=>"item/book"
         case 54 | 84=>"item/knowledge_book"
+        case 140 | 141 | 146=>"item/spyglass"
+        case 147 | 152=>"item/comparator"
+        case 148=>"block/oak_sapling"
+        case 149=>"item/paper"
+        case 142=>"item/barrier"
         case 10 | 116 | 108=>"block/oak_sapling"
         case 20=>"item/map"
         case 22 | 26=>"item/iron_shovel"
@@ -75,6 +81,7 @@ func workflowTip(app:App,id:Int64):String {
         case 54=>app.t("打开研究员终端；/也可呼出快捷输入。","Open the researcher terminal; / opens quick input.")
         case 53=>app.t("文件、示例、显示、声音、实验与智能体设置。","Files, examples, display, sound, experiment and agent settings.")
         case 59=>app.t("完成当前修改后，进入流程下一步。","Finish the current edit, then continue to the next step.")
+        case 140=>app.t("扫描密度、观察有限网格过渡区，并比较相同清理量的干预。","Scan density and compare equal clearing on a finite grid.")
         case _=>""
     }
 }

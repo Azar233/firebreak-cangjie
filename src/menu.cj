@@ -30,12 +30,15 @@ class MenuLayout {
             case 8=>[114,115,88]
             case 9=>[10,11,12,13,14,15,108,117,118,119,88]
             case 10=>[20,21,22,23,24,25,26,27,28,88]
-            case 11=>[120,121,122,88]
+            case 11=>[130,131,120,121,122,88]
             case _=>[93,94,95]
         }
     }
     func box(id: Int64,page!: Int64=0): Rect {
-        if(page==11 && id>=120 && id<=122){return at(0.0,104.0+Float32(id-120)*72.0,448.0,44.0)}
+        if(page==11){
+            if(id==130 || id==131){return at(0.0,72.0+Float32(id-130)*52.0,448.0,44.0)}
+            if(id>=120 && id<=122){return at(0.0,176.0+Float32(id-120)*52.0,448.0,44.0)}
+        }
         if(page==9){
             if(id>=10 && id<=15){return at(Float32((id-10)%2)*228.0,72.0+Float32((id-10)/2)*52.0,220.0,44.0)}
             if(id==108 || id==117){return at(0.0,if(id==108){228.0}else{280.0},448.0,44.0)}
@@ -92,6 +95,8 @@ func menuTitle(app: App): String {
 }
 func menuLabel(app: App,id: Int64): String {
     match(id) {
+        case 130=>app.t("下次植被概率：${app.forestDensity}% →","Next site probability: ${app.forestDensity}% ->")
+        case 131=>app.t("下次生成seed：${app.forestSeed} →","Next forest seed: ${app.forestSeed} ->")
         case 120=>app.t("24×20 / 小型网格","24x20 / Small")
         case 121=>app.t("64×64 / 标准网格","64x64 / Standard")
         case 122=>app.t("128×128 / 大型网格","128x128 / Large")

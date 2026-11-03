@@ -77,6 +77,7 @@ artifacts/*
 !artifacts/p6-checks.log
 !artifacts/workflow-checks.log
 !artifacts/grid-checks.log
+!artifacts/study-checks.log
 !artifacts/grid-benchmark.csv
 !artifacts/p6-case-results.json
 !artifacts/p6-chain-metrics.csv

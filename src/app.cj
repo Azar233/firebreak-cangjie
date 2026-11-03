@@ -8,7 +8,7 @@ import std.math.floor
 import std.fs.{File,exists}
 import stdx.encoding.base64.toBase64String
 
-let CONTROLS=[55,56,57,58,59,116,0,1,2,3,4,5,6,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,30,31,32,33,34,35,36,40,41,42,43,44,45,46,47,48,49,50,51,52,54,53,60,61,62,63,64,65,66,67,70,71,72,73,74,75,76,77,78]
+let CONTROLS=[55,56,57,58,59,116,0,1,2,3,4,5,6,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,30,31,32,33,34,35,36,40,41,42,43,44,45,46,47,48,49,50,51,52,54,53,60,61,62,63,64,65,66,67,70,71,72,73,74,75,76,77,78,140,141,142,143,144,145,146,147,148,149,151,152]
 let TOOL_NAMES=["选择","林地","道路","水域","建筑","清理植被","隔离带","保护目标","禁止处理"]
 
 class Layout {
@@ -24,6 +24,13 @@ class Layout {
         toolbar=Rect(20.0,height-96.0,246.0,66.0)
     }
     func control(id: Int64): Rect {
+        if(id>=140){
+            if(id==140){return Rect(toolbar.x,toolbar.y+11.0,250.0,44.0)}
+            let row=match(id){case 146 | 151=>0;case 141 | 142=>1;case 143 | 144=>2;case 145=>3;case 147=>4;case 152=>5;case _=>6}
+            let paired=id==146 || id==151 || (id>=141 && id<=144) || id==148 || id==149
+            let right=id==151 || id==142 || id==144 || id==149
+            return Rect(panel.x+18.0+if(right){122.0}else{0.0},panel.y+86.0+Float32(row)*52.0,if(paired){116.0}else{238.0},44.0)
+        }
         if(id>=55 && id<=58){let w=(width-64.0)/4.0;return Rect(20.0+Float32(id-55)*(w+8.0),94.0,w,44.0)}
         if(id==59){return Rect(panel.x+18.0,panel.y+446.0,238.0,44.0)}
         if(id==116){return Rect(panel.x+18.0,panel.y+186.0,238.0,44.0)}
@@ -66,7 +73,9 @@ class Layout {
             case _ => Rect(panel.x+18.0,panel.y+446.0,238.0,44.0)
         }
     }
-    func available(id: Int64,settings: Bool,simulation!: Bool=false,parameters!: Bool=false,comparison!: Bool=false,suggestions!: Bool=false): Bool {
+    func available(id: Int64,settings: Bool,simulation!: Bool=false,parameters!: Bool=false,comparison!: Bool=false,suggestions!: Bool=false,study!:Bool=false): Bool {
+        if(study){return STUDY_CONTROLS.contains(id)}
+        if(id>=140){return id==140 && simulation && !parameters && !comparison && !suggestions && !settings}
         if(id==53 || id==54 || (id>=55 && id<=58)){return true}
         if(id==59){return !comparison && !suggestions && !settings && (!simulation || !parameters)}
         if(id==116){return !simulation && !comparison && !suggestions && !settings}
@@ -85,8 +94,8 @@ class Layout {
         if (id>=2 && id<=6) { return !settings }
         return true
     }
-    func hit(x: Float32,y: Float32,settings!: Bool=false,simulation!: Bool=false,parameters!: Bool=false,comparison!: Bool=false,suggestions!: Bool=false): Int64 {
-        for (id in CONTROLS) { if (available(id,settings,simulation:simulation,parameters:parameters,comparison:comparison,suggestions:suggestions) && control(id).contains(x,y)) { return id } }; return -1
+    func hit(x: Float32,y: Float32,settings!: Bool=false,simulation!: Bool=false,parameters!: Bool=false,comparison!: Bool=false,suggestions!: Bool=false,study!:Bool=false): Int64 {
+        for (id in CONTROLS) { if (available(id,settings,simulation:simulation,parameters:parameters,comparison:comparison,suggestions:suggestions,study:study) && control(id).contains(x,y)) { return id } }; return -1
     }
 }
 
@@ -102,6 +111,18 @@ class App {
     var view: VoxelView
     let preferences: Preferences
     var workflowStage:Int64=0
+    var forestDensity:Int64=60
+    var forestSeed:Int64=42
+    var studyPanel=false
+    var studySamples:Int64=32
+    var studyDose:Int64=16
+    var studyPoint:Int64=12
+    var studySample:Int64=0
+    var studyPolicy:Int64=0
+    var studyJob:?ForestStudyJob=None
+    var densityResult:?DensityResult=None
+    var interventionResult:?InterventionResult=None
+    var studyPreview:?StudyPreview=None
     var menuOpen=false
     var bookPage: Int64=0
     var menuPage: Int64=0
@@ -164,7 +185,7 @@ class App {
         preferences=Preferences(preferencesPath)
         agentSettings=DeepSeekSettings(if(preferencesPath.isEmpty()){""}else{"agent.local.json"})
         this.assets=assets; font=PixelFont(assets); view=VoxelView(scene,assets)
-        if(!preferencesPath.isEmpty()){work.acceptLoaded(Project(nx:64,nz:64),"")}
+        if(!preferencesPath.isEmpty()){work.acceptLoaded(densityForest(Project(nx:64,nz:64),Float64(forestDensity)/100.0,forestSeed),"")}
         syncScene()
         message=t("按 Esc 打开工作台菜单。","Press Esc to open the workbench menu.")
         if (!preferences.loadError.isEmpty()) { message=t("本地设置读取失败，已使用默认语言：","Could not load preferences; using default language: ")+preferences.loadError }
@@ -178,6 +199,7 @@ class App {
         view.dirty=true
     }
     func updateExperiment(now: UInt64): Unit {
+        pollStudy(this)
         clockNow=now; syncSuggestions(); pollSearch(); syncComparison(); pollEvaluation(now)
         if (experiment.sync(work.project,work.revision)) { refreshExperimentView() }
         if (let Some(r) <- experiment.run) {
@@ -293,6 +315,7 @@ class App {
     func loadProject(path: String): Unit {
         let p=readProjectText(String.fromUtf8(File.readFrom(path)))
         let next=makeReference(p)
+        studyPanel=false
         work.acceptLoaded(p,path); replaceReference(next); cancel();camera.resetMap(); syncScene(); mapMode=reference.isSome(); referenceMode=false
     }
     func mapBox(l: Layout): Rect {
@@ -432,8 +455,9 @@ class App {
         require(dialog.isNone(),t("请先完成文件对话框","Finish the file dialog first"))
         commitField(); require(startCell<0,t("请先应用或取消选区","Apply or cancel the selection first"))
         dialogKind=kind
-        if (kind==65 || kind==78) {
-            if (kind==78) { syncSuggestions(); require(searchResult.isSome(),t("请先完成候选搜索","Complete candidate search first")) }
+        if (kind==65 || kind==78 || kind==149) {
+            if(kind==149){pollStudy(this);require(densityResult.isSome() && studyJob.isNone(),t("请先完成密度实验","Complete the density study first"))}
+            else if (kind==78) { syncSuggestions(); require(searchResult.isSome(),t("请先完成候选搜索","Complete candidate search first")) }
             else { syncComparison(); require(evalResult.isSome(),t("请先完成当前场地的评估","Complete evaluation of the current site first")) }
             dialog=Some(FileDialogs.openFolder(options:FileDialogOptions(),window:Some(window))); return
         }
@@ -449,6 +473,7 @@ class App {
         // Decode/upload before changing the document so a failed import keeps the current project.
         let s=decodeReference(p).getOrThrow()
         let texture=try { assets.r.textureFromSurface(s) } finally { s.close() }
+        studyPanel=false
         work.commit(p); work.path=""; if (let Some(old) <- reference) { old.close() }; reference=Some(texture)
         cancel();camera.resetMap(); syncScene(); mapMode=true; referenceMode=true; settings=true; message=t("底图已导入；请标定宽度并标注。点击纹理俯视查看三维场景的正上方。","Reference imported. Set its width and annotate. Switch to the textured map for an overhead view.")
     }
@@ -464,6 +489,8 @@ class App {
                         if (dialogKind==78) {
                             syncSuggestions(); let result=searchResult.getOrThrow()
                             message=t("候选报告已导出：","Candidate report exported: ")+exportSearch(result,paths[0],preferences.english)
+                        } else if(dialogKind==149){
+                            pollStudy(this);require(densityResult.isSome(),t("输入已变更，请重新运行实验","Inputs changed; rerun the study"));message=t("实验数据已导出：","Study exported: ")+exportStudy(this,paths[0])
                         } else if (dialogKind==65) {
                             syncComparison(); let result=evalResult.getOrThrow()
                             message=t("报告已导出：","Report exported: ")+exportEvaluation(result,assets,paths[0],english:preferences.english)
@@ -484,6 +511,7 @@ class App {
         }
     }
     func action(window: SdlWindow,id: Int64): Unit {
+        if(id>=140){studyAction(this,window,id);return}
         if(id==54 || (id>=10 && id<=13) || id==65 || id==78){playUiClick(this)}
         if(id>=55 && id<=58){enterWorkflow(this,id-55);playUiClick(this);return}
         if(id==59){enterWorkflow(this,min(3,currentWorkflow(this)+1));playUiClick(this);return}
@@ -508,6 +536,7 @@ class App {
         }
         if (menuOpen) { return handleMenu(window,record,l) }
         if (terminal.open) { return handleTerminalInput(this,record,l) }
+        if(studyPanel){return handleStudyInput(this,window,record,l)}
         match (record.event) {
             case UiEvent.MouseMove(x,y) =>
                 hover=l.hit(x,y,settings:settings,simulation:simPanel,parameters:simParameters,comparison:comparePanel,suggestions:suggestPanel)
@@ -607,6 +636,7 @@ class App {
     }
 
     func openSuggestions(): Unit {
+        studyPanel=false
         require(startCell<0,t("请先应用或取消编辑预览","Apply or cancel the edit preview first"))
         commitField(); workflowStage=2; suggestPanel=true; comparePanel=false; simPanel=false; settings=false; referenceMode=false; pickingIgnition=false
         if (let Some(run) <- experiment.run) { run.running=false }
@@ -719,11 +749,13 @@ class App {
             case 81=>commitField();menuPage=9;menuFocus=10
             case 117=>commitField();menuPage=1;menuFocus=33
             case 119=>commitField();menuPage=10;menuFocus=20
+            case 130=>forestDensity=(forestDensity+5)%105
+            case 131=>forestSeed=(forestSeed+1)%2147483648
             case 120 | 121 | 122=>
                 require(startCell<0,t("请先应用或取消选区","Apply or cancel the selection first"))
                 if(discard(window)){
                     let n: Int64=if(id==120){24}else if(id==121){64}else{128};let z: Int64=if(id==120){20}else{n}
-                    cancel();work.commit(Project(nx:n,nz:z));work.path="";work.unsaved=true;refreshReference();syncScene();enterWorkflow(this,0);menuOpen=false
+                    cancel();work.commit(densityForest(Project(nx:n,nz:z),Float64(forestDensity)/100.0,forestSeed));work.path="";work.unsaved=true;refreshReference();syncScene();enterWorkflow(this,0);menuOpen=false
                     camera.fitScene(scene,Layout(Float32(window.width),Float32(window.height)).canvas)
                     message=t("已建立 ${n}×${z} 平坦森林；每格是可燃单元，树木为示意。","Created ${n}x${z} flat forest; cells are fuel units, trees are illustrative.")
                 }
@@ -818,5 +850,5 @@ class App {
         }
         return !exitReady
     }
-    func close(): Unit { audio.close(); if(let Some(job)<-agentChat){job.cancel();job.wait()}; if (let Some(job) <- searchJob) { job.cancel() }; if (let Some(job) <- evalJob) { job.cancel() }; clearComparison(); view.close(); if (let Some(t) <- reference) { t.close() }; reference=None }
+    func close(): Unit { if(let Some(job)<-studyJob){job.cancel()};if(let Some(preview)<-studyPreview){preview.close()};audio.close(); if(let Some(job)<-agentChat){job.cancel();job.wait()}; if (let Some(job) <- searchJob) { job.cancel() }; if (let Some(job) <- evalJob) { job.cancel() }; clearComparison(); view.close(); if (let Some(t) <- reference) { t.close() }; reference=None }
 }

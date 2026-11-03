@@ -35,6 +35,8 @@ let MODEL_MESSAGES=[
     ["项目文件过大","Project file is too large"],
     ["不支持的项目格式或版本","Unsupported project format or version"],
     ["回放历史达到内存上限，请重置试验或缩小网格","Replay memory limit reached; reset the trial or use a smaller grid"],
+    ["没有可生长林地，请先建立森林","No growable domain; create a forest first"],
+    ["可处理植被不足，无法执行相同清理格数；请降低清理量或提高密度","Insufficient eligible fuel for equal clearing; reduce the dose or increase density"],
     ["不支持的传播规则版本","Unsupported spread rule version"],
     ["底图上限 8 MB","Reference image limit: 8 MB"],
     ["底图尺寸与项目不符","Reference dimensions do not match the project"],
