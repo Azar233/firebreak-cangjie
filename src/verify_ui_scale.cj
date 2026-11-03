@@ -26,6 +26,8 @@ func verifyUiScale(app:App,w:SdlWindow):Unit {
     let demo=App(app.assets,preferencesPath:"",audioEnabled:false)
     try{
         demo.work.acceptLoaded(densityForest(Project(nx:64,nz:64),0.6,42),"");enterWorkflow(demo,0);demo.preferences.gpuEnabled=true
-        demo.camera.fitScene(demo.scene,Layout(Float32(w.width),Float32(w.height)).canvas);render(demo,w,capture:"artifacts/release-workbench.png")
+        demo.preferences.shadersEnabled=true
+        demo.camera.fitScene(demo.scene,Layout(Float32(w.width),Float32(w.height)).canvas);demo.camera.zoom*=1.35
+        render(demo,w,capture:"artifacts/release-workbench.png")
     }finally{demo.close()}
 }

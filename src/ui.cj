@@ -180,7 +180,7 @@ func render(app: App,window: SdlWindow,capture!: String=""): Unit {
     frame(r,Rect(12.0,12.0,l.width-24.0,76.0))
     uiText(app,l,app.t("断火线","Firebreak"),30.0,26.0,scale:if (app.preferences.english) { 1.6 } else { 2.0 })
     uiText(app,l,app.t("森林实验 / ","Forest Lab / ")+workflowName(app,currentWorkflow(app))+(if (app.work.dirty()) { app.t(" * 未保存"," * Unsaved") } else if (app.work.path.isEmpty()) { app.t(" / 未另存"," / Not Saved") } else { app.t(" / 已保存"," / Saved") }),if (app.preferences.english) { 250.0 } else { 164.0 },40.0,color:Color.rgb(222,220,192))
-    mcButton(app,l,53,app.t("菜单 [Esc]","Menu [Esc]"))
+    mcButton(app,l,53,app.t("菜单","Menu"))
     mcButton(app,l,54,app.t("研究员","Researcher"))
     drawWorkflowBar(app,l)
     if(app.longPanel){drawLong(app,l)}
