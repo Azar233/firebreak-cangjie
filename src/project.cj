@@ -91,7 +91,14 @@ class Project {
         j.put("imageBase64",JsonString(image)); j.put("source",JsonString(source))
         return j.toJsonString()
     }
-    func copy(): Project { readProjectText(text()) }
+    func copy(): Project {
+        validate()
+        let p=Project(demo:false,nx:nx,nz:nz)
+        p.land=land.clone();p.vegetation=vegetation.clone();p.targets=targets.clone();p.forbidden=forbidden.clone();p.treatment=treatment.clone()
+        p.metersWide=metersWide;p.aspect=aspect;p.budget=budget;p.clearingPrice=clearingPrice;p.breakPrice=breakPrice
+        p.image=image;p.source=source;p.ignition=ignition;p.spreadProbability=spreadProbability;p.burnSteps=burnSteps;p.seed=seed
+        return p
+    }
 }
 func maskText(mask: Array<Int64>): String { String.fromUtf8(Array<UInt8>(mask.size,{i => UInt8(48+mask[i])})) }
 func parseMask(s: String,cells!:Int64=CELL_COUNT): Array<Int64> {

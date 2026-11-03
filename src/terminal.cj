@@ -131,6 +131,7 @@ class TerminalLayout {
 
 func openTerminal(app: App,quick: Bool): Unit {
     require(app.startCell<0 && app.activeField<0,app.t("请先完成或取消当前编辑","Finish or cancel the current edit first"))
+    if(let Some(replay)<-app.longReplay){replay.playing=false}
     let t=app.terminal;t.open=true;t.quick=quick;t.pressed = -1;t.editor.composition=""
     app.painting=false;app.dragging=false;app.panning=false;app.pressed = -1;app.hover = -1
     if(let Some(run)<-app.experiment.run){run.running=false};if(let Some(pair)<-app.pairView){pair.playing=false}

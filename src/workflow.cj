@@ -15,7 +15,8 @@ func workflowName(app:App,step:Int64):String {
 func enterWorkflow(app:App,step:Int64):Unit {
     require(step>=0 && step<=3,"Invalid workflow step")
     require(app.startCell<0 && app.activeField<0 && !app.painting,app.t("请先应用或取消当前选区与输入，再切换步骤。","Apply or cancel the pending selection/input before switching steps."))
-    app.studyPanel=false
+    app.studyPanel=false;app.longPanel=false
+    if(let Some(replay)<-app.longReplay){replay.playing=false}
     if(let Some(run)<-app.experiment.run){run.running=false}
     if(let Some(pair)<-app.pairView){pair.playing=false}
     app.workflowStage=step;app.comparePanel=step==3;app.simPanel=step==1
@@ -35,16 +36,16 @@ func enterWorkflow(app:App,step:Int64):Unit {
 }
 func controlIcon(id:Int64):String {
     let name=match(id){
-        case 55 | 21=>"block/oak_sapling"
+        case 160 | 161 | 175 | 55 | 21=>"block/oak_sapling"
         case 56=>"item/spyglass"
         case 57 | 25=>"item/iron_axe"
-        case 58 | 60 | 82=>"item/comparator"
-        case 59 | 12 | 14 | 15 | 65=>"item/paper"
+        case 167 | 58 | 60 | 82=>"item/comparator"
+        case 174 | 59 | 12 | 14 | 15 | 65=>"item/paper"
         case 0 | 42 | 92=>"item/compass_16"
         case 16 | 11 | 13 | 118=>"item/map"
         case 2 | 46 | 90=>"block/oak_sapling"
-        case 45 | 83=>"item/flint_and_steel"
-        case 40 | 43 | 44 | 64=>"item/clock_00"
+        case 162 | 45 | 83=>"item/flint_and_steel"
+        case 170 | 40 | 43 | 44 | 64=>"item/clock_00"
         case 41=>"item/repeater"
         case 48 | 81 | 117=>"item/book"
         case 53 | 98=>"item/book"

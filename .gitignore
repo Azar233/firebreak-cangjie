@@ -88,3 +88,6 @@ artifacts/*
 !artifacts/p6-camp-samples.csv
 !artifacts/p6-camp-search-parameters.json
 artifacts/readme-home-*.png
+
+!artifacts/long-checks.log
+!artifacts/long-benchmark.csv
