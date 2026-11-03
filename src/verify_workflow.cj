@@ -16,12 +16,16 @@ func verifyWorkflow(app:App,w:SdlWindow):Unit {
     for(size in [Size(1100.0,780.0),Size(1280.0,860.0),Size(2560.0,1380.0)]){
         let l=Layout(size.w,size.h)
         for(step in 0..4){let b=l.control(55+step);require(b.w>=44.0 && b.right()<=size.w && l.hit(b.centerX(),b.centerY())==55+step,"Pipeline target outside window")}
+        for(slot in 0..PRIMARY_TOOLS.size){let id=20+PRIMARY_TOOLS[slot];let b=l.control(id);require(b.w>=44.0 && b.h>=44.0 && l.hit(b.centerX(),b.centerY())==id,"Toolbar target outside window");if(slot>0){require(l.control(20+PRIMARY_TOOLS[slot-1]).right()+4.0<=b.x,"Tool buttons lack separation")}}
         for(id in [10,11,12,13,17,18,19,22,23,24,27,28,52]){require(!l.available(id,false),"Advanced action leaks into the primary canvas hit map")}
         for(page in [9,10]){let m=MenuLayout(l);for(id in m.controls(page)){let b=m.box(id,page:page);require(b.x>=0.0 && b.y>=0.0 && b.right()<=size.w && b.bottom()<=size.h && m.hit(b.centerX(),b.centerY(),page)==id,"Moved menu action outside window or overlapping")}}
     }
     pass(true,"Four pipeline steps and advanced menu targets fit desktop sizes without hidden canvas hotspots")
     click(app,w,55);pass(currentWorkflow(app)==0 && app.tool==1 && app.work.revision==revision && app.work.project.text()==source,"Build step changes the workspace without editing the project")
     render(app,w,capture:"artifacts/workflow-build.png")
+    for(slot in 0..PRIMARY_TOOLS.size){app.tool=PRIMARY_TOOLS[slot];app.hover=20+PRIMARY_TOOLS[(slot+1)%PRIMARY_TOOLS.size];render(app,w,capture:"artifacts/toolbar-selected-${slot}.png")}
+    app.preferences.setEnglish(true);w.setSize(1100,780);w.refreshSize();render(app,w,capture:"artifacts/toolbar-selected-en.png")
+    app.preferences.setEnglish(false);w.setSize(1280,860);w.refreshSize();app.tool=1;app.hover = -1
     app.startCell=0;app.endCell=1;let tool=app.tool;click(app,w,58)
     pass(currentWorkflow(app)==0 && app.startCell==0 && app.endCell==1 && app.tool==tool,"A pending edit blocks pipeline navigation without discarding its selection")
     app.cancel();click(app,w,56);click(app,w,45)

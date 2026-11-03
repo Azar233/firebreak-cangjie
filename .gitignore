@@ -91,3 +91,10 @@ artifacts/readme-home-*.png
 
 !artifacts/long-checks.log
 !artifacts/long-benchmark.csv
+
+!artifacts/agent-lab-checks.log
+!artifacts/agent-lab-live-checks.log
+
+artifacts/r5-agent-lab.png
+artifacts/toolbar-selected-[013].png
+!artifacts/agent-lab-final-checks.log

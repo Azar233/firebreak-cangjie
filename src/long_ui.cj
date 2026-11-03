@@ -26,6 +26,12 @@ func longEnabled(app:App,id:Int64):Bool {
     return true
 }
 func nextLongValue(value:Float64,values:Array<Float64>):Float64 {for(i in 0..values.size){if(values[i]==value){return values[(i+1)%values.size]}};return values[0]}
+func startLongStudy(app:App,spec:LongSpec):Unit {
+    require(app.longJob.isNone(),"A long-run task is already active")
+    let job=LongJob(app.work.project,app.work.revision,spec)
+    app.longGrowth=spec.growth;app.longLightning=spec.lightning;app.longWarmup=spec.warmup;app.longDrives=spec.drives;app.longSamples=spec.samples;app.longCapacity=spec.capacity
+    clearLong(app);app.longJob=Some(job);job.start()
+}
 func longAction(app:App,w:SdlWindow,id:Int64):Unit {
     require(longEnabled(app,id),app.t("请先等待或取消当前任务。","Wait for or cancel the current task."));playUiClick(app)
     match(id){
@@ -38,7 +44,7 @@ func longAction(app:App,w:SdlWindow,id:Int64):Unit {
         case 166=>app.longCapacity=match(app.longCapacity){case 0=>16;case 16=>64;case 64=>256;case 256=>app.work.project.cells;case _=>0}
         case 167=>
             let spec=LongSpec(app.longGrowth,app.longLightning,app.longWarmup,app.longDrives,app.longSamples,app.longCapacity)
-            let job=LongJob(app.work.project,app.work.revision,spec);clearLong(app);app.longJob=Some(job);job.start()
+            startLongStudy(app,spec)
         case 168=>if(let Some(job)<-app.longJob){job.cancel();app.longJob=None;app.message=app.t("已取消长期实验，不发布部分统计。","Long-run study cancelled; no partial results published.")}
         case 170=>let replay=app.longReplay.getOrThrow();if(replay.playing){replay.playing=false}else{replay.play(app.clockNow)}
         case 171 | 173=>let replay=app.longReplay.getOrThrow();replay.seek(replay.cursor+1,app.clockNow)

@@ -64,7 +64,7 @@ class Layout {
         }
         if (id>=46 && id<=48) { return Rect(panel.x+18.0,panel.y+310.0+Float32(id-46)*52.0,238.0,44.0) }
         if (id==18) { return Rect(748.0,94.0,98.0,44.0) }
-        if (id>=20 && id<=28) { let slot=match(id){case 20=>0;case 21=>1;case 25=>2;case 26=>3;case _=>id-20};return Rect(toolbar.x+3.0+Float32(slot)*60.0,toolbar.y+3.0,60.0,60.0) }
+        if (id>=20 && id<=28) { let slot=match(id){case 20=>0;case 21=>1;case 25=>2;case 26=>3;case _=>id-20};return Rect(toolbar.x+3.0+Float32(slot)*60.0,toolbar.y+3.0,56.0,60.0) }
         if (id>=10 && id<=16) { return Rect(20.0+Float32(id-10)*104.0,94.0,98.0,44.0) }
         if (id>=33 && id<=36) { return Rect(panel.x+18.0,panel.y+56.0+Float32(id-33)*76.0,238.0,44.0) }
         return match (id) {

@@ -226,10 +226,14 @@ func render(app: App,window: SdlWindow,capture!: String=""): Unit {
     if(!app.comparePanel && !app.suggestPanel && !app.simPanel && !app.settings){
         for(slot in 0..PRIMARY_TOOLS.size){
             let tool=PRIMARY_TOOLS[slot];let id=20+tool;let b=l.control(id)
-            mcButtonAt(app,b,id,"",app.tool==tool)
-            app.assets.blit(controlIcon(id),Rect(b.x+14.0,b.y+4.0,32.0,32.0))
+            mcButtonAt(app,b,id,"",false)
+            app.assets.r.pushClip(Rect(b.x+4.0,b.y+4.0,b.w-8.0,b.h-8.0))
+            app.assets.blit(controlIcon(id),Rect(b.centerX()-16.0,b.y+4.0,32.0,32.0))
             let zh=["选择","植林","清理","隔离"];let en=["Select","Plant","Clear","Break"]
-            app.font.center(app.t(zh[slot],en[slot]),Rect(b.x,b.y+39.0,b.w,20.0),scale:1.0,shadow:false,snap:true,pixelRatio:Float32(window.scale)*Float32(window.currentPixelDensity))
+            let label=app.t(zh[slot],en[slot]);let labelScale=min(1.0,(b.w-8.0)/max(1.0,app.font.measure(label)))
+            app.font.center(label,Rect(b.x+4.0,b.y+38.0,b.w-8.0,18.0),scale:labelScale,shadow:false,snap:true,pixelRatio:Float32(window.scale)*Float32(window.currentPixelDensity))
+            app.assets.r.popClip()
+            if(app.tool==tool){app.assets.r.strokeRect(Rect(b.x+1.0,b.y+1.0,b.w-2.0,b.h-2.0),Pen(width:2.0,color:Color.rgb(234,215,129)))}
         }
     }
     if(!app.menuOpen && !app.terminal.open){

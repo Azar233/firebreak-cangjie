@@ -52,6 +52,17 @@ func studyEnabled(app:App,id:Int64):Bool {
     if(id==152){return !busy && app.interventionResult.isSome()}
     return true
 }
+func startDensityStudy(app:App,samples:Int64):Unit {
+    require(app.studyJob.isNone(),"A density/structure task is already active")
+    let job=ForestStudyJob(app.work.project,app.work.revision,samples)
+    app.densityResult=None;app.interventionResult=None;refreshStudyPreview(app);app.studySamples=samples;app.studyJob=Some(job);job.start()
+}
+func startStructureStudy(app:App,samples:Int64,point:Int64,dose:Int64):Unit {
+    require(app.studyJob.isNone(),"A density/structure task is already active")
+    let result=app.densityResult.getOrThrow();require(result.revision==app.work.revision && point>=0 && point<result.points.size,"Invalid or stale density result")
+    let job=ForestStudyJob(readProjectText(result.source),app.work.revision,samples,mode:1,probability:result.points[point].probability,dose:dose)
+    app.studyPoint=point;app.studySamples=samples;app.studyDose=dose;app.interventionResult=None;app.studyPolicy=0;refreshStudyPreview(app);app.studyJob=Some(job);job.start()
+}
 func studyAction(app:App,w:SdlWindow,id:Int64):Unit {
     require(studyEnabled(app,id),app.t("请先等待或取消当前任务。","Wait for or cancel the current task."))
     playUiClick(app)
@@ -59,8 +70,7 @@ func studyAction(app:App,w:SdlWindow,id:Int64):Unit {
         case 140=>
             if(app.studyPanel){app.studyPanel=false}else{enterWorkflow(app,1);app.studyPanel=true;pollStudy(app)}
         case 141=>
-            app.densityResult=None;app.interventionResult=None;refreshStudyPreview(app)
-            let job=ForestStudyJob(app.work.project,app.work.revision,app.studySamples);app.studyJob=Some(job);job.start()
+            startDensityStudy(app,app.studySamples)
         case 142=>if(let Some(job)<-app.studyJob){job.cancel();app.studyJob=None;app.message=app.t("已取消实验，不发布部分样本。","Study cancelled; partial samples are not published.")}
         case 143 | 144=>
             let result=app.densityResult.getOrThrow();app.studyPoint=max(0,min(result.points.size-1,app.studyPoint+if(id==143){-1}else{1}));app.interventionResult=None;app.studyPolicy=0;refreshStudyPreview(app)
@@ -68,9 +78,7 @@ func studyAction(app:App,w:SdlWindow,id:Int64):Unit {
         case 146=>app.studySamples=if(app.studySamples==8){32}else if(app.studySamples==32){64}else{8}
         case 151=>app.studyDose=match(app.studyDose){case 1=>4;case 4=>16;case 16=>64;case 64=>128;case _=>1}
         case 147=>
-            let result=app.densityResult.getOrThrow();let base=readProjectText(result.source)
-            let job=ForestStudyJob(base,app.work.revision,app.studySamples,mode:1,probability:result.points[app.studyPoint].probability,dose:app.studyDose)
-            app.interventionResult=None;app.studyPolicy=0;refreshStudyPreview(app);app.studyJob=Some(job);job.start()
+            startStructureStudy(app,app.studySamples,app.studyPoint,app.studyDose)
         case 152=>app.studyPolicy=(app.studyPolicy+1)%4;refreshStudyPreview(app)
         case 148=>
             let next=app.studyPreview.getOrThrow().project.copy();next.budget=app.work.project.budget

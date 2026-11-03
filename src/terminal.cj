@@ -145,7 +145,7 @@ func submitTerminal(app: App): Unit {
     t.history.add(text);while(t.history.size>64){t.history.remove(at:0)};t.historyAt=t.history.size;t.savedDraft=""
     t.append(text,user:true);t.editor.set("");t.inputFirst=0
     match(text){
-        case "/help"=>t.append(app.t("本地命令：/site 当前场地；/clear 清空记录。\nEnter 发送；Shift+Enter 换行；↑↓ 历史；Ctrl+A/C/V 编辑；Ctrl+Shift+C 复制记录。\n填写 API Key 后可用自然语言对话；/stop 停止；/preview 预览候选。","Local commands: /site, /clear.\nEnter sends; Shift+Enter inserts a line; Up/Down history; Ctrl+A/C/V edit; Ctrl+Shift+C copies the transcript.\nWith a saved API key, chat naturally; /stop cancels; /preview opens candidates."))
+        case "/help"=>t.append(app.t("本地命令：/site 当前场地；/clear 清空记录。\nEnter 发送；Shift+Enter 换行；↑↓ 历史；Ctrl+A/C/V 编辑；Ctrl+Shift+C 复制记录。\n填写 API Key 后可用自然语言对话；/stop 停止；/preview 预览预算候选或实验样本。可让研究员扫描密度、比较等量清理、运行长期实验或读取结果。","Local commands: /site, /clear.\nEnter sends; Shift+Enter inserts a line; Up/Down history; Ctrl+A/C/V edit; Ctrl+Shift+C copies the transcript.\nWith a saved API key, chat naturally; /stop cancels; /preview opens budget candidates or experiment samples. Ask to scan density, compare equal clearing, run long experiments or read results."))
         case "/site"=>
             let p=app.work.project;var forest: Int64=0;var targets: Int64=0;var forbidden: Int64=0
             for(i in 0..p.cells){if(p.fuel(i)>0.0){forest++};if(p.targets[i]!=0){targets++};if(p.forbidden[i]!=0){forbidden++}}

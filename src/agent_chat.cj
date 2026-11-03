@@ -62,6 +62,20 @@ class AgentChatJob {
     let timeoutMillis:Float64
     var toolCalls:Int64=0
     var usedCap:Float64= -1.0
+    var pendingLab:?AgentLabCall=None
+    var ownedStudy:?ForestStudyJob=None;var ownedLong:?LongJob=None;var ownedEvaluation:?EvaluationJob=None
+    func ownStudy(task:ForestStudyJob):Unit {synchronized(lock){ownedStudy=Some(task);if(cancelled){task.cancel()}}}
+    func ownLong(task:LongJob):Unit {synchronized(lock){ownedLong=Some(task);if(cancelled){task.cancel()}}}
+    func ownEvaluation(task:EvaluationJob):Unit {synchronized(lock){ownedEvaluation=Some(task);if(cancelled){task.cancel()}}}
+    func takeLabCall():?AgentLabCall {synchronized(lock){let call=pendingLab;pendingLab=None;return call}}
+    func lab(args:HashMap<String,JsonValue>,readOnly:Bool):String {
+        require(!readOnly || args.isEmpty(),"read_lab accepts no arguments");event(if(readOnly){"read_lab"}else{"control_lab"})
+        let frozen=HashMap<String,JsonValue>();for((k,v) in args){frozen[k]=v};let call=AgentLabCall(frozen,readOnly)
+        synchronized(lock){require(pendingLab.isNone(),"Another UI request is pending");pendingLab=Some(call)}
+        var response:?String=None
+        while(response.isNone()){checkActive();response=call.result();if(response.isNone()){sleep(Duration.millisecond*5)}}
+        checkActive();return response.getOrThrow()
+    }
     init(p:Project,revision:Int64,settings:DeepSeekSettings,epoch:Int64,question:String,conversation:Conversation,timeoutMillis!:Float64=90000.0){
         require(timeoutMillis>0.0 && timeoutMillis<=90000.0,"Invalid agent deadline");this.timeoutMillis=timeoutMillis
         p.validate();source=p.text();this.revision=revision;generation=settings.generation;model=settings.model;key=settings.apiKey
@@ -71,7 +85,7 @@ class AgentChatJob {
     func isCancelled():Bool {synchronized(lock){return cancelled}}
     func expired():Bool {clock.ms()-began>timeoutMillis}
     func checkActive():Unit {require(!isCancelled(),"Cancelled");require(!expired(),"Deadline exceeded")}
-    func cancel():Unit {synchronized(lock){cancelled=true;if(let Some(s)<-search){s.cancel()}}}
+    func cancel():Unit {synchronized(lock){cancelled=true;if(let Some(s)<-search){s.cancel()};if(let Some(s)<-ownedStudy){s.cancel()};if(let Some(s)<-ownedLong){s.cancel()};if(let Some(s)<-ownedEvaluation){s.cancel()}}}
     func progress():AgentChatState {synchronized(lock){return AgentChatState(done,cancelled,answer,error,events.toArray(),plan)}}
     func event(name:String):Unit {checkActive();synchronized(lock){toolCalls++;require(toolCalls<=8,"Tool limit exceeded");events.add("[tool] "+name)}}
     func site():String {
@@ -104,7 +118,10 @@ class AgentChatJob {
             description:"Evaluate finite legal firebreak candidates, preserving protected/excluded cells. Optional max_additional_cost limits added cost in CNY, within remaining project budget. Returns stable ids and training/holdout metrics. Read-only; one cost limit per request.",
             parameters:[("max_additional_cost","Maximum ADDITIONAL cost in CNY, no higher than remaining project budget",TypeSchema.Float,false)],
             execFn:Some({args=>evaluateTool(args)}))
-        return SimpleToolManager([a,b])
+        let c=NativeFuncTool(name:"read_lab",description:"Read LIVE revision-checked forest/workflow/task progress and available R3 density/structure, R4 long-run, single-fire and paired-comparison metrics. Missing fields mean unavailable, not zero. Always call for current experiment facts; historical chat facts may be stale.",execFn:Some({args=>lab(args,true)}))
+        let d=NativeFuncTool(name:"control_lab",description:"Operate existing lab controls on the UI thread without editing project data. Actions: workflow(stage 0..3), density_scan(samples 8/32/64), structure_compare(samples,density_index 0..20,dose 1..128), structure_preview(density_index,sample,policy 0 baseline/1 random/2 connector/3 center strip), long_run(growth,lightning,warmup,drives,samples,capacity), compare_run(samples 4/16/32), single_start/single_pause/single_step/single_reset, long_play/long_pause/long_step/long_seek(frame), cancel_tasks. Other arguments must be omitted. Run returns task started/progress, not completed results: read_lab later. Previews never Apply; user uses /preview then manually applies. No project/ignition/settings edits or files. Long replay remains blocked while terminal/menu open. Only act when user asks to operate.",parameters:[
+            ("action","One supported action",TypeSchema.Str,true),("stage","0 Build Forest, 1 Observe Forest, 2 Intervene, 3 Compare",TypeSchema.Int,false),("samples","Independent replicate count",TypeSchema.Int,false),("density_index","Tested p index 0..20, p=index*0.05",TypeSchema.Int,false),("dose","Equal clearing count 1..128",TypeSchema.Int,false),("policy","Preview policy 0..3",TypeSchema.Int,false),("sample","Zero-based preview sample",TypeSchema.Int,false),("growth","Per-empty-site growth probability",TypeSchema.Float,false),("lightning","Whole-grid strike probability per round",TypeSchema.Float,false),("warmup","Excluded warmup rounds 0..2048",TypeSchema.Int,false),("drives","Measured rounds 1..8192",TypeSchema.Int,false),("capacity","Ideal suppression size 0..16384",TypeSchema.Int,false),("frame","Zero-based sampled checkpoint",TypeSchema.Int,false)],execFn:Some({args=>lab(args,false)}))
+        return SimpleToolManager([a,b,c,d])
     }
     func evaluateTool(args:HashMap<String,JsonValue>):String {
         require(args.size<=1 && (args.isEmpty() || args.contains("max_additional_cost")),"Unknown arguments")
@@ -123,14 +140,14 @@ class AgentChatJob {
         let native=DeepSeekModel(this)
         try{
             checkActive();Config.enableParallelToolCall=false;Config.enableAgentLog=false;Config.saveModelRequest=false;Config.importPaths=[];Config.logLevel="error"
-            let agent=BaseAgent(model:modelOverride ?? native,name:"Firebreak researcher",executor:Some(ReactExecutor(loop:6)),toolManager:tools(),systemPrompt:"You are Firebreak's forest firebreak planning assistant. Answer in the user's language, concise plain text. Use real tools for site facts and planning; never invent tool results or claim scene edits. Tool snapshots are the ONLY current site truth; conversation site facts can be stale. Budget/land constraints cannot be changed by you. For a lower spending cap, pass max_additional_cost as a validated numeric tool argument, subtracting existing cost if the user means total cost. Higher budgets require changing project settings first. Never claim optimality or real-world wildfire forecasts. Recommendations require evaluate_candidates. Explain training versus holdout; no verified recommendation if recommended=-1. Results are read-only, user must /preview then manually Apply in the map. No filesystem, shell, networking, other agents or external tools are available. Follow the framework action/answer protocol; do not include private reasoning in your final answer.")
+            let agent=BaseAgent(model:modelOverride ?? native,name:"Firebreak researcher",executor:Some(ReactExecutor(loop:6)),toolManager:tools(),systemPrompt:"You are Firebreak's forest experiment assistant. Use read_lab for current experiment facts and control_lab only for user-requested operations. A started asynchronous task is not a completed result. Do not invent missing metrics or keep polling in a loop; report running status and let the user ask later. Fixed-cell structure comparison uses control_lab structure_compare, never monetary evaluate_candidates. Critically distinguish density p from single-fire spread q and whole-grid lightning probability. Long runs are DS-inspired idealizations, not SOC proof. RAG is not installed. Manual Apply remains mandatory for every forest change. Answer in the user's language, concise plain text. Use real tools for site facts and planning; never invent tool results or claim scene edits. Tool snapshots are the ONLY current site truth; conversation site facts can be stale. Budget/land constraints cannot be changed by you. For a lower spending cap, pass max_additional_cost as a validated numeric tool argument, subtracting existing cost if the user means total cost. Higher budgets require changing project settings first. Never claim optimality or real-world wildfire forecasts. Monetary-budget recommendations require evaluate_candidates; forest structure comparisons use structure_compare and read_lab. Explain training versus holdout; no verified recommendation if recommended=-1. Results are read-only, user must /preview then manually Apply in the map. No filesystem, shell, networking, other agents or external tools are available. Follow the framework action/answer protocol; do not include private reasoning in your final answer.")
             let response=agent.asyncChat(AgentRequest(question,conversation:Some(conversation)))
             while(let Some(chunk)<-response.next()){
                 checkActive();synchronized(lock){require(answer.size+chunk.size<=16384,"Answer exceeds display bound");answer+=chunk}
             }
             checkActive();require(response.status==AgentResponseStatus.Success,"Model response failed")
             synchronized(lock){require(!answer.trimAscii().isEmpty(),"Empty model answer")}
-        }catch(_:Exception){synchronized(lock){if(!cancelled){error=if(expired()){"请求超时 / Request timed out"}else{"模型请求失败，请检查网络、余额、模型名称或 API 设置 / Model request failed; check network, balance, model or API settings"}}}}
+        }catch(_:Exception){synchronized(lock){if(!cancelled){error=if(expired()){"请求超时 / Request timed out"}else{"模型请求失败，请检查网络、余额、模型名称或 API 设置 / Model request failed; check network, balance, model or API settings"}};if(let Some(task)<-ownedStudy){task.cancel()};if(let Some(task)<-ownedLong){task.cancel()};if(let Some(task)<-ownedEvaluation){task.cancel()}}}
         finally{native.close();synchronized(lock){search=None;done=true}}
     }
 }
@@ -138,6 +155,7 @@ func pollAgentChat(app:App):Unit {
     if(let Some(job)<-app.agentChat){
         let t=app.terminal
         if(job.revision!=app.work.revision || job.generation!=app.agentSettings.generation || job.epoch!=t.epoch){job.cancel()}
+        if(!job.isCancelled()){pollAgentLab(app,job)}
         var state=job.progress()
         if(state.done && job.source!=app.work.project.text()){job.cancel();state=job.progress()}
         if(!state.cancelled){
@@ -167,7 +185,13 @@ func startAgentChat(app:App,text:String):Unit {
     t.seenEvents=0;t.streamText="";t.agentPlan=None;app.agentChat=Some(job);t.append(app.t("正在连接 DeepSeek…","Connecting to DeepSeek…"));job.start()
 }
 func previewAgentPlan(app:App):Unit {
-    let t=app.terminal;let r=t.agentPlan.getOrThrow()
+    let t=app.terminal
+    if(t.agentPlan.isNone()){
+        pollStudy(app);pollLong(app,app.clockNow)
+        require((app.studyPanel && app.studyPreview.isSome()) || (app.longPanel && app.longReplay.isSome()),app.t("暂无有效预览，请先运行实验并选择样本。","No current preview; run an experiment and select a sample first."))
+        t.open=false;return
+    }
+    let r=t.agentPlan.getOrThrow()
     require(t.planRevision==app.work.revision && t.planSource==app.work.project.text(),app.t("场地已修改，请重新请求建议。","Site changed; request new suggestions."))
     if(let Some(old)<-app.searchJob){old.cancel();app.searchJob=None}
     app.openSuggestions();app.searchResult=Some(r);app.candidateIndex=max(0,r.selected);app.candidateVisible = !r.entries.isEmpty();t.open=false

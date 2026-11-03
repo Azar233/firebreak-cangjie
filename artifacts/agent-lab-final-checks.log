@@ -1,0 +1,24 @@
+PASS Lab reads actual forest structure and leaves unavailable experiment results absent
+PASS The model control surface has no Apply or project-edit action
+PASS Textual integers are rejected before changing workflow
+PASS Unknown model arguments are rejected at the controller boundary
+PASS Model commands preserve pending manual selections
+PASS Real CangjieMagic orchestration marshals model tools to the native UI owner thread
+PASS Agent-started density scan publishes eight real replicates without a workspace edit
+PASS Equal-cell agent comparisons reuse all four actual policies and paired statistics
+PASS Slash preview exposes the exact structural sample while preserving manual Apply
+PASS Lab reading exposes real long-run totals, exact parameters and warmup semantics
+PASS Agent replay step uses the same sampled-checkpoint cursor as the GUI
+PASS Long playback remains blocked by the terminal and reports the overlay explicitly
+PASS Agent pause preserves both the checkpoint and source forest
+PASS Single-fire agent operations require a manually chosen valid ignition
+PASS Agent single-step advances the existing synchronous fire controller once
+PASS Agent starts single-fire playback through the shared controller
+PASS Agent pauses single-fire playback without editing ignition or forest
+PASS Agent starts and reads actual matched project evaluation without budget-based candidate selection
+PASS Cancel command stops outstanding lab tasks through the shared controllers
+PASS Stopping a request cancels the experiment task owned by that request
+PASS A stale queued command is rejected before dispatching UI actions
+PASS A cancelled queued command cannot change the workflow
+PASS Cancellation wakes and joins a model worker waiting for an unserviced UI request
+PASS An unserviced UI request expires without requiring the UI thread to unblock it
